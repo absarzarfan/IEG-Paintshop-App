@@ -13,7 +13,7 @@ import {
   getListMaterialsQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Plus, AlertTriangle, Settings2, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, AlertTriangle, Settings2, Trash2, ClipboardPenLine } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -133,9 +133,14 @@ export function JobItemDetail() {
             </div>
             <p className="text-xl text-foreground font-medium">{job.description}</p>
           </div>
-          {isAdmin && (
-            <EditJobItemDialog job={job} />
-          )}
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/paint-usage/new?jobItemId=${job.id}`} className="inline-flex h-10 items-center justify-center border border-border bg-card px-4 text-sm font-bold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary" data-testid={`link-record-paint-usage-${job.id}`}>
+              <ClipboardPenLine className="mr-2 h-4 w-4 text-primary" /> Record Paint Usage
+            </Link>
+            {isAdmin && (
+              <EditJobItemDialog job={job} />
+            )}
+          </div>
         </div>
       </div>
 

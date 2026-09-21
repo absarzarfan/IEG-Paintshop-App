@@ -619,6 +619,220 @@ export const DeleteSerialNumberResponse = zod.void()
 
 
 /**
+ * @summary List paint usage records with calculated variance
+ */
+export const ListPaintUsageQueryParams = zod.object({
+  "jobItemId": zod.coerce.number().int().optional(),
+  "serialNumberId": zod.coerce.number().int().optional(),
+  "fromDate": zod.date().optional(),
+  "toDate": zod.date().optional()
+})
+
+export const ListPaintUsageResponseItem = zod.object({
+  "id": zod.number().int(),
+  "jobItemId": zod.number().int(),
+  "jobNo": zod.string(),
+  "serialNumberId": zod.number().int(),
+  "serialNo": zod.string(),
+  "usageDate": zod.coerce.date(),
+  "shift": zod.string(),
+  "primerBaseActualL": zod.number(),
+  "primerHrdActualL": zod.number(),
+  "primerThinnerActualL": zod.number(),
+  "primerActualTotalL": zod.number(),
+  "topcoatBaseActualL": zod.number(),
+  "topcoatHrdActualL": zod.number(),
+  "topcoatThinnerActualL": zod.number(),
+  "topcoatActualTotalL": zod.number(),
+  "primerTargetTotalL": zod.number(),
+  "topcoatTargetTotalL": zod.number(),
+  "primerVarianceL": zod.number(),
+  "topcoatVarianceL": zod.number(),
+  "primerVariancePct": zod.number(),
+  "topcoatVariancePct": zod.number(),
+  "thresholdPct": zod.number(),
+  "isOverconsumption": zod.boolean(),
+  "notes": zod.string().nullable(),
+  "createdByUserId": zod.number().int().nullable(),
+  "createdByName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListPaintUsageResponse = zod.array(ListPaintUsageResponseItem)
+
+
+/**
+ * @summary Record actual paint usage for a serial number (admin or painter)
+ */
+export const createPaintUsageBodyShiftMax = 50;
+
+export const createPaintUsageBodyPrimerBaseActualLMin = 0;
+
+export const createPaintUsageBodyPrimerHrdActualLMin = 0;
+
+export const createPaintUsageBodyPrimerThinnerActualLMin = 0;
+
+export const createPaintUsageBodyTopcoatBaseActualLMin = 0;
+
+export const createPaintUsageBodyTopcoatHrdActualLMin = 0;
+
+export const createPaintUsageBodyTopcoatThinnerActualLMin = 0;
+
+
+
+export const CreatePaintUsageBody = zod.object({
+  "jobItemId": zod.number().int(),
+  "serialNumberId": zod.number().int(),
+  "usageDate": zod.coerce.date(),
+  "shift": zod.string().min(1).max(createPaintUsageBodyShiftMax),
+  "primerBaseActualL": zod.number().min(createPaintUsageBodyPrimerBaseActualLMin),
+  "primerHrdActualL": zod.number().min(createPaintUsageBodyPrimerHrdActualLMin),
+  "primerThinnerActualL": zod.number().min(createPaintUsageBodyPrimerThinnerActualLMin),
+  "topcoatBaseActualL": zod.number().min(createPaintUsageBodyTopcoatBaseActualLMin),
+  "topcoatHrdActualL": zod.number().min(createPaintUsageBodyTopcoatHrdActualLMin),
+  "topcoatThinnerActualL": zod.number().min(createPaintUsageBodyTopcoatThinnerActualLMin),
+  "notes": zod.string().nullish()
+})
+
+export const CreatePaintUsageResponse = zod.object({
+  "id": zod.number().int(),
+  "jobItemId": zod.number().int(),
+  "jobNo": zod.string(),
+  "serialNumberId": zod.number().int(),
+  "serialNo": zod.string(),
+  "usageDate": zod.coerce.date(),
+  "shift": zod.string(),
+  "primerBaseActualL": zod.number(),
+  "primerHrdActualL": zod.number(),
+  "primerThinnerActualL": zod.number(),
+  "primerActualTotalL": zod.number(),
+  "topcoatBaseActualL": zod.number(),
+  "topcoatHrdActualL": zod.number(),
+  "topcoatThinnerActualL": zod.number(),
+  "topcoatActualTotalL": zod.number(),
+  "primerTargetTotalL": zod.number(),
+  "topcoatTargetTotalL": zod.number(),
+  "primerVarianceL": zod.number(),
+  "topcoatVarianceL": zod.number(),
+  "primerVariancePct": zod.number(),
+  "topcoatVariancePct": zod.number(),
+  "thresholdPct": zod.number(),
+  "isOverconsumption": zod.boolean(),
+  "notes": zod.string().nullable(),
+  "createdByUserId": zod.number().int().nullable(),
+  "createdByName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get one paint usage record with calculated variance
+ */
+export const GetPaintUsageParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetPaintUsageResponse = zod.object({
+  "id": zod.number().int(),
+  "jobItemId": zod.number().int(),
+  "jobNo": zod.string(),
+  "serialNumberId": zod.number().int(),
+  "serialNo": zod.string(),
+  "usageDate": zod.coerce.date(),
+  "shift": zod.string(),
+  "primerBaseActualL": zod.number(),
+  "primerHrdActualL": zod.number(),
+  "primerThinnerActualL": zod.number(),
+  "primerActualTotalL": zod.number(),
+  "topcoatBaseActualL": zod.number(),
+  "topcoatHrdActualL": zod.number(),
+  "topcoatThinnerActualL": zod.number(),
+  "topcoatActualTotalL": zod.number(),
+  "primerTargetTotalL": zod.number(),
+  "topcoatTargetTotalL": zod.number(),
+  "primerVarianceL": zod.number(),
+  "topcoatVarianceL": zod.number(),
+  "primerVariancePct": zod.number(),
+  "topcoatVariancePct": zod.number(),
+  "thresholdPct": zod.number(),
+  "isOverconsumption": zod.boolean(),
+  "notes": zod.string().nullable(),
+  "createdByUserId": zod.number().int().nullable(),
+  "createdByName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update actual paint usage (admin or painter)
+ */
+export const UpdatePaintUsageParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updatePaintUsageBodyShiftMax = 50;
+
+export const updatePaintUsageBodyPrimerBaseActualLMin = 0;
+
+export const updatePaintUsageBodyPrimerHrdActualLMin = 0;
+
+export const updatePaintUsageBodyPrimerThinnerActualLMin = 0;
+
+export const updatePaintUsageBodyTopcoatBaseActualLMin = 0;
+
+export const updatePaintUsageBodyTopcoatHrdActualLMin = 0;
+
+export const updatePaintUsageBodyTopcoatThinnerActualLMin = 0;
+
+
+
+export const UpdatePaintUsageBody = zod.object({
+  "usageDate": zod.coerce.date().optional(),
+  "shift": zod.string().min(1).max(updatePaintUsageBodyShiftMax).optional(),
+  "primerBaseActualL": zod.number().min(updatePaintUsageBodyPrimerBaseActualLMin).optional(),
+  "primerHrdActualL": zod.number().min(updatePaintUsageBodyPrimerHrdActualLMin).optional(),
+  "primerThinnerActualL": zod.number().min(updatePaintUsageBodyPrimerThinnerActualLMin).optional(),
+  "topcoatBaseActualL": zod.number().min(updatePaintUsageBodyTopcoatBaseActualLMin).optional(),
+  "topcoatHrdActualL": zod.number().min(updatePaintUsageBodyTopcoatHrdActualLMin).optional(),
+  "topcoatThinnerActualL": zod.number().min(updatePaintUsageBodyTopcoatThinnerActualLMin).optional(),
+  "notes": zod.string().nullish()
+})
+
+export const UpdatePaintUsageResponse = zod.object({
+  "id": zod.number().int(),
+  "jobItemId": zod.number().int(),
+  "jobNo": zod.string(),
+  "serialNumberId": zod.number().int(),
+  "serialNo": zod.string(),
+  "usageDate": zod.coerce.date(),
+  "shift": zod.string(),
+  "primerBaseActualL": zod.number(),
+  "primerHrdActualL": zod.number(),
+  "primerThinnerActualL": zod.number(),
+  "primerActualTotalL": zod.number(),
+  "topcoatBaseActualL": zod.number(),
+  "topcoatHrdActualL": zod.number(),
+  "topcoatThinnerActualL": zod.number(),
+  "topcoatActualTotalL": zod.number(),
+  "primerTargetTotalL": zod.number(),
+  "topcoatTargetTotalL": zod.number(),
+  "primerVarianceL": zod.number(),
+  "topcoatVarianceL": zod.number(),
+  "primerVariancePct": zod.number(),
+  "topcoatVariancePct": zod.number(),
+  "thresholdPct": zod.number(),
+  "isOverconsumption": zod.boolean(),
+  "notes": zod.string().nullable(),
+  "createdByUserId": zod.number().int().nullable(),
+  "createdByName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List audit trail entries, newest first (admin only)
  */
 export const ListAuditLogQueryParams = zod.object({

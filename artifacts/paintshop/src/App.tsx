@@ -21,6 +21,7 @@ import { Colors } from './pages/colors';
 import { Brands } from './pages/brands';
 import { Users } from './pages/users';
 import { AuditLog } from './pages/audit-log';
+import { PaintUsage } from './pages/paint-usage';
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -199,6 +200,8 @@ function ClerkProviderWithRoutes() {
             <ProtectedRoute path="/dashboard" component={Dashboard} />
             <ProtectedRoute path="/job-items" component={JobItems} />
             <ProtectedRoute path="/job-items/:id" component={JobItemDetail} />
+            <ProtectedRoute path="/paint-usage" component={PaintUsage} />
+            <ProtectedRoute path="/paint-usage/:id" component={PaintUsage} />
             <ProtectedRoute path="/materials" component={Materials} />
             <ProtectedRoute path="/colors" component={Colors} />
             <ProtectedRoute path="/brands" component={Brands} />

@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   Menu
 } from "lucide-react";
+import { ClipboardPenLine } from "lucide-react";
 import { useAppAuth, ROLE_LABELS } from "@/lib/auth";
 import { Button } from "./ui/button";
 
@@ -61,6 +62,7 @@ export function Layout({ children }: LayoutProps) {
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Job Items", href: "/job-items", icon: PaintBucket },
+    { name: "Paint Usage", href: "/paint-usage", icon: ClipboardPenLine },
     { name: "Materials", href: "/materials", icon: Droplet },
     { name: "Colors", href: "/colors", icon: Palette },
     { name: "Brands", href: "/brands", icon: Settings },

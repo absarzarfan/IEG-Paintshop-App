@@ -314,6 +314,88 @@ export interface SerialNumberBulkInput {
   values?: string[];
 }
 
+export interface PaintUsage {
+  id: number;
+  jobItemId: number;
+  jobNo: string;
+  serialNumberId: number;
+  serialNo: string;
+  usageDate: string;
+  shift: string;
+  primerBaseActualL: number;
+  primerHrdActualL: number;
+  primerThinnerActualL: number;
+  primerActualTotalL: number;
+  topcoatBaseActualL: number;
+  topcoatHrdActualL: number;
+  topcoatThinnerActualL: number;
+  topcoatActualTotalL: number;
+  primerTargetTotalL: number;
+  topcoatTargetTotalL: number;
+  primerVarianceL: number;
+  topcoatVarianceL: number;
+  primerVariancePct: number;
+  topcoatVariancePct: number;
+  thresholdPct: number;
+  isOverconsumption: boolean;
+  /** @nullable */
+  notes: string | null;
+  /** @nullable */
+  createdByUserId: number | null;
+  /** @nullable */
+  createdByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaintUsageInput {
+  jobItemId: number;
+  serialNumberId: number;
+  usageDate: string;
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  shift: string;
+  /** @minimum 0 */
+  primerBaseActualL: number;
+  /** @minimum 0 */
+  primerHrdActualL: number;
+  /** @minimum 0 */
+  primerThinnerActualL: number;
+  /** @minimum 0 */
+  topcoatBaseActualL: number;
+  /** @minimum 0 */
+  topcoatHrdActualL: number;
+  /** @minimum 0 */
+  topcoatThinnerActualL: number;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface PaintUsageUpdate {
+  usageDate?: string;
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  shift?: string;
+  /** @minimum 0 */
+  primerBaseActualL?: number;
+  /** @minimum 0 */
+  primerHrdActualL?: number;
+  /** @minimum 0 */
+  primerThinnerActualL?: number;
+  /** @minimum 0 */
+  topcoatBaseActualL?: number;
+  /** @minimum 0 */
+  topcoatHrdActualL?: number;
+  /** @minimum 0 */
+  topcoatThinnerActualL?: number;
+  /** @nullable */
+  notes?: string | null;
+}
+
 export type AuditAction = typeof AuditAction[keyof typeof AuditAction];
 
 
@@ -352,6 +434,13 @@ export type ListJobItemsParams = {
  * Case-insensitive search over job number and description
  */
 search?: string;
+};
+
+export type ListPaintUsageParams = {
+jobItemId?: number;
+serialNumberId?: number;
+fromDate?: string;
+toDate?: string;
 };
 
 export type ListAuditLogParams = {

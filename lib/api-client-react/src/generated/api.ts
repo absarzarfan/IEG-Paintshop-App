@@ -35,11 +35,15 @@ import type {
   JobItemUpdate,
   ListAuditLogParams,
   ListJobItemsParams,
+  ListPaintUsageParams,
   Material,
   MaterialInput,
   MaterialPrice,
   MaterialPriceInput,
   MaterialUpdate,
+  PaintUsage,
+  PaintUsageInput,
+  PaintUsageUpdate,
   SerialNumber,
   SerialNumberBulkInput,
   User,
@@ -1976,6 +1980,344 @@ export const useDeleteSerialNumber = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteSerialNumberMutationOptions(options));
+    }
+
+export const getListPaintUsageUrl = (params?: ListPaintUsageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/paint-usage?${stringifiedParams}` : `/api/paint-usage`
+}
+
+/**
+ * @summary List paint usage records with calculated variance
+ */
+export const listPaintUsage = async (params?: ListPaintUsageParams, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsage[]> => {
+
+  return customFetch<PaintUsage[]>(getListPaintUsageUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPaintUsageQueryKey = (params?: ListPaintUsageParams,) => {
+    return [
+    `/api/paint-usage`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPaintUsageQueryOptions = <TData = Awaited<ReturnType<typeof listPaintUsage>>, TError = ErrorType<unknown>>(params?: ListPaintUsageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaintUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPaintUsageQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPaintUsage>>> = ({ signal }) => listPaintUsage(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPaintUsage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPaintUsageQueryResult = NonNullable<Awaited<ReturnType<typeof listPaintUsage>>>
+export type ListPaintUsageQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List paint usage records with calculated variance
+ */
+
+export function useListPaintUsage<TData = Awaited<ReturnType<typeof listPaintUsage>>, TError = ErrorType<unknown>>(
+ params?: ListPaintUsageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaintUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPaintUsageQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePaintUsageUrl = () => {
+
+
+
+
+  return `/api/paint-usage`
+}
+
+/**
+ * @summary Record actual paint usage for a serial number (admin or painter)
+ */
+export const createPaintUsage = async (paintUsageInput: PaintUsageInput, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsage> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PaintUsage>(getCreatePaintUsageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paintUsageInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePaintUsageMutationKey = () => ['createPaintUsage'] as const;
+
+export const getCreatePaintUsageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaintUsage>>, TError,CreatePaintUsageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPaintUsage>>, TError,CreatePaintUsageMutationVariables, TContext> => {
+
+const mutationKey = getCreatePaintUsageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPaintUsage>>, CreatePaintUsageMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPaintUsage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePaintUsageMutationResult = NonNullable<Awaited<ReturnType<typeof createPaintUsage>>>
+    export type CreatePaintUsageMutationBody = BodyType<PaintUsageInput>
+    export type CreatePaintUsageMutationError = ErrorType<void>
+    export type CreatePaintUsageMutationVariables = {data: BodyType<PaintUsageInput>}
+
+    /**
+ * @summary Record actual paint usage for a serial number (admin or painter)
+ */
+export const useCreatePaintUsage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaintUsage>>, TError,CreatePaintUsageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPaintUsage>>,
+        TError,
+        CreatePaintUsageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePaintUsageMutationOptions(options));
+    }
+
+export const getGetPaintUsageUrl = (id: number,) => {
+
+
+
+
+  return `/api/paint-usage/${id}`
+}
+
+/**
+ * @summary Get one paint usage record with calculated variance
+ */
+export const getPaintUsage = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsage> => {
+
+  return customFetch<PaintUsage>(getGetPaintUsageUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPaintUsageQueryKey = (id: number,) => {
+    return [
+    `/api/paint-usage/${id}`
+    ] as const;
+    }
+
+
+export const getGetPaintUsageQueryOptions = <TData = Awaited<ReturnType<typeof getPaintUsage>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPaintUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPaintUsageQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPaintUsage>>> = ({ signal }) => getPaintUsage(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPaintUsage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPaintUsageQueryResult = NonNullable<Awaited<ReturnType<typeof getPaintUsage>>>
+export type GetPaintUsageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get one paint usage record with calculated variance
+ */
+
+export function useGetPaintUsage<TData = Awaited<ReturnType<typeof getPaintUsage>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPaintUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPaintUsageQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePaintUsageUrl = (id: number,) => {
+
+
+
+
+  return `/api/paint-usage/${id}`
+}
+
+/**
+ * @summary Update actual paint usage (admin or painter)
+ */
+export const updatePaintUsage = async (id: number,
+    paintUsageUpdate: PaintUsageUpdate, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsage> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PaintUsage>(getUpdatePaintUsageUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paintUsageUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdatePaintUsageMutationKey = () => ['updatePaintUsage'] as const;
+
+export const getUpdatePaintUsageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaintUsage>>, TError,UpdatePaintUsageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePaintUsage>>, TError,UpdatePaintUsageMutationVariables, TContext> => {
+
+const mutationKey = getUpdatePaintUsageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePaintUsage>>, UpdatePaintUsageMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePaintUsage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePaintUsageMutationResult = NonNullable<Awaited<ReturnType<typeof updatePaintUsage>>>
+    export type UpdatePaintUsageMutationBody = BodyType<PaintUsageUpdate>
+    export type UpdatePaintUsageMutationError = ErrorType<void>
+    export type UpdatePaintUsageMutationVariables = {id: number;data: BodyType<PaintUsageUpdate>}
+
+    /**
+ * @summary Update actual paint usage (admin or painter)
+ */
+export const useUpdatePaintUsage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaintUsage>>, TError,UpdatePaintUsageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePaintUsage>>,
+        TError,
+        UpdatePaintUsageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdatePaintUsageMutationOptions(options));
     }
 
 export const getListAuditLogUrl = (params?: ListAuditLogParams,) => {

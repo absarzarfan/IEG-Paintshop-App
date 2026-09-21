@@ -1012,7 +1012,7 @@ components:
         [
           jobItemId, serialNumberId, usageDate, shift,
           primerBaseActualL, primerHrdActualL, primerThinnerActualL,
-          topcoatBaseActualL, topcoatHrdActualL, topcoatThinnerL
+          topcoatBaseActualL, topcoatHrdActualL, topcoatThinnerActualL
         ]
 
     PaintUsageUpdate:

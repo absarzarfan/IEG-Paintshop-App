@@ -6,6 +6,7 @@ import colorsRouter from "./colors";
 import materialsRouter from "./materials";
 import jobItemsRouter from "./jobItems";
 import serialNumbersRouter from "./serialNumbers";
+import paintUsageRouter from "./paintUsage";
 import auditLogRouter from "./auditLog";
 import dashboardRouter from "./dashboard";
 import { requireAuth, attachAppUser } from "../middlewares/auth";
@@ -25,6 +26,7 @@ router.use(colorsRouter);
 router.use(materialsRouter);
 router.use(jobItemsRouter);
 router.use(serialNumbersRouter);
+router.use(paintUsageRouter);
 router.use(auditLogRouter);
 router.use(dashboardRouter);
 
