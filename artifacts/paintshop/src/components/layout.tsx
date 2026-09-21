@@ -148,9 +148,9 @@ export function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile Header (hidden on desktop) */}
-        <header className="h-16 md:hidden border-b border-border bg-card flex items-center px-4 justify-between shrink-0">
-          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-navy.png`} alt="Integrated Engineering Group" className="h-9 w-auto max-w-[180px] object-contain" />
-          <Button variant="ghost" size="icon">
+        <header className="h-16 md:hidden border-b border-[#52575D] bg-[#41444B] flex items-center px-4 justify-between shrink-0">
+          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-white.png`} alt="Integrated Engineering Group" className="h-9 w-auto max-w-[180px] object-contain" />
+          <Button variant="ghost" size="icon" className="text-[#F6F4E6] hover:bg-[#52575D] hover:text-[#F6F4E6]">
             <Menu className="h-5 w-5" />
           </Button>
         </header>
