@@ -10,6 +10,22 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: Current user and user/role management
+  - name: brands
+    description: Paint brand master data
+  - name: materials
+    description: Paint material master data and price history
+  - name: colors
+    description: Paint color master data
+  - name: job-items
+    description: Job/item catalog master data (paint targets)
+  - name: serial-numbers
+    description: Serial numbers belonging to a job item
+  - name: audit-log
+    description: Append-only audit trail
+  - name: dashboard
+    description: Summary/overview data
 paths:
   /healthz:
     get:
@@ -24,6 +40,495 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Get the current authenticated user
+      description: Returns the app user record for the signed-in Clerk session, provisioning it on first login. The very first user in the system is auto-provisioned as admin; everyone after that is provisioned as pending until an admin assigns a role.
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users (admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user's role or active status (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+
+  /brands:
+    get:
+      operationId: listBrands
+      tags: [brands]
+      summary: List paint brands
+      responses:
+        "200":
+          description: List of brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Brand"
+    post:
+      operationId: createBrand
+      tags: [brands]
+      summary: Create a paint brand (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandInput"
+      responses:
+        "201":
+          description: Created brand
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Brand"
+
+  /brands/{id}:
+    patch:
+      operationId: updateBrand
+      tags: [brands]
+      summary: Update a paint brand (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandUpdate"
+      responses:
+        "200":
+          description: Updated brand
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Brand"
+        "404":
+          description: Not found
+
+  /colors:
+    get:
+      operationId: listColors
+      tags: [colors]
+      summary: List paint colors
+      responses:
+        "200":
+          description: List of colors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Color"
+    post:
+      operationId: createColor
+      tags: [colors]
+      summary: Create a paint color (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ColorInput"
+      responses:
+        "201":
+          description: Created color
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Color"
+
+  /colors/{id}:
+    patch:
+      operationId: updateColor
+      tags: [colors]
+      summary: Update a paint color (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ColorUpdate"
+      responses:
+        "200":
+          description: Updated color
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Color"
+        "404":
+          description: Not found
+
+  /materials:
+    get:
+      operationId: listMaterials
+      tags: [materials]
+      summary: List paint materials
+      responses:
+        "200":
+          description: List of materials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Material"
+    post:
+      operationId: createMaterial
+      tags: [materials]
+      summary: Create a paint material (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialInput"
+      responses:
+        "201":
+          description: Created material
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Material"
+
+  /materials/{id}:
+    get:
+      operationId: getMaterial
+      tags: [materials]
+      summary: Get a paint material by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Material
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Material"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateMaterial
+      tags: [materials]
+      summary: Update a paint material (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialUpdate"
+      responses:
+        "200":
+          description: Updated material
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Material"
+        "404":
+          description: Not found
+
+  /materials/{id}/prices:
+    get:
+      operationId: listMaterialPrices
+      tags: [materials]
+      summary: List price history for a material, newest first
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Price history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MaterialPrice"
+    post:
+      operationId: createMaterialPrice
+      tags: [materials]
+      summary: Record a new price for a material (admin only). Price history is append-only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialPriceInput"
+      responses:
+        "201":
+          description: Created price entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaterialPrice"
+
+  /job-items:
+    get:
+      operationId: listJobItems
+      tags: [job-items]
+      summary: List job/item catalog entries
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Case-insensitive search over job number and description
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of job items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobItem"
+    post:
+      operationId: createJobItem
+      tags: [job-items]
+      summary: Create a job/item catalog entry (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobItemInput"
+      responses:
+        "201":
+          description: Created job item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobItem"
+
+  /job-items/{id}:
+    get:
+      operationId: getJobItem
+      tags: [job-items]
+      summary: Get a job/item catalog entry with derived cost preview
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job item detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobItemDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateJobItem
+      tags: [job-items]
+      summary: Update a job/item catalog entry (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobItemUpdate"
+      responses:
+        "200":
+          description: Updated job item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobItem"
+        "404":
+          description: Not found
+
+  /job-items/{jobItemId}/serial-numbers:
+    get:
+      operationId: listJobItemSerialNumbers
+      tags: [serial-numbers]
+      summary: List serial numbers registered under a job item
+      parameters:
+        - name: jobItemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of serial numbers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SerialNumber"
+    post:
+      operationId: createJobItemSerialNumbers
+      tags: [serial-numbers]
+      summary: Register serial numbers under a job item, as an explicit list or a numeric range (admin only)
+      parameters:
+        - name: jobItemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SerialNumberBulkInput"
+      responses:
+        "201":
+          description: Created serial numbers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SerialNumber"
+
+  /serial-numbers/{id}:
+    delete:
+      operationId: deleteSerialNumber
+      tags: [serial-numbers]
+      summary: Remove a serial number (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /audit-log:
+    get:
+      operationId: listAuditLog
+      tags: [audit-log]
+      summary: List audit trail entries, newest first (admin only)
+      parameters:
+        - name: entityType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLogEntry"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Overview counts and recent audit activity for the home screen
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +539,367 @@ components:
       required:
         - status
 
+    UserRole:
+      type: string
+      enum: [admin, painter, warehouse, supervisor, procurement, pending]
+      description: pending users have no permissions until an admin assigns a real role
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        clerkUserId: { type: string }
+        name: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        role:
+          $ref: "#/components/schemas/UserRole"
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, clerkUserId, name, email, role, isActive, createdAt]
+
+    UserUpdate:
+      type: object
+      properties:
+        role:
+          $ref: "#/components/schemas/UserRole"
+        isActive: { type: boolean }
+
+    Brand:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, isActive, createdAt]
+
+    BrandInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+      required: [name]
+
+    BrandUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        isActive: { type: boolean }
+
+    Color:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        hexCode: { type: ["string", "null"] }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, hexCode, isActive, createdAt]
+
+    ColorInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        hexCode: { type: string }
+      required: [name]
+
+    ColorUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        hexCode: { type: ["string", "null"] }
+        isActive: { type: boolean }
+
+    MaterialType:
+      type: string
+      enum: [Primer, Topcoat, Hardener, Thinner, Activator]
+
+    Material:
+      type: object
+      properties:
+        id: { type: integer }
+        brandId: { type: integer }
+        brandName: { type: string }
+        description: { type: string }
+        type:
+          $ref: "#/components/schemas/MaterialType"
+        packagingSizeL: { type: number }
+        color: { type: ["string", "null"] }
+        deadStockThreshold: { type: number }
+        currency: { type: string }
+        currentUnitPrice: { type: ["number", "null"] }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required:
+        [
+          id,
+          brandId,
+          brandName,
+          description,
+          type,
+          packagingSizeL,
+          color,
+          deadStockThreshold,
+          currency,
+          currentUnitPrice,
+          isActive,
+          createdAt,
+        ]
+
+    MaterialInput:
+      type: object
+      properties:
+        brandId: { type: integer }
+        description: { type: string, minLength: 1 }
+        type:
+          $ref: "#/components/schemas/MaterialType"
+        packagingSizeL: { type: number, minimum: 0 }
+        color: { type: string }
+        deadStockThreshold: { type: number, minimum: 0 }
+        currency: { type: string, minLength: 1 }
+      required:
+        [brandId, description, type, packagingSizeL, deadStockThreshold, currency]
+
+    MaterialUpdate:
+      type: object
+      properties:
+        brandId: { type: integer }
+        description: { type: string, minLength: 1 }
+        type:
+          $ref: "#/components/schemas/MaterialType"
+        packagingSizeL: { type: number, minimum: 0 }
+        color: { type: ["string", "null"] }
+        deadStockThreshold: { type: number, minimum: 0 }
+        currency: { type: string, minLength: 1 }
+        isActive: { type: boolean }
+
+    MaterialPrice:
+      type: object
+      properties:
+        id: { type: integer }
+        materialId: { type: integer }
+        unitPrice: { type: number }
+        currency: { type: string }
+        effectiveDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+      required: [id, materialId, unitPrice, currency, effectiveDate, createdAt]
+
+    MaterialPriceInput:
+      type: object
+      properties:
+        unitPrice: { type: number, minimum: 0 }
+        currency: { type: string, minLength: 1 }
+        effectiveDate: { type: string, format: date }
+      required: [unitPrice, currency, effectiveDate]
+
+    JobItem:
+      type: object
+      properties:
+        id: { type: integer }
+        jobNo: { type: string }
+        description: { type: string }
+        surfaceAreaM2: { type: ["number", "null"] }
+        primerBaseL: { type: number }
+        primerHrdL: { type: number }
+        primerThinnerL: { type: number }
+        primerTotalL: { type: number }
+        topcoatBaseL: { type: number }
+        topcoatHrdL: { type: number }
+        topcoatThinnerL: { type: number }
+        topcoatTotalL: { type: number }
+        overconsumptionThresholdPct: { type: ["number", "null"] }
+        primerBaseMaterialId: { type: ["integer", "null"] }
+        primerHrdMaterialId: { type: ["integer", "null"] }
+        primerThinnerMaterialId: { type: ["integer", "null"] }
+        topcoatBaseMaterialId: { type: ["integer", "null"] }
+        topcoatHrdMaterialId: { type: ["integer", "null"] }
+        topcoatThinnerMaterialId: { type: ["integer", "null"] }
+        serialNumberCount: { type: integer }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required:
+        [
+          id,
+          jobNo,
+          description,
+          surfaceAreaM2,
+          primerBaseL,
+          primerHrdL,
+          primerThinnerL,
+          primerTotalL,
+          topcoatBaseL,
+          topcoatHrdL,
+          topcoatThinnerL,
+          topcoatTotalL,
+          overconsumptionThresholdPct,
+          primerBaseMaterialId,
+          primerHrdMaterialId,
+          primerThinnerMaterialId,
+          topcoatBaseMaterialId,
+          topcoatHrdMaterialId,
+          topcoatThinnerMaterialId,
+          serialNumberCount,
+          isActive,
+          createdAt,
+        ]
+
+    JobItemCosts:
+      type: object
+      description: Derived from current material prices. Null when a role has no material assigned, no price recorded yet, or assigned materials use inconsistent currencies.
+      properties:
+        currency: { type: ["string", "null"] }
+        primerCostBase: { type: ["number", "null"] }
+        primerCostHrd: { type: ["number", "null"] }
+        primerCostThinner: { type: ["number", "null"] }
+        primerCostTotal: { type: ["number", "null"] }
+        topcoatCostBase: { type: ["number", "null"] }
+        topcoatCostHrd: { type: ["number", "null"] }
+        topcoatCostThinner: { type: ["number", "null"] }
+        topcoatCostTotal: { type: ["number", "null"] }
+      required:
+        [
+          currency,
+          primerCostBase,
+          primerCostHrd,
+          primerCostThinner,
+          primerCostTotal,
+          topcoatCostBase,
+          topcoatCostHrd,
+          topcoatCostThinner,
+          topcoatCostTotal,
+        ]
+
+    JobItemDetail:
+      allOf:
+        - $ref: "#/components/schemas/JobItem"
+        - type: object
+          properties:
+            costs:
+              $ref: "#/components/schemas/JobItemCosts"
+          required: [costs]
+
+    JobItemInput:
+      type: object
+      properties:
+        jobNo: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        surfaceAreaM2: { type: number, minimum: 0 }
+        primerBaseL: { type: number, minimum: 0 }
+        primerHrdL: { type: number, minimum: 0 }
+        primerThinnerL: { type: number, minimum: 0 }
+        topcoatBaseL: { type: number, minimum: 0 }
+        topcoatHrdL: { type: number, minimum: 0 }
+        topcoatThinnerL: { type: number, minimum: 0 }
+        overconsumptionThresholdPct: { type: number, minimum: 0 }
+        primerBaseMaterialId: { type: integer }
+        primerHrdMaterialId: { type: integer }
+        primerThinnerMaterialId: { type: integer }
+        topcoatBaseMaterialId: { type: integer }
+        topcoatHrdMaterialId: { type: integer }
+        topcoatThinnerMaterialId: { type: integer }
+      required:
+        [
+          jobNo,
+          description,
+          primerBaseL,
+          primerHrdL,
+          primerThinnerL,
+          topcoatBaseL,
+          topcoatHrdL,
+          topcoatThinnerL,
+        ]
+
+    JobItemUpdate:
+      type: object
+      properties:
+        jobNo: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        surfaceAreaM2: { type: ["number", "null"], minimum: 0 }
+        primerBaseL: { type: number, minimum: 0 }
+        primerHrdL: { type: number, minimum: 0 }
+        primerThinnerL: { type: number, minimum: 0 }
+        topcoatBaseL: { type: number, minimum: 0 }
+        topcoatHrdL: { type: number, minimum: 0 }
+        topcoatThinnerL: { type: number, minimum: 0 }
+        overconsumptionThresholdPct: { type: ["number", "null"], minimum: 0 }
+        primerBaseMaterialId: { type: ["integer", "null"] }
+        primerHrdMaterialId: { type: ["integer", "null"] }
+        primerThinnerMaterialId: { type: ["integer", "null"] }
+        topcoatBaseMaterialId: { type: ["integer", "null"] }
+        topcoatHrdMaterialId: { type: ["integer", "null"] }
+        topcoatThinnerMaterialId: { type: ["integer", "null"] }
+        isActive: { type: boolean }
+
+    SerialNumber:
+      type: object
+      properties:
+        id: { type: integer }
+        jobItemId: { type: integer }
+        serialNo: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, jobItemId, serialNo, createdAt]
+
+    SerialNumberBulkInput:
+      type: object
+      description: Either a numeric range (rangeStart/rangeEnd) or an explicit list of values
+      properties:
+        mode:
+          type: string
+          enum: [range, list]
+        rangeStart: { type: string }
+        rangeEnd: { type: string }
+        values:
+          type: array
+          items: { type: string }
+      required: [mode]
+
+    AuditAction:
+      type: string
+      enum: [create, update, delete]
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        actorUserId: { type: ["integer", "null"] }
+        actorName: { type: ["string", "null"] }
+        action:
+          $ref: "#/components/schemas/AuditAction"
+        entityType: { type: string }
+        entityId: { type: string }
+        changes:
+          type: object
+          additionalProperties: true
+        createdAt: { type: string, format: date-time }
+      required:
+        [
+          id,
+          actorUserId,
+          actorName,
+          action,
+          entityType,
+          entityId,
+          changes,
+          createdAt,
+        ]
+
+    DashboardSummary:
+      type: object
+      properties:
+        jobItemCount: { type: integer }
+        materialCount: { type: integer }
+        colorCount: { type: integer }
+        brandCount: { type: integer }
+        pendingUserCount: { type: integer }
+        recentAuditEntries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLogEntry"
+      required:
+        [
+          jobItemCount,
+          materialCount,
+          colorCount,
+          brandCount,
+          pendingUserCount,
+          recentAuditEntries,
+        ]

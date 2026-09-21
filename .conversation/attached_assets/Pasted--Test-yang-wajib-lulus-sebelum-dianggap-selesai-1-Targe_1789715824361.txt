@@ -1,0 +1,37 @@
+
+
+
+**Test yang wajib lulus sebelum dianggap selesai:**
+
+1. Target auto-calc = master × quantity, untuk primer & topcoat, semua komponen.
+2. Δ dihitung per komponen; hijau saat `Δ ≥ 0`, merah saat `Δ < 0`; `Target = 0` tidak crash.
+3. Overconsumption > threshold memicu `Pending review` + alert.
+4. Reject → resubmit mempertahankan identity, histori, lampiran, dan `reworkCount`.
+5. Operator tidak bisa memutasi record operator lain.
+6. Submit pemakaian mengurangi stok sesuai lot; rollback bila transaksi gagal.
+7. FIFO merekomendasikan lot expire terdekat; override tercatat di audit.
+8. Lot expired tidak muncul di available stock maupun rekomendasi.
+9. Alert H-90/H-30 dan alert below-threshold menyala pada tanggal yang benar.
+10. Opname dengan selisih wajib remark + approval; menghasilkan transaksi Adjustment.
+11. Export Excel/PDF mingguan & bulanan menghasilkan layout sesuai sheet acuan.
+12. Laporan periode memakai `Asia/Jakarta`, bukan timezone server.
+
+---
+
+## 6. URUTAN BUILD YANG DIMINTA
+
+**Sprint 1** master data + auth/role + audit trail → **Sprint 2** form pengecatan + variance engine + indikator → **Sprint 3** stok (receive, issue, FIFO, expiry) + integrasi ke Modul 1 → **Sprint 4** opname + alert engine → **Sprint 5** dashboard, export Excel/PDF, summary mingguan & bulanan.
+
+Setelah tiap sprint: tampilkan ringkasan schema + daftar endpoint + hasil test, lalu tunggu konfirmasi saya sebelum lanjut.
+
+---
+
+## 7. DAFTAR [KONFIRMASI] YANG HARUS SAYA JAWAB DULU
+
+1. Jam shift & hari kerja paintshop.
+2. Stok dikurangi per liter atau per kaleng utuh (kebijakan kaleng terbuka).
+3. Boleh submit pemakaian saat stok sistem tidak cukup?
+4. Threshold overconsumption final (default 10%) — seragam atau per material?
+5. Channel notifikasi alert (in-app / email / lainnya).
+6. Mata uang & sumber `unit_price` (master manual atau ikut harga PO terakhir).
+7. Apakah satu record pemakaian bisa mencakup >1 SN sekaligus (sheet menunjukkan range `359–365`, qty 7).

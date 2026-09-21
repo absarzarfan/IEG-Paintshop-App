@@ -1,0 +1,157 @@
+import { ReactNode } from "react";
+import { Link, useLocation } from "wouter";
+import { useClerk } from "@clerk/react";
+import { 
+  LayoutDashboard, 
+  PaintBucket, 
+  Droplet, 
+  Palette, 
+  Settings, 
+  Users,
+  Activity,
+  LogOut,
+  ShieldAlert,
+  Menu
+} from "lucide-react";
+import { useAppAuth, ROLE_LABELS } from "@/lib/auth";
+import { Button } from "./ui/button";
+
+interface LayoutProps {
+  children: ReactNode;
+}
+
+export function Layout({ children }: LayoutProps) {
+  const { user, isPending, isAdmin } = useAppAuth();
+  const [location] = useLocation();
+  const { signOut } = useClerk();
+
+  // Handle pending users
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-card border border-border p-8 text-center space-y-6">
+          <div className="w-16 h-16 bg-orange-100 text-primary mx-auto flex items-center justify-center">
+            <ShieldAlert size={32} strokeWidth={2.5} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold font-sans text-foreground">Menunggu Persetujuan</h1>
+            <p className="text-muted-foreground mt-2 font-medium">
+              Akun Anda sedang dalam antrean. Hubungi Administrator untuk mendapatkan akses.
+            </p>
+          </div>
+          <div className="bg-secondary p-4 text-left border-l-4 border-primary">
+            <p className="text-sm font-semibold text-foreground uppercase tracking-wide">Detail Akun</p>
+            <div className="mt-2 space-y-1 text-sm">
+              <p><span className="text-muted-foreground">Email:</span> <span className="font-mono">{user?.email}</span></p>
+              <p><span className="text-muted-foreground">Status:</span> <span className="font-bold text-orange-600">Pending</span></p>
+            </div>
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full uppercase font-bold tracking-wide"
+            onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" })}
+          >
+            Log Out
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const navLinks = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Job Items", href: "/job-items", icon: PaintBucket },
+    { name: "Materials", href: "/materials", icon: Droplet },
+    { name: "Colors", href: "/colors", icon: Palette },
+    { name: "Brands", href: "/brands", icon: Settings },
+  ];
+
+  const adminLinks = [
+    { name: "Users", href: "/users", icon: Users },
+    { name: "Audit Log", href: "/audit-log", icon: Activity },
+  ];
+
+  return (
+    <div className="min-h-screen flex bg-background">
+      {/* Sidebar */}
+      <aside className="w-64 bg-sidebar border-r border-sidebar-border flex-shrink-0 flex flex-col">
+        <div className="h-16 flex items-center px-6 border-b border-sidebar-border bg-sidebar-accent/50">
+          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo.svg`} alt="Logo" className="h-6 opacity-90 brightness-0 invert" />
+        </div>
+        
+        <div className="p-4 border-b border-sidebar-border bg-sidebar-accent/20">
+          <p className="text-sm font-bold text-sidebar-foreground truncate" title={user?.name || user?.email || "User"}>
+            {user?.name || user?.email || "User"}
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            <p className="text-xs font-mono text-sidebar-foreground/70 uppercase">
+              {user ? ROLE_LABELS[user.role] : "Loading..."}
+            </p>
+          </div>
+        </div>
+
+        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+          <div className="px-3 mb-2">
+            <p className="text-[10px] font-bold text-sidebar-foreground/40 uppercase tracking-widest">Master Data</p>
+          </div>
+          {navLinks.map((link) => {
+            const isActive = location === link.href || location.startsWith(`${link.href}/`);
+            return (
+              <Link key={link.href} href={link.href} className={`flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-primary text-sidebar-primary-foreground font-bold" : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"}`}>
+                <link.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                {link.name}
+              </Link>
+            );
+          })}
+
+          {isAdmin && (
+            <>
+              <div className="px-3 mt-8 mb-2">
+                <p className="text-[10px] font-bold text-sidebar-foreground/40 uppercase tracking-widest">Administrasi</p>
+              </div>
+              {adminLinks.map((link) => {
+                const isActive = location === link.href;
+                return (
+                  <Link key={link.href} href={link.href} className={`flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors ${isActive ? "bg-sidebar-primary text-sidebar-primary-foreground font-bold" : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"}`}>
+                    <link.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                    {link.name}
+                  </Link>
+                );
+              })}
+            </>
+          )}
+        </nav>
+
+        <div className="p-4 border-t border-sidebar-border">
+          <button 
+            type="button"
+            className="flex items-center gap-3 px-3 py-2 w-full text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" })}
+          >
+            <LogOut size={18} />
+            Log Keluar
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile Header (hidden on desktop) */}
+        <header className="h-16 md:hidden border-b border-border bg-card flex items-center px-4 justify-between shrink-0">
+          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo.svg`} alt="Logo" className="h-6" />
+          <Button variant="ghost" size="icon">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </header>
+
+        {/* Page Content */}
+        <div className="flex-1 overflow-auto bg-background p-6 lg:p-8">
+          <div className="max-w-[1400px] mx-auto">
+            {children}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

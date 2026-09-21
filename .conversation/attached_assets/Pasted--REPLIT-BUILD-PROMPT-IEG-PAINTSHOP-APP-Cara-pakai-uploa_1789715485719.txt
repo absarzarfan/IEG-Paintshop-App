@@ -1,0 +1,226 @@
+# REPLIT BUILD PROMPT — IEG PAINTSHOP APP
+
+> Cara pakai: upload `RFI_SYSTEM_ZIP.zip` (folder `portable-reference/`) ke Replit Agent, lalu paste seluruh isi dokumen ini sebagai prompt awal. Bagian **[KONFIRMASI]** harus diisi/di-klarifikasi sebelum Agent menulis logic terkait.
+
+---
+
+## 0. KONTEKS & ATURAN REUSE
+
+Bangun aplikasi produksi **PAINTSHOP APP** untuk PT IEG Manufacturing Indonesia (fabrikasi oil & gas equipment, Batam). Aplikasi terdiri dari dua modul terintegrasi: **Paint Usage Tracker** dan **Paint Stock Management**.
+
+Saya melampirkan `portable-reference/` — package acuan hasil ekstraksi dari RFI Workflow System. Gunakan sebagai **behavioral starting point**, bukan copy-paste produk.
+
+**WAJIB dipakai ulang (COPY DIRECTLY, lalu di-extend):**
+
+| File acuan | Dipakai untuk di Paintshop App |
+|---|---|
+| `source/shared/types.ts` | Pola shared types + status union + Attachment/Comment/Note. Extend dengan entity paint. |
+| `source/backend/workflowPolicy.ts` | Pure & testable transition policy. Pakai polanya untuk lifecycle Paint Job & Stock Opname. |
+| `source/backend/timeAndShift.ts` | Shift & business-day. **ADAPT timezone ke `Asia/Jakarta` (WIB, UTC+7)**, bukan `Asia/Bangkok`. Shift 1 07:30–15:30, Shift 2 15:30–23:30, Shift 3 23:30–07:30 — **[KONFIRMASI jam shift paintshop]**. |
+| `source/backend/attachmentPolicy.ts` | COPY DIRECTLY: max 10 lampiran/record, max 10 MB, kompresi JPEG/PNG/WebP, PDF tidak dikompres, upload URL diminta dari backend (browser tidak pernah pegang credential storage). |
+| `contracts/openapi.yaml` | Pola kontrak API + auth + role. ADAPT semua route dari `/workflow/*` ke `/paintshop/*`. |
+| `database/002_normalized_workflow.sql` | Pakai skema **normalized** (BUKAN JSONB snapshot 001) sebagai gaya persistence. |
+| `source/backend/partList.ts` | Referensi pola perhitungan kebutuhan material per line → adaptasi jadi perhitungan target cat per Job × Qty. |
+
+**DILARANG dibawa:** branding/nama department RFI, seed user, password/token/bucket ID/URL deployment, `.env`, `node_modules`, `dist`, generated client.
+
+**DILARANG diasumsikan:** `source/frontend/nesting.ts` adalah reference generic rectangle packing — **tidak relevan** untuk paintshop, jangan diimplementasikan. Jangan mengarang aturan konsumsi material, kerf, remnant, atau yield; semua formula cat harus persis seperti Bagian 3 di bawah.
+
+**Stack:** TypeScript end-to-end. React + Vite + Tailwind (mobile/tablet-first untuk form operator), Express/Node backend, PostgreSQL (Replit DB/Neon) + Drizzle ORM, object storage untuk lampiran. Session server-authoritative, idle timeout 30 menit.
+
+---
+
+## 1. ROLE & HAK AKSES (server-side enforced, jangan andalkan visibility UI)
+
+| Role | Hak |
+|---|---|
+| **Admin** | CRUD semua master data (Job/Item, SN, Operator, Color, Merek, Material, Packaging, Threshold), kelola user, override & close record, lihat semua audit trail. |
+| **Painter / Operator (PIC)** | Input form pengecatan miliknya sendiri, lihat histori & varians miliknya, upload foto hasil. Tidak bisa mengubah record operator lain, tidak bisa mengubah master target. |
+| **Paint Store / Warehouse** | Goods Receive, issue lot, input Stock Opname, kelola Lot & Expire Date. Tidak bisa mengubah master target pemakaian. |
+| **Supervisor / QC Reviewer** | Approve/Reject record pemakaian yang overconsumption melebihi toleransi, approve hasil opname, komentar. Tidak melakukan mutasi timer/entry operasional. |
+| **Procurement (read + alert)** | Lihat dashboard stok, alert near-expiry & low stock, export laporan. Read-only ke transaksi. |
+
+Aturan turunan dari acuan yang tetap berlaku: requestor tidak boleh memutasi record milik user lain; keputusan reject wajib punya alasan non-blank; komentar & catatan bersifat **append-only** (tidak pernah ditimpa diam-diam).
+
+---
+
+## 2. MODUL 1 — PAINT USAGE TRACKER
+
+### 2.1 Master Data (Fase 1)
+
+**`master_job_item`** — sumber target, persis mengikuti kolom sheet **MASTER FILE**:
+
+```
+job_no              string   PK-ish (contoh: B180009, B180030, B190102)
+description         string   (COVER AS, GUARD GP GEAR - COVER, SUPPORT AS, ...)
+surface_area_m2     numeric  (2, 1.2, 0.6, 3.5, ...)
+primer_total_l      numeric  (0.7, 0.45, 0.2, 1.3, ...)
+primer_base_l       numeric  (0.56, 0.36, 0.16, 1.04)
+primer_hrd_l        numeric  (0.14, 0.09, 0.04, 0.26)
+primer_thinner_l    numeric  (0.14, 0.09, 0.04, 0.26)
+primer_cost_base    numeric  ($5.20, $3.34, $1.49, $9.66)
+primer_cost_hrd     numeric  ($2.29, $1.47, $0.65, $4.25)
+primer_cost_thinner numeric  ($0.84, $0.54, $0.24, $1.56)
+primer_cost_total   numeric  ($8.33, $5.36, $2.38, $15.48)
+topcoat_total_l     numeric  (0.4, 0.3, 0.12, 0.6)
+topcoat_base_l      numeric  (0.3, 0.23, 0.09, 0.45)
+topcoat_hrd_l       numeric  (0.1, 0.08, 0.03, 0.15)
+topcoat_thinner_l   numeric  (0.08, 0.06, 0.02, 0.12)
+topcoat_cost_base / hrd / thinner / total   numeric
+```
+
+Aturan: **kolom cost adalah turunan** (`liter × unit_price` dari master harga material), jangan hardcode. Simpan `unit_price` per material + `currency` (USD) + `effective_date` agar histori cost tidak berubah retroaktif. Record lama tetap memakai harga saat transaksi dibuat.
+
+**Master lain:** `master_sn` (mapping Serial Number ↔ Job No, contoh `359–365` untuk B180339, `212-214` untuk B190004 — dukung input range dan list), `master_operator_pic`, `master_color` (Yellow, TU Yellow, Black, TU Black, …).
+
+### 2.2 Form Input Pengecatan (Fase 2) — mobile/tablet friendly
+
+Header: `Job Number` (searchable dropdown) → `SN` (terfilter dari job) → `Quantity` → `Tanggal Eksekusi` → `PIC/Operator`.
+
+Section **PRIMER** — tanggal primer, aktual `Base (l)`, `Hard (l)`, `Thinner (l)`.
+Section **TOPCOAT** — tanggal topcoat (boleh beda hari dari primer, lihat sheet PAINT TRACKER: primer 03/09/2026 vs topcoat 07/09/2026), `Color` (bisa lebih dari satu warna per record, contoh baris 1: Yellow 1.1 + TU Yellow 0.225 → **dukung multi-color line per record**), aktual `Base`, `Hard`, `Thinner`.
+
+Auto-calculation: begitu Job No + Quantity dipilih, sistem menarik target dari master:
+
+```
+target_komponen = master_job_item.<komponen> × quantity
+```
+
+Target ditampilkan read-only di sebelah kolom input aktual (layout mirror sheet: Base(l) | Target | Δ).
+
+### 2.3 Variance Engine (Fase 3)
+
+```
+Δ = Target − Aktual
+Δ dihitung TERPISAH per komponen: primer_base, primer_hrd, primer_thinner,
+                                   topcoat_base, topcoat_hrd, topcoat_thinner
+variance_pct = (Aktual − Target) / Target × 100   (Target > 0)
+```
+
+Status indicator:
+- `Δ ≥ 0` → **HEMAT / SESUAI TARGET** → hijau
+- `Δ < 0` → **BOROS / OVERCONSUMPTION** → merah/merah muda
+- `Target = 0` dan `Aktual > 0` → **UNPLANNED** → abu/oranye, jangan divide-by-zero
+
+Alert: bila `variance_pct > 10%` (threshold **configurable per Admin**, default 10) → record masuk status `Pending review`, notifikasi ke Supervisor + Admin. Supervisor `Approved` → `Completed`; `Rejected` → `Rejected` + wajib alasan, operator dapat resubmit.
+
+Lifecycle record pemakaian (pakai pola `workflowPolicy.ts`, pure function + unit test):
+`Draft → Submitted → Pending review (jika lewat threshold) → Completed | Rejected → (resubmit) → Submitted`
+Resubmit **mempertahankan identity, histori, catatan, lampiran, dan `reworkCount` kumulatif**; hanya reset hasil review & keputusan terakhir.
+
+### 2.4 Accountability (Fase 4)
+
+- Rekap histori pemakaian per Operator/PIC: total record, total liter, jumlah overconsumption, rata-rata `variance_pct`, ranking efisiensi.
+- **Audit trail wajib**: siapa, kapan (timestamp WIB), field apa, nilai lama → nilai baru, untuk setiap create/update/delete di transaksi maupun master. Append-only, tidak bisa dihapus dari UI.
+
+### 2.5 Dashboard & Report (Fase 5)
+
+- Rekap aktual vs target per Job No / per periode / per SN / per operator.
+- Persentase efisiensi (Hemat vs Boros), tren mingguan & bulanan.
+- Total cost aktual vs cost target (USD).
+- **Export Excel (.xlsx) & PDF** — layout mengikuti sheet `PAINT TRACKER` (grup kolom Primer & Topcoat, kolom Target dan Δ berdampingan, conditional formatting hijau/merah ikut ter-export).
+- Laporan konsumsi per Serial Number untuk keabsahan QC.
+- **Summary report otomatis akhir minggu & akhir bulan** (tujuan utama sistem ini). Boundary periode memakai tanggal eksplisit + timezone bisnis `Asia/Jakarta`, bukan timezone mesin server. Response polling pakai `no-store`.
+
+---
+
+## 3. MODUL 2 — PAINT STOCK
+
+### 3.1 Master Inventory (Fase 1)
+
+```
+master_brand      : PPG - CIB, International, dst.
+master_material   : description/product name, contoh:
+                    SPECTRACRON SEP 1E2732D GRAY EPOXY PRIMER / 20 L
+                    SPECTRACRON SEP PRIMER ACTIVATOR / 5 L
+                    SPECTRACRON SEP YELLOW URETHANE / 15 L
+                    SPECTRACRON SEP BLACK URETHANE TOPCOAT / 20 L
+                    URETHANE HARDENER / 5 L
+                    THINNER FOR PRIMER GXS75761M / 20 L
+                    THINNER FOR TOP COAT / 20 L
+  fields: material_id, brand_id, description, type(Primer|Topcoat|Hardener|Thinner|Activator),
+          packaging_size_l (5/15/20), color, dead_stock_threshold, unit_price
+paint_lot         : lot_id, material_id, lot_no (168/171/172/77/79/80/…), qty, expire_date, status
+```
+
+Catatan mapping dari sheet `WEEKLY CIB PAINT STOCK`: kolom `DEATH STOCKS` = threshold minimum per material (15, 30, 8, 25, 15…), `LOT NO/COLOR` + `QTY` + `EXPIRE DATE` = baris per lot, `TOTAL` = agregat qty seluruh lot aktif material tsb, `REMARKS` = selisih hasil opname (nilai negatif = kurang dari sistem). Indikator titik merah di sheet = flag manual → gantikan dengan flag otomatis (near-expiry / below threshold).
+
+### 3.2 Transaksi Gudang (Fase 2)
+
+- **Goods Receive:** brand, material, packaging size, lot no, expire date, qty, supplier/DO no, penerima, lampiran (foto DO/COA).
+- **Issue to Production:** **terintegrasi langsung** dengan form pengecatan Modul 1. Saat operator submit pemakaian per Job No, stok berkurang otomatis dari lot yang dipilih. Satu record pemakaian boleh menarik dari >1 lot (tabel `stock_issue_line`: usage_id, lot_id, qty_l).
+- **FIFO = First Expired, First Out:** sistem merekomendasikan (default-select) lot dengan `expire_date` terdekat yang masih punya qty > 0. Operator boleh override, tapi **override wajib alasan dan tercatat di audit trail**.
+- Konversi satuan: pemakaian dicatat dalam **liter**, stok dicatat dalam **kaleng/pail** berukuran `packaging_size_l`. **[KONFIRMASI]** apakah stok dikurangi per liter (kaleng terbuka dihitung parsial) atau per kaleng utuh. Jangan tebak — implementasikan sebagai `stock_uom_policy` yang configurable, default: kurangi per liter dan simpan `open_container` per lot.
+
+### 3.3 Stock Tracking & Expiry Engine (Fase 3)
+
+```
+total_qty_available(material) = Σ qty semua lot berstatus Active
+variance_opname = qty_fisik − qty_sistem        → kolom REMARKS
+```
+
+Early Warning System:
+- **Near expiry:** flag H-90 (warning/kuning) dan H-30 (critical/merah) sebelum `expire_date`; lot lewat tanggal → status `Expired`, otomatis dikeluarkan dari stok available dan dari rekomendasi FIFO.
+- **Low stock / dead stock:** bila `total_qty_available < dead_stock_threshold` → alert ke Procurement untuk re-order.
+- Notifikasi: in-app badge + halaman Alerts + digest email/harian **[KONFIRMASI channel: email? WhatsApp? in-app saja?]**.
+
+### 3.4 Stock Opname & Dashboard (Fase 4)
+
+- Form rekonsiliasi mingguan/bulanan: sistem menampilkan qty sistem per lot, petugas isi qty fisik, sistem hitung selisih, wajib remark bila selisih ≠ 0, butuh approval Supervisor sebelum stok disesuaikan. Penyesuaian dicatat sebagai transaksi `Adjustment`, **bukan** edit langsung ke qty lot.
+- Dashboard gudang: laporan **Weekly/Monthly Paint Stock** dengan layout persis sheet acuan (header `WEEKLY CIB PAINT STOCK` + tanggal, grup per brand, baris per lot, kolom DESCRIPTION / DEATH STOCKS / LOT NO-COLOR / QTY / EXPIRE DATE / TOTAL / REMARKS).
+- Analitik fast-moving vs dead stock (konsumsi rata-rata per minggu, estimasi days-of-cover).
+
+---
+
+## 4. INTEGRASI DUA MODUL
+
+1. Submit pemakaian di Modul 1 → membuat `stock_issue` di Modul 2 dalam **satu transaksi database** (atomic). Jika stok tidak cukup → tolak submit dengan pesan jelas, atau izinkan negative-stock dengan flag **[KONFIRMASI kebijakan]**.
+2. Reject/revisi record pemakaian → buat transaksi **reversal** yang mengembalikan qty ke lot asal; jangan hapus baris asli.
+3. Cost aktual di Modul 1 dihitung dari `unit_price` lot yang benar-benar dipakai (bukan harga master terkini).
+
+---
+
+## 5. NON-FUNCTIONAL & DEFINITION OF DONE
+
+- Semua otorisasi di-enforce server-side; ownership check per record.
+- Semua transisi status berupa pure function + unit test.
+- Timezone bisnis `Asia/Jakarta`, boundary laporan berupa date-only eksplisit.
+- Attachment: max 10 per record, max 10 MB, upload URL dari backend.
+- Audit trail append-only untuk seluruh mutasi.
+- Persistence tahan restart/multi-instance (PostgreSQL, bukan in-memory).
+- Mobile browser regression test: login + submit form pengecatan pertama.
+
+**Test yang wajib lulus sebelum dianggap selesai:**
+
+1. Target auto-calc = master × quantity, untuk primer & topcoat, semua komponen.
+2. Δ dihitung per komponen; hijau saat `Δ ≥ 0`, merah saat `Δ < 0`; `Target = 0` tidak crash.
+3. Overconsumption > threshold memicu `Pending review` + alert.
+4. Reject → resubmit mempertahankan identity, histori, lampiran, dan `reworkCount`.
+5. Operator tidak bisa memutasi record operator lain.
+6. Submit pemakaian mengurangi stok sesuai lot; rollback bila transaksi gagal.
+7. FIFO merekomendasikan lot expire terdekat; override tercatat di audit.
+8. Lot expired tidak muncul di available stock maupun rekomendasi.
+9. Alert H-90/H-30 dan alert below-threshold menyala pada tanggal yang benar.
+10. Opname dengan selisih wajib remark + approval; menghasilkan transaksi Adjustment.
+11. Export Excel/PDF mingguan & bulanan menghasilkan layout sesuai sheet acuan.
+12. Laporan periode memakai `Asia/Jakarta`, bukan timezone server.
+
+---
+
+## 6. URUTAN BUILD YANG DIMINTA
+
+**Sprint 1** master data + auth/role + audit trail → **Sprint 2** form pengecatan + variance engine + indikator → **Sprint 3** stok (receive, issue, FIFO, expiry) + integrasi ke Modul 1 → **Sprint 4** opname + alert engine → **Sprint 5** dashboard, export Excel/PDF, summary mingguan & bulanan.
+
+Setelah tiap sprint: tampilkan ringkasan schema + daftar endpoint + hasil test, lalu tunggu konfirmasi saya sebelum lanjut.
+
+---
+
+## 7. DAFTAR [KONFIRMASI] YANG HARUS SAYA JAWAB DULU
+
+1. Jam shift & hari kerja paintshop.
+2. Stok dikurangi per liter atau per kaleng utuh (kebijakan kaleng terbuka).
+3. Boleh submit pemakaian saat stok sistem tidak cukup?
+4. Threshold overconsumption final (default 10%) — seragam atau per material?
+5. Channel notifikasi alert (in-app / email / lainnya).
+6. Mata uang & sumber `unit_price` (master manual atau ikut harga PO terakhir).
+7. Apakah satu record pemakaian bisa mencakup >1 SN sekaligus (sheet menunjukkan range `359–365`, qty 7).

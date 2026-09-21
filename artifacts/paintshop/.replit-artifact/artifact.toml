@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "IEG Paintshop App"
+description = "Production management app for PT IEG Manufacturing Indonesia's paint shop. Sprint 1 covers master data (job/item catalog with paint targets, serial numbers, colors, brands, materials with price history), role-based user management (Admin, Painter/Operator, Warehouse, Supervisor, Procurement), and an append-only audit trail. Later sprints add the paint usage tracker, stock/FIFO management, alerts, and reporting."
+version = "1.0.0"
+id = "artifacts/paintshop"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19428
+
+[services.development]
+run = "pnpm --filter @workspace/paintshop run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/paintshop", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/paintshop/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19428"
+BASE_PATH = "/"
