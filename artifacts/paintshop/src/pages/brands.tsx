@@ -148,7 +148,7 @@ export function Brands() {
                       />
                     ) : (
                       <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
-                        brand.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-secondary text-muted-foreground border-border'
+                        brand.isActive ? 'bg-primary/20 text-foreground border-primary/40' : 'bg-secondary text-muted-foreground border-border'
                       }`}>
                         {brand.isActive ? "Active" : "Inactive"}
                       </span>

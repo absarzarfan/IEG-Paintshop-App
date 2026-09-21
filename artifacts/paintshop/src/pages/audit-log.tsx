@@ -70,9 +70,9 @@ export function AuditLog() {
                     </td>
                     <td>
                       <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
-                        log.action === 'create' ? 'bg-green-50 text-green-700 border-green-200' :
-                        log.action === 'update' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                        'bg-red-50 text-red-700 border-red-200'
+                        log.action === 'create' ? 'bg-primary/20 text-foreground border-primary/40' :
+                        log.action === 'update' ? 'bg-secondary text-secondary-foreground border-border' :
+                        'bg-foreground/10 text-foreground border-border'
                       }`}>
                         {log.action}
                       </span>

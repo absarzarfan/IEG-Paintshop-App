@@ -1,69 +1,74 @@
 import { Link } from "wouter";
-import { ArrowRight, Factory, HardHat, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, ClipboardPenLine, PackageCheck, ShieldCheck } from "lucide-react";
 
 export function Landing() {
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans selection:bg-primary selection:text-white">
-      <header className="h-20 border-b border-border bg-card flex items-center px-6 lg:px-12 justify-between">
-        <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo.svg`} alt="IEG Paintshop" className="h-8" />
-        <div className="flex items-center gap-4">
-          <Link href="/sign-in" className="text-sm font-bold text-foreground hover:text-primary transition-colors uppercase tracking-wide">
-            Log In
-          </Link>
-           <span className="hidden sm:inline-flex text-xs font-bold uppercase tracking-wide text-muted-foreground">
-             Admin-managed access
-           </span>
-        </div>
+    <div className="min-h-screen bg-[#f4f5f7] flex flex-col font-sans selection:bg-primary selection:text-primary-foreground">
+      <header className="h-20 bg-[#41444B] flex items-center justify-between px-6 lg:px-12">
+        <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-white.png`} alt="Integrated Engineering Group" className="h-9 w-auto max-w-[190px] object-contain" />
+        <Link href="/sign-in" className="text-xs font-bold uppercase tracking-[0.16em] text-[#F6F4E6] transition-colors hover:text-primary">
+          Masuk
+        </Link>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] [background-size:24px_24px] opacity-30 z-0"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent z-0"></div>
-
-        <div className="max-w-3xl z-10 space-y-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary border border-border text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
-            <Factory size={14} className="text-primary" />
-            PT IEG Manufacturing Indonesia
+      <main className="flex-1 flex flex-col items-center px-5 py-14 text-center">
+        <div className="max-w-5xl w-full">
+          <div className="mx-auto mb-8 flex h-24 w-56 items-center justify-center bg-white shadow-sm">
+            <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-navy.png`} alt="Integrated Engineering Group" className="h-16 w-auto max-w-[190px] object-contain" />
           </div>
-          
-          <h1 className="text-5xl lg:text-7xl font-extrabold text-foreground tracking-tight leading-[1.1]">
-            SYSTEM OF RECORD FOR <span className="text-primary">PAINTSHOP</span> OPERATIONS.
+
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#41444B] tracking-tight uppercase">
+            IEG Paintshop
           </h1>
-          
-          <p className="text-xl text-muted-foreground font-medium max-w-2xl mx-auto">
-            Replace paper tracking with authoritative master data. Manage job items, material consumption targets, and strict role-based access for the Batam fabrication plant.
+          <p className="mt-3 text-sm sm:text-base font-medium text-[#6b7078]">
+            Paint usage and material control system
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link href="/sign-in" className="w-full sm:w-auto h-12 px-8 bg-foreground text-background flex items-center justify-center font-bold text-base uppercase tracking-wide hover:bg-foreground/90 transition-all shadow-md group">
-              Sign In to System
-              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl z-10 text-left">
-          <div className="bg-card p-6 border border-border shadow-sm">
-            <HardHat className="h-8 w-8 text-primary mb-4" strokeWidth={2} />
-            <h3 className="font-bold text-lg mb-2">Master Data Control</h3>
-            <p className="text-muted-foreground text-sm font-medium">Precise tracking of paint targets per unit, serial numbers, and overconsumption thresholds.</p>
-          </div>
-          <div className="bg-card p-6 border border-border shadow-sm">
-            <ShieldCheck className="h-8 w-8 text-primary mb-4" strokeWidth={2} />
-            <h3 className="font-bold text-lg mb-2">Role-Based Access</h3>
-            <p className="text-muted-foreground text-sm font-medium">Strict boundaries between Admins, Painters, Warehouse, Supervisors, and Procurement.</p>
-          </div>
-          <div className="bg-card p-6 border border-border shadow-sm">
-            <Factory className="h-8 w-8 text-primary mb-4" strokeWidth={2} />
-            <h3 className="font-bold text-lg mb-2">Audit Trail</h3>
-            <p className="text-muted-foreground text-sm font-medium">Append-only history of every change. Know exactly who updated prices or material links.</p>
+          <div className="mt-12 grid grid-cols-1 gap-4 text-left md:grid-cols-3">
+            {[
+              {
+                icon: ShieldCheck,
+                eyebrow: "System Control",
+                title: "Admin",
+                description: "Manage users, roles, master data, and the complete Paintshop operation.",
+              },
+              {
+                icon: ClipboardPenLine,
+                eyebrow: "Paint Operation",
+                title: "Painter / Operator",
+                description: "Record actual primer and topcoat usage for every job and serial number.",
+              },
+              {
+                icon: PackageCheck,
+                eyebrow: "Material Control",
+                title: "Warehouse",
+                description: "Monitor paint materials, stock thresholds, batches, and expiry dates.",
+              },
+            ].map(({ icon: Icon, eyebrow, title, description }) => (
+              <Link
+                key={title}
+                href="/sign-in"
+                className="group min-h-56 border border-[#dde0e4] bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-primary/60 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center bg-primary text-primary-foreground">
+                    <Icon className="h-5 w-5" strokeWidth={2.2} />
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-[#858a92] transition-transform group-hover:translate-x-1 group-hover:text-[#41444B]" />
+                </div>
+                <p className="mt-7 text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{eyebrow}</p>
+                <h2 className="mt-2 text-lg font-extrabold text-[#41444B]">{title}</h2>
+                <p className="mt-2 text-sm leading-5 text-[#6b7078]">{description}</p>
+                <div className="mt-5 border-t border-[#e6e7e9] pt-3 text-[10px] font-mono uppercase tracking-wider text-[#858a92]">
+                  Continue to sign in
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </main>
-      
-      <footer className="h-16 border-t border-border bg-card flex items-center justify-center px-6 z-10 text-xs font-mono text-muted-foreground uppercase tracking-widest">
+
+      <footer className="border-t border-[#dde0e4] bg-white px-6 py-5 text-center text-[10px] font-mono uppercase tracking-[0.16em] text-[#858a92]">
         © {new Date().getFullYear()} PT IEG Manufacturing Indonesia
       </footer>
     </div>

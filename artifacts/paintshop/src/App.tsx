@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode, useState } from "react";
-import { Route, Switch, useLocation, Router as WouterRouter, Redirect } from "wouter";
+import { Link, Route, Switch, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   useGetAuthStatus,
@@ -76,75 +76,87 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 relative">
-      <div className="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-5" />
-      <div className="relative z-10 w-full max-w-md bg-card border border-border shadow-xl">
-        <div className="border-b border-border p-8 pb-6 text-center">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-[#f4f5f7] px-4 py-12">
+      <div className="w-full max-w-xl">
+        <div className="mb-8 text-center">
           <img
-            src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo.svg`}
-            alt="IEG Paintshop"
-            className="h-10 w-auto mx-auto mb-6"
+            src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-navy.png`}
+            alt="Integrated Engineering Group"
+            className="mx-auto h-16 w-auto max-w-[220px] object-contain"
           />
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-            {statusLoading ? "Access Control" : isSetup ? "Buat Admin Pertama" : "Masuk ke Sistem"}
+          <h1 className="mt-6 text-3xl font-extrabold uppercase tracking-tight text-[#41444B]">
+            IEG Paintshop
           </h1>
-          <p className="mt-2 text-sm font-medium text-muted-foreground">
-            {isSetup
-              ? "Siapkan akun Admin. Setelah ini, hanya Admin yang dapat membuat akun pengguna."
-              : "Gunakan username dan password yang diberikan oleh Admin."}
-          </p>
+          <p className="mt-2 font-mono text-xs text-[#6b7078]">Paint usage and material control system</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-5">
-          {statusError && (
-            <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-              Server autentikasi belum siap. Silakan muat ulang halaman.
-            </div>
-          )}
-          {(loginMutation.error || setupMutation.error) && (
-            <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-              {authErrorMessage(loginMutation.error || setupMutation.error)}
-            </div>
-          )}
+        <div className="rounded-xl border border-[#e0e2e5] bg-white p-6 shadow-[0_16px_35px_rgba(65,68,75,0.12)] sm:p-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-xs font-medium text-[#6b7078] hover:text-[#41444B]">
+            <span aria-hidden="true">←</span>
+            Pilih halaman utama
+          </Link>
+          <div className="mt-6">
+            <h2 className="text-2xl font-bold text-[#41444B]">
+              {statusLoading ? "Access Control" : isSetup ? "Buat Admin Pertama" : "Masuk ke Sistem"}
+            </h2>
+            <p className="mt-2 text-sm text-[#6b7078]">
+              {isSetup
+                ? "Siapkan akun Admin. Setelah ini, hanya Admin yang dapat membuat akun pengguna."
+                : "Gunakan username dan password yang diberikan oleh Admin."}
+            </p>
+          </div>
 
-          {isSetup && (
+          <form onSubmit={handleSubmit} className="mt-7 space-y-5">
+            {statusError && (
+              <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+                Server autentikasi belum siap. Silakan muat ulang halaman.
+              </div>
+            )}
+            {(loginMutation.error || setupMutation.error) && (
+              <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+                {authErrorMessage(loginMutation.error || setupMutation.error)}
+              </div>
+            )}
+
+            {isSetup && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Nama lengkap</Label>
+                <Input id="name" value={name} onChange={(event) => setName(event.target.value)} required autoComplete="name" />
+              </div>
+            )}
             <div className="space-y-2">
-              <Label htmlFor="name">Nama lengkap</Label>
-              <Input id="name" value={name} onChange={(event) => setName(event.target.value)} required autoComplete="name" />
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                required
+                minLength={isSetup ? 3 : 1}
+                autoComplete="username"
+                placeholder="contoh: operator.batam"
+              />
             </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              required
-              minLength={isSetup ? 3 : 1}
-              autoComplete="username"
-              placeholder="contoh: operator.batam"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              minLength={isSetup ? 8 : 1}
-              autoComplete={isSetup ? "new-password" : "current-password"}
-            />
-            {isSetup && <p className="text-xs text-muted-foreground">Minimal 8 karakter.</p>}
-          </div>
-          <Button type="submit" className="w-full h-11 font-bold uppercase tracking-wide" disabled={isSubmitting || statusLoading || !!statusError}>
-            {isSubmitting ? "Memproses..." : isSetup ? "Buat Admin & Masuk" : "Masuk"}
-          </Button>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                minLength={isSetup ? 8 : 1}
+                autoComplete={isSetup ? "new-password" : "current-password"}
+              />
+              {isSetup && <p className="text-xs text-[#6b7078]">Minimal 8 karakter.</p>}
+            </div>
+            <Button type="submit" className="h-11 w-full bg-[#FDDB3A] font-bold uppercase tracking-wide text-[#41444B] hover:bg-[#f2cc27]" disabled={isSubmitting || statusLoading || !!statusError}>
+              {isSubmitting ? "Memproses..." : isSetup ? "Buat Admin & Masuk" : "Masuk"}
+            </Button>
+          </form>
 
-        <div className="border-t border-border px-8 py-4 text-center text-xs font-medium text-muted-foreground">
-          Akses dibuat dan dikelola oleh Administrator IEG.
+          <div className="mt-6 border-t border-[#e6e7e9] pt-4 text-center text-xs font-medium text-[#858a92]">
+            Akses dibuat dan dikelola oleh Administrator IEG.
+          </div>
         </div>
       </div>
     </div>

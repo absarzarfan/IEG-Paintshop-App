@@ -237,7 +237,7 @@ export function JobItems() {
                     <td className="font-mono text-right">{item.serialNumberCount}</td>
                     <td className="text-center">
                       <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
-                        item.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-secondary text-muted-foreground border-border'
+                        item.isActive ? 'bg-primary/20 text-foreground border-primary/40' : 'bg-secondary text-muted-foreground border-border'
                       }`}>
                         {item.isActive ? "Active" : "Inactive"}
                       </span>

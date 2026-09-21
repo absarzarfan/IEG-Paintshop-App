@@ -39,7 +39,7 @@ export function Layout({ children }: LayoutProps) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md bg-card border border-border p-8 text-center space-y-6">
-          <div className="w-16 h-16 bg-orange-100 text-primary mx-auto flex items-center justify-center">
+          <div className="w-16 h-16 bg-primary/20 text-primary mx-auto flex items-center justify-center">
             <ShieldAlert size={32} strokeWidth={2.5} />
           </div>
           <div>
@@ -52,7 +52,7 @@ export function Layout({ children }: LayoutProps) {
             <p className="text-sm font-semibold text-foreground uppercase tracking-wide">Detail Akun</p>
             <div className="mt-2 space-y-1 text-sm">
               <p><span className="text-muted-foreground">Username:</span> <span className="font-mono">{user?.username}</span></p>
-              <p><span className="text-muted-foreground">Status:</span> <span className="font-bold text-orange-600">Pending</span></p>
+              <p><span className="text-muted-foreground">Status:</span> <span className="font-bold text-primary">Pending</span></p>
             </div>
           </div>
           <Button 
@@ -86,7 +86,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar border-r border-sidebar-border flex-shrink-0 flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-sidebar-border bg-sidebar-accent/50">
-          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo.svg`} alt="Logo" className="h-6 opacity-90 brightness-0 invert" />
+          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-white.png`} alt="Integrated Engineering Group" className="h-9 w-auto max-w-[180px] object-contain opacity-95" />
         </div>
         
         <div className="p-4 border-b border-sidebar-border bg-sidebar-accent/20">
@@ -94,7 +94,7 @@ export function Layout({ children }: LayoutProps) {
             {user?.name || user?.username || "User"}
           </p>
           <div className="flex items-center gap-2 mt-1">
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            <span className="w-2 h-2 rounded-full bg-primary"></span>
             <p className="text-xs font-mono text-sidebar-foreground/70 uppercase">
               {user ? ROLE_LABELS[user.role] : "Loading..."}
             </p>
@@ -149,7 +149,7 @@ export function Layout({ children }: LayoutProps) {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile Header (hidden on desktop) */}
         <header className="h-16 md:hidden border-b border-border bg-card flex items-center px-4 justify-between shrink-0">
-          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo.svg`} alt="Logo" className="h-6" />
+          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-navy.png`} alt="Integrated Engineering Group" className="h-9 w-auto max-w-[180px] object-contain" />
           <Button variant="ghost" size="icon">
             <Menu className="h-5 w-5" />
           </Button>

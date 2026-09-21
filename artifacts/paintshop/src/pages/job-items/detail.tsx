@@ -126,7 +126,7 @@ export function JobItemDetail() {
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-4xl font-extrabold font-mono text-primary uppercase tracking-tight">{job.jobNo}</h1>
               <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider border ${
-                job.isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-secondary text-muted-foreground border-border'
+              job.isActive ? 'bg-primary/20 text-foreground border-primary/40' : 'bg-secondary text-muted-foreground border-border'
               }`}>
                 {job.isActive ? "Active" : "Inactive"}
               </span>
@@ -151,11 +151,11 @@ export function JobItemDetail() {
         </div>
         <div className="bg-card border border-border p-4 shadow-sm flex flex-col justify-center">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Total Primer / Unit</p>
-          <p className="text-2xl font-mono font-bold text-blue-600">{job.primerTotalL.toFixed(3)} L</p>
+          <p className="text-2xl font-mono font-bold text-foreground">{job.primerTotalL.toFixed(3)} L</p>
         </div>
         <div className="bg-card border border-border p-4 shadow-sm flex flex-col justify-center">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Total Topcoat / Unit</p>
-          <p className="text-2xl font-mono font-bold text-orange-600">{job.topcoatTotalL.toFixed(3)} L</p>
+          <p className="text-2xl font-mono font-bold text-primary">{job.topcoatTotalL.toFixed(3)} L</p>
         </div>
       </div>
 
@@ -170,8 +170,8 @@ export function JobItemDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Primer */}
             <div className="bg-card border border-border shadow-sm">
-              <div className="bg-blue-50 border-b border-border p-4">
-                <h3 className="font-bold text-blue-900 uppercase tracking-wide">Primer Breakdown</h3>
+              <div className="bg-secondary border-b border-border p-4">
+                <h3 className="font-bold text-secondary-foreground uppercase tracking-wide">Primer Breakdown</h3>
               </div>
               <table className="w-full text-sm">
                 <thead>
@@ -208,8 +208,8 @@ export function JobItemDetail() {
 
             {/* Topcoat */}
             <div className="bg-card border border-border shadow-sm">
-              <div className="bg-orange-50 border-b border-border p-4">
-                <h3 className="font-bold text-orange-900 uppercase tracking-wide">Topcoat Breakdown</h3>
+              <div className="bg-primary/20 border-b border-border p-4">
+                <h3 className="font-bold text-foreground uppercase tracking-wide">Topcoat Breakdown</h3>
               </div>
               <table className="w-full text-sm">
                 <thead>
@@ -283,7 +283,7 @@ export function JobItemDetail() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-bold text-blue-900 bg-blue-50 p-2 border border-border text-center uppercase tracking-wider mb-2">Primer</h4>
+                <h4 className="font-bold text-secondary-foreground bg-secondary p-2 border border-border text-center uppercase tracking-wider mb-2">Primer</h4>
                 <div className="space-y-2">
                   <MaterialDisplayCard role="Base" materialId={job.primerBaseMaterialId} />
                   <MaterialDisplayCard role="Hardener" materialId={job.primerHrdMaterialId} />
@@ -291,7 +291,7 @@ export function JobItemDetail() {
                 </div>
               </div>
               <div>
-                <h4 className="font-bold text-orange-900 bg-orange-50 p-2 border border-border text-center uppercase tracking-wider mb-2">Topcoat</h4>
+                <h4 className="font-bold text-foreground bg-primary/20 p-2 border border-border text-center uppercase tracking-wider mb-2">Topcoat</h4>
                 <div className="space-y-2">
                   <MaterialDisplayCard role="Base" materialId={job.topcoatBaseMaterialId} />
                   <MaterialDisplayCard role="Hardener" materialId={job.topcoatHrdMaterialId} />

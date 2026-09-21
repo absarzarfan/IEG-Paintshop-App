@@ -1,0 +1,92 @@
+PAINTSHOP APP 
+1. PAINT USAGE TRACKER 
+Fase 1: Database Architecture & Data Master (Backend Setup) 
+• Master Item/Job (dari Gambar 1): 
+o Job Number, Description, Surface Area (m²). 
+o Standar pemakaian/target per komponen per unit (Base, Hardener, Thinner 
+untuk Primer & Topcoat). 
+• Master Unit & Operational: 
+o Mapping Serial Number (SN) dan Quantity per Job Number. 
+o Master Data Operator/PIC (Person in Charge) dan Master Color (Warna Topcoat). 
+Fase 2: Transaksi & Form Input Field Operator (Operational Input) 
+• Form Input Pengecatan (Mobile/Tablet Friendly): 
+o Header: Pilih Job Number, SN (Serial Number), Quantity, Tanggal Eksekusi, dan 
+PIC (Operator). 
+o Input Primer: Pemakaian aktual (Base, Hardener, Thinner dalam Liter). 
+o Input Topcoat: Pilih Warna (Color), pemakaian aktual (Base, Hardener, Thinner 
+dalam Liter). 
+• Otomatisasi Target Calculation: 
+o Aplikasi otomatis menarik data Target dari Master Data berdasarkan Job Number 
+× Quantity. 
+Fase 3: Real-Time Variance Engine & Status Indicator 
+• Kalkulasi Differential ($\Delta$): 
+o Formula: $\text{Differential} = \text{Target} - \text{Aktual}$ 
+o Menghitung nilai varians per komponen (Base, Hardener, Thinner) secara 
+terpisah untuk Primer dan Topcoat. 
+• Conditional Formatting & Indicator System: 
+o Hemat/Sesuai Target ($\Delta \ge 0$): Indikator Hijau (seperti pada Excel). 
+o Boros/Overconsumption ($\Delta < 0$): Indikator Merah/Merah Muda (seperti 
+pada Excel). 
+• Alert System: Notifikasi otomatis jika pemakaian melebihi ambang batas toleransi 
+(misal: overconsumption > 10%). 
+Fase 4: Module Accountability & Operator Performance 
+• PIC/Operator Tracking: 
+o Rekap histori pemakaian cat berdasarkan Operator (PIC). 
+o Matriks evaluasi: Mengetahui operator mana yang sering mengalami 
+overconsumption atau paling efisien. 
+• Audit Trail: 
+o Pencatatan log tanggal, waktu, dan user yang menginput atau mengubah data 
+pemakaian cat. 
+Fase 5: Dashboard Analytics & Reporting 
+• Summary Dashboard: 
+o Rekap total pemakaian aktual vs target per Job No / Periode. 
+o Visualisasi persentase efisiensi (Hemat vs Boros). 
+• Export & Report Generation: 
+o Export laporan transaksi bulanan ke format Excel / PDF. 
+o Laporan konsumsi bahan baku per Serial Number (SN) untuk keabsahan quality 
+control (QC). 
+PAINT TRACKER 
+MASTER FILE 
+Tujuan dan Sasaran: 
+Untuk bisa mengetahui penggunaan cat apakah sesuai target yang diberikan, dan bisa dapat 
+summary report pada setiap akhir minggu dan bulan. 
+2. PAINT STOCKS 
+Fase 1: Database Architecture & Master Data Inventory 
+• Master Merek & Material: 
+o Merek Cat (misal: PPG - CIB, International, dll.). 
+o Description / Product Name (misal: Epoxy Primer, Urethane Topcoat). 
+o Packaging Size (Kemasan: 5 L, 15 L, 20 L, dll.). 
+o Minimal Stock Level / Dead Stock / Buffer Threshold (Batas aman stok minimal). 
+• Batch & Lot Tracking: 
+o Mapping Lot No. / Batch Number per jenis cat. 
+o Expire Date per Lot/Batch. 
+Fase 2: Management Stok & Transaksi Gudang (In/Out) 
+• Stok Masuk (Goods Receive): Input penerimaan cat baru lengkap dengan Merek, Jenis, 
+Packaging Size, Lot No, Expire Date, dan Jumlah (Qty). 
+• Stok Keluar (Issue to Production): 
+o Terintegrasi langsung dengan Form Pengecatan (Gambar 2). Saat operator 
+menginput penggunaan cat per Job No, stok di Paint Store otomatis berkurang 
+berdasarkan Lot No yang dipakai. 
+o Penerapan aturan FIFO (First Expired, First Out): Sistem otomatis 
+merekomendasikan Lot No yang mendekati tanggal kedaluwarsa untuk 
+digunakan terlebih dahulu. 
+Fase 3: Real-Time Stock Tracking & Expiry Control Engine 
+• Kalkulasi & Rekap Stok: 
+o Total Qty Available: Menghitung otomatis total stok fisik dari seluruh Lot No 
+yang aktif. 
+o Remarks / Variance Tracking: Menghitung selisih stok (masuk vs keluar vs hasil 
+Opname). 
+• Early Warning System (Notifikasi Otomatis): 
+o Alert Near Expiry: Peringatan H-90 / H-30 sebelum cat kedaluwarsa (Expire 
+Date). 
+o Alert Dead Stock / Low Stock: Peringatan jika Qty fisik berada di bawah 
+threshold Dead Stocks / batas aman minimum agar tim Procurement segera 
+melakukan re-order. 
+Fase 4: Stock Take (Opname) & Integrated Dashboard 
+• Fitur Stock Opname Periodic: 
+o Form rekonsiliasi mingguan/bulanan antara stok fisik di Paint Store dengan stok 
+di sistem. 
+• Dashboard Gudang Cat: 
+o Laporan Weekly/Monthly Paint Stock (Sesuai format acuan Excel). 
+o Monitoring pergerakan material paling cepat habis (Fast-moving) vs stok yang 
+mengendap (Dead Stock). 

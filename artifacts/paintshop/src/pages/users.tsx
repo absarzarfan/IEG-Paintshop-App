@@ -161,7 +161,7 @@ export function Users() {
               </thead>
               <tbody className="divide-y divide-border font-medium">
                 {users.map(user => (
-                  <tr key={user.id} className={`hover:bg-secondary/30 transition-colors ${user.role === 'pending' ? 'bg-orange-50/50' : ''}`}>
+                  <tr key={user.id} className={`hover:bg-secondary/30 transition-colors ${user.role === 'pending' ? 'bg-primary/10' : ''}`}>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
                         {user.role === 'pending' && <ShieldAlert className="h-5 w-5 text-primary shrink-0" />}

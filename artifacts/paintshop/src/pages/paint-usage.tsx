@@ -105,9 +105,9 @@ function apiMessage(error: unknown) {
 function Metric({ label, value, tone = "neutral" }: { label: string; value: string; tone?: "neutral" | "blue" | "orange" | "red" }) {
   const toneClass = {
     neutral: "text-foreground",
-    blue: "text-blue-700",
-    orange: "text-orange-700",
-    red: "text-red-700",
+    blue: "text-foreground",
+    orange: "text-primary",
+    red: "text-destructive",
   }[tone];
   return (
     <div className="border border-border bg-card px-4 py-3">
@@ -123,7 +123,7 @@ function VarianceBadge({ over }: { over: boolean }) {
       <TriangleAlert className="mr-1 h-3 w-3" /> Overconsumption
     </Badge>
   ) : (
-    <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800" data-testid="status-within-threshold">
+    <Badge variant="outline" className="border-primary/50 bg-primary/15 text-foreground" data-testid="status-within-threshold">
       <CheckCircle2 className="mr-1 h-3 w-3" /> Within Threshold
     </Badge>
   );
@@ -311,8 +311,8 @@ function UsageForm({
 
         <section className="border border-border bg-card">
           <div className="grid border-b border-border bg-secondary/40 md:grid-cols-2">
-            <div className="border-b border-border px-5 py-3 md:border-b-0 md:border-r"><p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-800">Actual Primer (Liter)</p></div>
-            <div className="px-5 py-3"><p className="text-xs font-bold uppercase tracking-[0.16em] text-orange-800">Actual Topcoat (Liter)</p></div>
+            <div className="border-b border-border px-5 py-3 md:border-b-0 md:border-r"><p className="text-xs font-bold uppercase tracking-[0.16em] text-foreground">Actual Primer (Liter)</p></div>
+            <div className="px-5 py-3"><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Actual Topcoat (Liter)</p></div>
           </div>
           <div className="grid gap-5 p-5 md:grid-cols-2">
             <div className="grid gap-4 sm:grid-cols-3">
@@ -440,7 +440,7 @@ function PaintUsageList() {
                     <td className="font-mono font-bold text-primary">{record.serialNo}</td>
                     <td className="text-right font-mono">{formatLiters(record.primerActualTotalL)}<p className="text-xs text-muted-foreground">target {formatLiters(record.primerTargetTotalL)}</p></td>
                     <td className="text-right font-mono">{formatLiters(record.topcoatActualTotalL)}<p className="text-xs text-muted-foreground">target {formatLiters(record.topcoatTargetTotalL)}</p></td>
-                    <td className={`text-right font-mono font-bold ${record.isOverconsumption ? "text-red-700" : "text-emerald-700"}`}>P {record.primerVariancePct.toFixed(1)}%<br />T {record.topcoatVariancePct.toFixed(1)}%</td>
+                    <td className={`text-right font-mono font-bold ${record.isOverconsumption ? "text-destructive" : "text-foreground"}`}>P {record.primerVariancePct.toFixed(1)}%<br />T {record.topcoatVariancePct.toFixed(1)}%</td>
                     <td><VarianceBadge over={record.isOverconsumption} /></td>
                     <td><ChevronRight className="h-4 w-4 text-muted-foreground" /></td>
                   </tr>
@@ -488,8 +488,8 @@ function PaintUsageDetail({ id }: { id: number }) {
 }
 
 function ComponentTable({ title, accent, rows, total, variance, pct, threshold }: { title: string; accent: "blue" | "orange"; rows: [string, number, number][]; total: number; variance: number; pct: number; threshold: number }) {
-  const header = accent === "blue" ? "bg-blue-50 text-blue-900" : "bg-orange-50 text-orange-900";
-  return <div className="border border-border bg-card"><div className={`border-b border-border px-5 py-3 ${header}`}><h2 className="text-sm font-bold uppercase tracking-wider">{title}</h2></div><table><thead><tr><th>Komponen</th><th className="text-right">Actual (L)</th><th className="text-right">Target Ref.</th></tr></thead><tbody>{rows.map(([label, actual, target], index) => <tr key={label}><td className="font-medium">{label}</td><td className="text-right font-mono">{actual.toFixed(3)}</td><td className="text-right font-mono text-muted-foreground">{index === 0 ? target.toFixed(3) : "—"}</td></tr>)}<tr className="bg-secondary/40"><td className="font-bold uppercase tracking-wider">Total</td><td className="text-right font-mono font-bold">{total.toFixed(3)}</td><td className="text-right font-mono text-muted-foreground">Variance {variance >= 0 ? "+" : ""}{variance.toFixed(3)} L</td></tr></tbody></table><div className="flex items-center justify-between border-t border-border px-5 py-3 text-sm"><span className="font-bold uppercase tracking-wider text-muted-foreground">Variance</span><span className={`font-mono text-lg font-bold ${pct > threshold ? "text-red-700" : "text-emerald-700"}`}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}%</span></div></div>;
+  const header = accent === "blue" ? "bg-secondary text-secondary-foreground" : "bg-primary/20 text-foreground";
+  return <div className="border border-border bg-card"><div className={`border-b border-border px-5 py-3 ${header}`}><h2 className="text-sm font-bold uppercase tracking-wider">{title}</h2></div><table><thead><tr><th>Komponen</th><th className="text-right">Actual (L)</th><th className="text-right">Target Ref.</th></tr></thead><tbody>{rows.map(([label, actual, target], index) => <tr key={label}><td className="font-medium">{label}</td><td className="text-right font-mono">{actual.toFixed(3)}</td><td className="text-right font-mono text-muted-foreground">{index === 0 ? target.toFixed(3) : "—"}</td></tr>)}<tr className="bg-secondary/40"><td className="font-bold uppercase tracking-wider">Total</td><td className="text-right font-mono font-bold">{total.toFixed(3)}</td><td className="text-right font-mono text-muted-foreground">Variance {variance >= 0 ? "+" : ""}{variance.toFixed(3)} L</td></tr></tbody></table><div className="flex items-center justify-between border-t border-border px-5 py-3 text-sm"><span className="font-bold uppercase tracking-wider text-muted-foreground">Variance</span><span className={`font-mono text-lg font-bold ${pct > threshold ? "text-destructive" : "text-foreground"}`}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}%</span></div></div>;
 }
 
 export function PaintUsage() {

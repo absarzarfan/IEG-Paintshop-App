@@ -37,12 +37,12 @@ export function Dashboard() {
       </div>
 
       {summary.pendingUserCount > 0 && (
-        <div className="bg-orange-100 border-l-4 border-primary p-4 flex items-center justify-between shadow-sm">
+        <div className="bg-primary/15 border-l-4 border-primary p-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">
             <Users className="text-primary h-6 w-6" />
             <div>
-              <p className="font-bold text-orange-950">Menunggu Persetujuan</p>
-              <p className="text-orange-800 text-sm font-medium">{summary.pendingUserCount} pengguna menunggu akses role.</p>
+              <p className="font-bold text-foreground">Menunggu Persetujuan</p>
+              <p className="text-muted-foreground text-sm font-medium">{summary.pendingUserCount} pengguna menunggu akses role.</p>
             </div>
           </div>
           <Link href="/users" className="bg-primary text-white text-xs font-bold uppercase tracking-wider px-4 py-2 hover:bg-primary/90 transition-colors shadow-sm">
@@ -90,9 +90,9 @@ export function Dashboard() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5
-                      ${entry.action === 'create' ? 'bg-green-100 text-green-700 border border-green-200' :
-                        entry.action === 'update' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                        'bg-red-100 text-red-700 border border-red-200'
+                      ${entry.action === 'create' ? 'bg-primary/20 text-foreground border border-primary/40' :
+                        entry.action === 'update' ? 'bg-secondary text-secondary-foreground border border-border' :
+                        'bg-foreground/10 text-foreground border border-border'
                       }
                     `}>
                       {entry.action}
