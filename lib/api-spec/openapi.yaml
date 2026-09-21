@@ -22,6 +22,8 @@ tags:
     description: Job/item catalog master data (paint targets)
   - name: serial-numbers
     description: Serial numbers belonging to a job item
+  - name: paint-usage
+    description: Actual paint usage and server-calculated variance
   - name: audit-log
     description: Append-only audit trail
   - name: dashboard
@@ -485,6 +487,103 @@ paths:
         "404":
           description: Not found
 
+  /paint-usage:
+    get:
+      operationId: listPaintUsage
+      tags: [paint-usage]
+      summary: List paint usage records with calculated variance
+      parameters:
+        - name: jobItemId
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: serialNumberId
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: fromDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: toDate
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Paint usage records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaintUsage"
+    post:
+      operationId: createPaintUsage
+      tags: [paint-usage]
+      summary: Record actual paint usage for a serial number (admin or painter)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaintUsageInput"
+      responses:
+        "201":
+          description: Created paint usage record with variance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaintUsage"
+        "400":
+          description: Invalid input or serial number does not belong to the job item
+        "409":
+          description: A usage record already exists for this serial number
+
+  /paint-usage/{id}:
+    get:
+      operationId: getPaintUsage
+      tags: [paint-usage]
+      summary: Get one paint usage record with calculated variance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Paint usage record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaintUsage"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePaintUsage
+      tags: [paint-usage]
+      summary: Update actual paint usage (admin or painter)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaintUsageUpdate"
+      responses:
+        "200":
+          description: Updated paint usage record with variance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaintUsage"
+        "404":
+          description: Not found
+
   /audit-log:
     get:
       operationId: listAuditLog
@@ -851,6 +950,83 @@ components:
           type: array
           items: { type: string }
       required: [mode]
+
+    PaintUsage:
+      type: object
+      properties:
+        id: { type: integer }
+        jobItemId: { type: integer }
+        jobNo: { type: string }
+        serialNumberId: { type: integer }
+        serialNo: { type: string }
+        usageDate: { type: string, format: date }
+        shift: { type: string }
+        primerBaseActualL: { type: number }
+        primerHrdActualL: { type: number }
+        primerThinnerActualL: { type: number }
+        primerActualTotalL: { type: number }
+        topcoatBaseActualL: { type: number }
+        topcoatHrdActualL: { type: number }
+        topcoatThinnerActualL: { type: number }
+        topcoatActualTotalL: { type: number }
+        primerTargetTotalL: { type: number }
+        topcoatTargetTotalL: { type: number }
+        primerVarianceL: { type: number }
+        topcoatVarianceL: { type: number }
+        primerVariancePct: { type: number }
+        topcoatVariancePct: { type: number }
+        thresholdPct: { type: number }
+        isOverconsumption: { type: boolean }
+        notes: { type: ["string", "null"] }
+        createdByUserId: { type: ["integer", "null"] }
+        createdByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required:
+        [
+          id, jobItemId, jobNo, serialNumberId, serialNo, usageDate, shift,
+          primerBaseActualL, primerHrdActualL, primerThinnerActualL,
+          primerActualTotalL, topcoatBaseActualL, topcoatHrdActualL,
+          topcoatThinnerActualL, topcoatActualTotalL, primerTargetTotalL,
+          topcoatTargetTotalL, primerVarianceL, topcoatVarianceL,
+          primerVariancePct, topcoatVariancePct, thresholdPct,
+          isOverconsumption, notes, createdByUserId, createdByName,
+          createdAt, updatedAt
+        ]
+
+    PaintUsageInput:
+      type: object
+      properties:
+        jobItemId: { type: integer }
+        serialNumberId: { type: integer }
+        usageDate: { type: string, format: date }
+        shift: { type: string, minLength: 1, maxLength: 50 }
+        primerBaseActualL: { type: number, minimum: 0 }
+        primerHrdActualL: { type: number, minimum: 0 }
+        primerThinnerActualL: { type: number, minimum: 0 }
+        topcoatBaseActualL: { type: number, minimum: 0 }
+        topcoatHrdActualL: { type: number, minimum: 0 }
+        topcoatThinnerActualL: { type: number, minimum: 0 }
+        notes: { type: ["string", "null"] }
+      required:
+        [
+          jobItemId, serialNumberId, usageDate, shift,
+          primerBaseActualL, primerHrdActualL, primerThinnerActualL,
+          topcoatBaseActualL, topcoatHrdActualL, topcoatThinnerL
+        ]
+
+    PaintUsageUpdate:
+      type: object
+      properties:
+        usageDate: { type: string, format: date }
+        shift: { type: string, minLength: 1, maxLength: 50 }
+        primerBaseActualL: { type: number, minimum: 0 }
+        primerHrdActualL: { type: number, minimum: 0 }
+        primerThinnerActualL: { type: number, minimum: 0 }
+        topcoatBaseActualL: { type: number, minimum: 0 }
+        topcoatHrdActualL: { type: number, minimum: 0 }
+        topcoatThinnerActualL: { type: number, minimum: 0 }
+        notes: { type: ["string", "null"] }
 
     AuditAction:
       type: string
