@@ -26,7 +26,7 @@ export const UserRole = {
 
 export interface User {
   id: number;
-  clerkUserId: string;
+  username: string;
   /** @nullable */
   name: string | null;
   /** @nullable */
@@ -36,7 +36,67 @@ export interface User {
   createdAt: string;
 }
 
+export interface AuthStatus {
+  setupRequired: boolean;
+}
+
+export interface AuthSession {
+  user: User;
+}
+
+export interface LoginInput {
+  /** @minLength 1 */
+  username: string;
+  /** @minLength 1 */
+  password: string;
+}
+
+export interface AdminSetupInput {
+  /**
+     * @minLength 3
+     * @maxLength 64
+     */
+  username: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+}
+
+export interface UserInput {
+  /**
+     * @minLength 3
+     * @maxLength 64
+     */
+  username: string;
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /** @nullable */
+  email?: string | null;
+  role: UserRole;
+  isActive?: boolean;
+}
+
 export interface UserUpdate {
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password?: string;
   role?: UserRole;
   isActive?: boolean;
 }

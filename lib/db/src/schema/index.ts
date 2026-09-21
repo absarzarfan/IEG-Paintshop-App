@@ -1,4 +1,5 @@
 export * from "./users";
+export * from "./authSessions";
 export * from "./brands";
 export * from "./colors";
 export * from "./materials";

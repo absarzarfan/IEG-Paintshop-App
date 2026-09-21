@@ -8,6 +8,11 @@
 import type { UserRole } from './userRole';
 
 export interface UserUpdate {
+  /**
+     * @minLength 8
+     * @maxLength 128
+     */
+  password?: string;
   role?: UserRole;
   isActive?: boolean;
 }

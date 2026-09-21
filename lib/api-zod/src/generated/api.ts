@@ -18,12 +18,83 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Check whether the initial Admin setup is required
+ */
+export const GetAuthStatusResponse = zod.object({
+  "setupRequired": zod.boolean()
+})
+
+
+/**
+ * @summary Create the first Admin account and start a session
+ */
+export const setupAdminBodyUsernameMin = 3;
+export const setupAdminBodyUsernameMax = 64;
+
+export const setupAdminBodyPasswordMin = 8;
+export const setupAdminBodyPasswordMax = 128;
+
+export const setupAdminBodyNameMax = 120;
+
+
+
+export const SetupAdminBody = zod.object({
+  "username": zod.string().min(setupAdminBodyUsernameMin).max(setupAdminBodyUsernameMax),
+  "password": zod.string().min(setupAdminBodyPasswordMin).max(setupAdminBodyPasswordMax),
+  "name": zod.string().min(1).max(setupAdminBodyNameMax)
+})
+
+export const SetupAdminResponse = zod.object({
+  "user": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "name": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Sign in with an Admin-provided username and password
+ */
+
+
+
+
+export const LoginBody = zod.object({
+  "username": zod.string().min(1),
+  "password": zod.string().min(1)
+})
+
+export const LoginResponse = zod.object({
+  "user": zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "name": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary End the current username/password session
+ */
+export const LogoutResponse = zod.void()
+
+
+/**
  * Returns the app user record for the signed-in Clerk session, provisioning it on first login. The very first user in the system is auto-provisioned as admin; everyone after that is provisioned as pending until an admin assigns a role.
  * @summary Get the current authenticated user
  */
 export const GetCurrentUserResponse = zod.object({
   "id": zod.number().int(),
-  "clerkUserId": zod.string(),
+  "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
@@ -37,7 +108,7 @@ export const GetCurrentUserResponse = zod.object({
  */
 export const ListUsersResponseItem = zod.object({
   "id": zod.number().int(),
-  "clerkUserId": zod.string(),
+  "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
@@ -48,20 +119,59 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem)
 
 
 /**
+ * @summary Create an application user (admin only)
+ */
+export const createUserBodyUsernameMin = 3;
+export const createUserBodyUsernameMax = 64;
+
+export const createUserBodyPasswordMin = 8;
+export const createUserBodyPasswordMax = 128;
+
+export const createUserBodyNameMax = 120;
+
+
+
+export const CreateUserBody = zod.object({
+  "username": zod.string().min(createUserBodyUsernameMin).max(createUserBodyUsernameMax),
+  "password": zod.string().min(createUserBodyPasswordMin).max(createUserBodyPasswordMax),
+  "name": zod.string().min(1).max(createUserBodyNameMax),
+  "email": zod.string().nullish(),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "isActive": zod.boolean().optional()
+})
+
+export const CreateUserResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "name": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Update a user's role or active status (admin only)
  */
 export const UpdateUserParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
+export const updateUserBodyPasswordMin = 8;
+export const updateUserBodyPasswordMax = 128;
+
+
+
 export const UpdateUserBody = zod.object({
+  "password": zod.string().min(updateUserBodyPasswordMin).max(updateUserBodyPasswordMax).optional(),
   "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).optional().describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean().optional()
 })
 
 export const UpdateUserResponse = zod.object({
   "id": zod.number().int(),
-  "clerkUserId": zod.string(),
+  "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),

@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import authRouter from "./auth";
 import usersRouter from "./users";
 import brandsRouter from "./brands";
 import colorsRouter from "./colors";
@@ -9,16 +10,16 @@ import serialNumbersRouter from "./serialNumbers";
 import paintUsageRouter from "./paintUsage";
 import auditLogRouter from "./auditLog";
 import dashboardRouter from "./dashboard";
-import { requireAuth, attachAppUser } from "../middlewares/auth";
+import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(authRouter);
 
-// Every route below requires a signed-in Clerk session and has req.appUser
-// available (JIT-provisioned on first login). Per-route requireRole/
-// requireAdmin calls handle authorization from there.
-router.use(requireAuth, attachAppUser);
+// Every route below requires a signed-in internal session and has req.appUser
+// available. Per-route requireRole/requireAdmin handles authorization.
+router.use(requireAuth);
 
 router.use(usersRouter);
 router.use(brandsRouter);

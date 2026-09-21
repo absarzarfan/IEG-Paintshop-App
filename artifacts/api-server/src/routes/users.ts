@@ -2,6 +2,8 @@ import { Router, type IRouter } from "express";
 import { and, eq, count } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import {
+  CreateUserBody,
+  CreateUserResponse,
   GetCurrentUserResponse,
   ListUsersResponse,
   UpdateUserParams,
@@ -10,16 +12,54 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/auth";
 import { recordAudit, diffFields } from "../lib/audit";
+import { hashPassword, isUniqueViolation, normalizeUsername, toPublicUser } from "../lib/auth";
 
 const router: IRouter = Router();
 
 router.get("/users/me", async (req, res): Promise<void> => {
-  res.json(GetCurrentUserResponse.parse(req.appUser));
+  res.json(GetCurrentUserResponse.parse(req.appUser ? toPublicUser(req.appUser) : null));
 });
 
 router.get("/users", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db.select().from(usersTable).orderBy(usersTable.createdAt);
-  res.json(ListUsersResponse.parse(rows));
+  res.json(ListUsersResponse.parse(rows.map(toPublicUser)));
+});
+
+router.post("/users", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = CreateUserBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  try {
+    const [created] = await db
+      .insert(usersTable)
+      .values({
+        username: normalizeUsername(parsed.data.username),
+        passwordHash: hashPassword(parsed.data.password),
+        name: parsed.data.name.trim(),
+        email: parsed.data.email ?? null,
+        role: parsed.data.role,
+        isActive: parsed.data.isActive ?? true,
+      })
+      .returning();
+
+    await recordAudit({
+      req,
+      action: "create",
+      entityType: "user",
+      entityId: created.id,
+      changes: { username: created.username, role: created.role },
+    });
+    res.status(201).json(CreateUserResponse.parse(toPublicUser(created)));
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      res.status(409).json({ error: "Username already exists" });
+      return;
+    }
+    throw error;
+  }
 });
 
 router.patch("/users/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -57,14 +97,22 @@ router.patch("/users/:id", requireAdmin, async (req, res): Promise<void> => {
     }
   }
 
-  const [updated] = await db.update(usersTable).set(parsed.data).where(eq(usersTable.id, params.data.id)).returning();
+  const { password, ...accountChanges } = parsed.data;
+  const updateValues = {
+    ...accountChanges,
+    ...(password ? { passwordHash: hashPassword(password) } : {}),
+  };
+  const [updated] = await db.update(usersTable).set(updateValues).where(eq(usersTable.id, params.data.id)).returning();
 
-  const changes = diffFields(before, parsed.data);
+  const changes = diffFields(before, {
+    ...accountChanges,
+    ...(password ? { password: "[reset by admin]" } : {}),
+  });
   if (Object.keys(changes).length > 0) {
     await recordAudit({ req, action: "update", entityType: "user", entityId: updated.id, changes });
   }
 
-  res.json(UpdateUserResponse.parse(updated));
+  res.json(UpdateUserResponse.parse(toPublicUser(updated)));
 });
 
 export default router;

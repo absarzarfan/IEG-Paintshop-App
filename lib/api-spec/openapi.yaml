@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Internal username/password authentication
   - name: users
     description: Current user and user/role management
   - name: brands
@@ -43,12 +45,78 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  /auth/status:
+    get:
+      operationId: getAuthStatus
+      tags: [auth]
+      summary: Check whether the initial Admin setup is required
+      responses:
+        "200":
+          description: Authentication setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthStatus"
+
+  /auth/setup:
+    post:
+      operationId: setupAdmin
+      tags: [auth]
+      summary: Create the first Admin account and start a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSetupInput"
+      responses:
+        "201":
+          description: Initial Admin session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "400":
+          description: Invalid setup data
+        "409":
+          description: Admin setup has already been completed
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Sign in with an Admin-provided username and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "401":
+          description: Invalid username or password
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: End the current username/password session
+      responses:
+        "204":
+          description: Session ended
+
   /users/me:
     get:
       operationId: getCurrentUser
       tags: [users]
       summary: Get the current authenticated user
-      description: Returns the app user record for the signed-in Clerk session, provisioning it on first login. The very first user in the system is auto-provisioned as admin; everyone after that is provisioned as pending until an admin assigns a role.
+      description: Returns the app user record for the signed-in internal username/password session.
       responses:
         "200":
           description: Current user
@@ -71,6 +139,25 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create an application user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "409":
+          description: Username already exists
 
   /users/{id}:
     patch:
@@ -647,18 +734,59 @@ components:
       type: object
       properties:
         id: { type: integer }
-        clerkUserId: { type: string }
+        username: { type: string }
         name: { type: ["string", "null"] }
         email: { type: ["string", "null"] }
         role:
           $ref: "#/components/schemas/UserRole"
         isActive: { type: boolean }
         createdAt: { type: string, format: date-time }
-      required: [id, clerkUserId, name, email, role, isActive, createdAt]
+      required: [id, username, name, email, role, isActive, createdAt]
+
+    AuthStatus:
+      type: object
+      properties:
+        setupRequired: { type: boolean }
+      required: [setupRequired]
+
+    AuthSession:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+      required: [user]
+
+    LoginInput:
+      type: object
+      properties:
+        username: { type: string, minLength: 1 }
+        password: { type: string, minLength: 1, format: password }
+      required: [username, password]
+
+    AdminSetupInput:
+      type: object
+      properties:
+        username: { type: string, minLength: 3, maxLength: 64 }
+        password: { type: string, minLength: 8, maxLength: 128, format: password }
+        name: { type: string, minLength: 1, maxLength: 120 }
+      required: [username, password, name]
+
+    UserInput:
+      type: object
+      properties:
+        username: { type: string, minLength: 3, maxLength: 64 }
+        password: { type: string, minLength: 8, maxLength: 128, format: password }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        email: { type: ["string", "null"] }
+        role:
+          $ref: "#/components/schemas/UserRole"
+        isActive: { type: boolean }
+      required: [username, password, name, role]
 
     UserUpdate:
       type: object
       properties:
+        password: { type: string, minLength: 8, maxLength: 128, format: password }
         role:
           $ref: "#/components/schemas/UserRole"
         isActive: { type: boolean }

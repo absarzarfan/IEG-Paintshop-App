@@ -9,7 +9,7 @@ import type { UserRole } from './userRole';
 
 export interface User {
   id: number;
-  clerkUserId: string;
+  username: string;
   /** @nullable */
   name: string | null;
   /** @nullable */

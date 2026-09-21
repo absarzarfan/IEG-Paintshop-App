@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { useClerk } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLogout } from "@workspace/api-client-react";
 import { 
   LayoutDashboard, 
   PaintBucket, 
@@ -23,8 +24,15 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { user, isPending, isAdmin } = useAppAuth();
-  const [location] = useLocation();
-  const { signOut } = useClerk();
+  const [location, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const logoutMutation = useLogout();
+
+  const handleLogout = async () => {
+    await logoutMutation.mutateAsync();
+    queryClient.clear();
+    setLocation("/");
+  };
 
   // Handle pending users
   if (isPending) {
@@ -43,14 +51,14 @@ export function Layout({ children }: LayoutProps) {
           <div className="bg-secondary p-4 text-left border-l-4 border-primary">
             <p className="text-sm font-semibold text-foreground uppercase tracking-wide">Detail Akun</p>
             <div className="mt-2 space-y-1 text-sm">
-              <p><span className="text-muted-foreground">Email:</span> <span className="font-mono">{user?.email}</span></p>
+              <p><span className="text-muted-foreground">Username:</span> <span className="font-mono">{user?.username}</span></p>
               <p><span className="text-muted-foreground">Status:</span> <span className="font-bold text-orange-600">Pending</span></p>
             </div>
           </div>
           <Button 
             variant="outline" 
             className="w-full uppercase font-bold tracking-wide"
-            onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" })}
+            onClick={handleLogout}
           >
             Log Out
           </Button>
@@ -82,8 +90,8 @@ export function Layout({ children }: LayoutProps) {
         </div>
         
         <div className="p-4 border-b border-sidebar-border bg-sidebar-accent/20">
-          <p className="text-sm font-bold text-sidebar-foreground truncate" title={user?.name || user?.email || "User"}>
-            {user?.name || user?.email || "User"}
+          <p className="text-sm font-bold text-sidebar-foreground truncate" title={user?.name || user?.username || "User"}>
+            {user?.name || user?.username || "User"}
           </p>
           <div className="flex items-center gap-2 mt-1">
             <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -129,7 +137,7 @@ export function Layout({ children }: LayoutProps) {
           <button 
             type="button"
             className="flex items-center gap-3 px-3 py-2 w-full text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-            onClick={() => signOut({ redirectUrl: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" })}
+            onClick={handleLogout}
           >
             <LogOut size={18} />
             Log Keluar

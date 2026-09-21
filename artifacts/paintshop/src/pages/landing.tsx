@@ -11,9 +11,9 @@ export function Landing() {
           <Link href="/sign-in" className="text-sm font-bold text-foreground hover:text-primary transition-colors uppercase tracking-wide">
             Log In
           </Link>
-          <Link href="/sign-up" className="hidden sm:inline-flex bg-primary text-primary-foreground h-9 px-4 items-center justify-center font-bold text-sm uppercase tracking-wide hover:bg-primary/90 transition-colors shadow-sm">
-            Request Access
-          </Link>
+           <span className="hidden sm:inline-flex text-xs font-bold uppercase tracking-wide text-muted-foreground">
+             Admin-managed access
+           </span>
         </div>
       </header>
 
