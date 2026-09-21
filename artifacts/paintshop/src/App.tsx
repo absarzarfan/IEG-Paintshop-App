@@ -53,7 +53,7 @@ function AuthPage() {
   const { data: status, isLoading: statusLoading, error: statusError } = useGetAuthStatus();
   const loginMutation = useLogin();
   const setupMutation = useSetupAdmin();
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState("Admin");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
 
