@@ -89,7 +89,7 @@ export function Users() {
     }
   };
 
-  const roles: UserRole[] = ["admin", "painter", "warehouse", "supervisor", "procurement", "pending"];
+  const roles: UserRole[] = ["admin", "painter", "warehouse", "pending"];
 
   return (
     <div className="space-y-6">

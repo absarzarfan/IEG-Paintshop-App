@@ -35,7 +35,7 @@ export function Landing() {
               {
                 icon: ClipboardPenLine,
                 eyebrow: "Paint Operation",
-                title: "Painter / Operator",
+                title: "Paint Mixer",
                 description: "Record actual primer and topcoat usage for every job and serial number.",
               },
               {

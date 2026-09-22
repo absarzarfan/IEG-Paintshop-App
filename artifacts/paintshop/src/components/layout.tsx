@@ -6,6 +6,7 @@ import {
   LayoutDashboard, 
   PaintBucket, 
   Droplet, 
+  Boxes,
   Palette, 
   Settings, 
   Users,
@@ -24,6 +25,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { user, isPending, isAdmin } = useAppAuth();
+  const canTraceStock = user?.role === "admin" || user?.role === "warehouse";
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const logoutMutation = useLogout();
@@ -71,6 +73,7 @@ export function Layout({ children }: LayoutProps) {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Job Items", href: "/job-items", icon: PaintBucket },
     { name: "Paint Usage", href: "/paint-usage", icon: ClipboardPenLine },
+    ...(canTraceStock ? [{ name: "Stock", href: "/stock", icon: Boxes }] : []),
     { name: "Materials", href: "/materials", icon: Droplet },
     { name: "Colors", href: "/colors", icon: Palette },
     { name: "Brands", href: "/brands", icon: Settings },

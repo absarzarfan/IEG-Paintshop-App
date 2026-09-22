@@ -50,7 +50,7 @@ export const SetupAdminResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -77,7 +77,7 @@ export const LoginResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -99,7 +99,7 @@ export const GetCurrentUserResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -113,7 +113,7 @@ export const ListUsersResponseItem = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -138,7 +138,7 @@ export const CreateUserBody = zod.object({
   "password": zod.string().min(createUserBodyPasswordMin).max(createUserBodyPasswordMax),
   "name": zod.string().min(1).max(createUserBodyNameMax),
   "email": zod.string().nullish(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean().optional()
 })
 
@@ -147,7 +147,7 @@ export const CreateUserResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -167,7 +167,7 @@ export const updateUserBodyPasswordMax = 128;
 
 export const UpdateUserBody = zod.object({
   "password": zod.string().min(updateUserBodyPasswordMin).max(updateUserBodyPasswordMax).optional(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).optional().describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).optional().describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean().optional()
 })
 
@@ -176,7 +176,7 @@ export const UpdateUserResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'supervisor', 'procurement', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -457,6 +457,75 @@ export const CreateMaterialPriceResponse = zod.object({
   "unitPrice": zod.number(),
   "currency": zod.string(),
   "effectiveDate": zod.coerce.date(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List current stock balances by material
+ */
+export const ListStockSummaryResponseItem = zod.object({
+  "materialId": zod.number().int(),
+  "materialDescription": zod.string(),
+  "brandName": zod.string(),
+  "packagingSizeL": zod.number(),
+  "deadStockThreshold": zod.number(),
+  "currentUnitPrice": zod.number().nullable(),
+  "stockL": zod.number()
+})
+export const ListStockSummaryResponse = zod.array(ListStockSummaryResponseItem)
+
+
+/**
+ * @summary List stock movements, newest first
+ */
+export const ListStockMovementsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "materialId": zod.number().int(),
+  "materialDescription": zod.string(),
+  "brandName": zod.string(),
+  "movementType": zod.enum(['in', 'out', 'adjustment']),
+  "quantityL": zod.number(),
+  "lotNo": zod.string().nullable(),
+  "expiryDate": zod.coerce.date().nullable(),
+  "notes": zod.string().nullable(),
+  "createdByUserId": zod.number().int().nullable(),
+  "createdByName": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListStockMovementsResponse = zod.array(ListStockMovementsResponseItem)
+
+
+/**
+ * @summary Record a stock receipt, issue, or adjustment (admin or warehouse)
+ */
+export const createStockMovementBodyLotNoMax = 120;
+
+export const createStockMovementBodyNotesMax = 500;
+
+
+
+export const CreateStockMovementBody = zod.object({
+  "materialId": zod.number().int(),
+  "movementType": zod.enum(['in', 'out', 'adjustment']),
+  "quantityL": zod.number(),
+  "lotNo": zod.string().max(createStockMovementBodyLotNoMax).nullish(),
+  "expiryDate": zod.coerce.date().nullish(),
+  "notes": zod.string().max(createStockMovementBodyNotesMax).nullish()
+})
+
+export const CreateStockMovementResponse = zod.object({
+  "id": zod.number().int(),
+  "materialId": zod.number().int(),
+  "materialDescription": zod.string(),
+  "brandName": zod.string(),
+  "movementType": zod.enum(['in', 'out', 'adjustment']),
+  "quantityL": zod.number(),
+  "lotNo": zod.string().nullable(),
+  "expiryDate": zod.coerce.date().nullable(),
+  "notes": zod.string().nullable(),
+  "createdByUserId": zod.number().int().nullable(),
+  "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 })
 

@@ -18,6 +18,8 @@ tags:
     description: Paint brand master data
   - name: materials
     description: Paint material master data and price history
+  - name: stock
+    description: Warehouse stock balances and movement tracing
   - name: colors
     description: Paint color master data
   - name: job-items
@@ -426,6 +428,55 @@ paths:
               schema:
                 $ref: "#/components/schemas/MaterialPrice"
 
+  /stock:
+    get:
+      operationId: listStockSummary
+      tags: [stock]
+      summary: List current stock balances by material
+      responses:
+        "200":
+          description: Current stock balances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockSummary"
+
+  /stock/movements:
+    get:
+      operationId: listStockMovements
+      tags: [stock]
+      summary: List stock movements, newest first
+      responses:
+        "200":
+          description: Stock movement history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockMovement"
+    post:
+      operationId: createStockMovement
+      tags: [stock]
+      summary: Record a stock receipt, issue, or adjustment (admin or warehouse)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockMovementInput"
+      responses:
+        "201":
+          description: Created stock movement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockMovement"
+        "400":
+          description: Invalid stock movement
+
   /job-items:
     get:
       operationId: listJobItems
@@ -727,7 +778,7 @@ components:
 
     UserRole:
       type: string
-      enum: [admin, painter, warehouse, supervisor, procurement, pending]
+      enum: [admin, painter, warehouse, pending]
       description: pending users have no permissions until an admin assigns a real role
 
     User:
@@ -917,6 +968,54 @@ components:
         currency: { type: string, minLength: 1 }
         effectiveDate: { type: string, format: date }
       required: [unitPrice, currency, effectiveDate]
+
+    StockMovementType:
+      type: string
+      enum: [in, out, adjustment]
+
+    StockSummary:
+      type: object
+      properties:
+        materialId: { type: integer }
+        materialDescription: { type: string }
+        brandName: { type: string }
+        packagingSizeL: { type: number }
+        deadStockThreshold: { type: number }
+        currentUnitPrice: { type: ["number", "null"] }
+        stockL: { type: number }
+      required:
+        [materialId, materialDescription, brandName, packagingSizeL, deadStockThreshold, currentUnitPrice, stockL]
+
+    StockMovement:
+      type: object
+      properties:
+        id: { type: integer }
+        materialId: { type: integer }
+        materialDescription: { type: string }
+        brandName: { type: string }
+        movementType:
+          $ref: "#/components/schemas/StockMovementType"
+        quantityL: { type: number }
+        lotNo: { type: ["string", "null"] }
+        expiryDate: { type: ["string", "null"], format: date }
+        notes: { type: ["string", "null"] }
+        createdByUserId: { type: ["integer", "null"] }
+        createdByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required:
+        [id, materialId, materialDescription, brandName, movementType, quantityL, lotNo, expiryDate, notes, createdByUserId, createdByName, createdAt]
+
+    StockMovementInput:
+      type: object
+      properties:
+        materialId: { type: integer }
+        movementType:
+          $ref: "#/components/schemas/StockMovementType"
+        quantityL: { type: number }
+        lotNo: { type: ["string", "null"], maxLength: 120 }
+        expiryDate: { type: ["string", "null"], format: date }
+        notes: { type: ["string", "null"], maxLength: 500 }
+      required: [materialId, movementType, quantityL]
 
     JobItem:
       type: object

@@ -501,7 +501,7 @@ export function PaintUsage() {
   const queryJobId = Number(new URLSearchParams(location.split("?")[1] || "").get("jobItemId") || 0);
   if (params.id === "new") {
     if (!canRecordUsage) {
-      return <div className="border border-amber-200 bg-amber-50 p-6 text-sm font-semibold text-amber-900">Akun Anda memiliki akses read-only. Role Painter atau Admin diperlukan untuk mencatat Paint Usage.</div>;
+      return <div className="border border-amber-200 bg-amber-50 p-6 text-sm font-semibold text-amber-900">Akun Anda memiliki akses read-only. Role Paint Mixer atau Admin diperlukan untuk mencatat Paint Usage.</div>;
     }
     return <div className="space-y-5 pb-12"><Link href="/paint-usage" className="inline-flex items-center text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-primary" data-testid="link-back-paint-usage-create"><ArrowLeft className="mr-2 h-4 w-4" /> Paint Usage</Link><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Operasional / Input</p><h1 className="mt-1 text-3xl font-extrabold uppercase tracking-tight">Catat Actual Paint Usage</h1><p className="mt-1 text-sm font-medium text-muted-foreground">Masukkan pemakaian aktual per Serial Number. Target dan variance dihitung server.</p></div><UsageForm mode="create" initialJobId={queryJobId} onComplete={(record) => setLocation(`/paint-usage/${record.id}`)} /></div>;
   }

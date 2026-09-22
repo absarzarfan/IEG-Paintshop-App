@@ -19,8 +19,6 @@ export const UserRole = {
   admin: 'admin',
   painter: 'painter',
   warehouse: 'warehouse',
-  supervisor: 'supervisor',
-  procurement: 'procurement',
   pending: 'pending',
 } as const;
 
@@ -218,6 +216,64 @@ export interface MaterialPriceInput {
   /** @minLength 1 */
   currency: string;
   effectiveDate: string;
+}
+
+export type StockMovementType = typeof StockMovementType[keyof typeof StockMovementType];
+
+
+export const StockMovementType = {
+  in: 'in',
+  out: 'out',
+  adjustment: 'adjustment',
+} as const;
+
+export interface StockSummary {
+  materialId: number;
+  materialDescription: string;
+  brandName: string;
+  packagingSizeL: number;
+  deadStockThreshold: number;
+  /** @nullable */
+  currentUnitPrice: number | null;
+  stockL: number;
+}
+
+export interface StockMovement {
+  id: number;
+  materialId: number;
+  materialDescription: string;
+  brandName: string;
+  movementType: StockMovementType;
+  quantityL: number;
+  /** @nullable */
+  lotNo: string | null;
+  /** @nullable */
+  expiryDate: string | null;
+  /** @nullable */
+  notes: string | null;
+  /** @nullable */
+  createdByUserId: number | null;
+  /** @nullable */
+  createdByName: string | null;
+  createdAt: string;
+}
+
+export interface StockMovementInput {
+  materialId: number;
+  movementType: StockMovementType;
+  quantityL: number;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  lotNo?: string | null;
+  /** @nullable */
+  expiryDate?: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  notes?: string | null;
 }
 
 export interface JobItem {

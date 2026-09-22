@@ -29,6 +29,7 @@ import { Brands } from "./pages/brands";
 import { Users } from "./pages/users";
 import { AuditLog } from "./pages/audit-log";
 import { PaintUsage } from "./pages/paint-usage";
+import { Stock } from "./pages/stock";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -169,11 +170,13 @@ function HomeRedirect() {
   return user ? <Redirect to="/dashboard" /> : <Landing />;
 }
 
-function ProtectedRoute({ component: Component, path }: { component: React.ComponentType, path: string }) {
+function ProtectedRoute({ component: Component, path, allowedRoles }: { component: React.ComponentType, path: string, allowedRoles?: string[] }) {
   const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false, queryKey: getGetCurrentUserQueryKey() } });
   return (
     <Route path={path}>
-      {isLoading ? <LoadingScreen /> : user ? <Layout><Component /></Layout> : <Redirect to="/sign-in" />}
+      {isLoading ? <LoadingScreen /> : user ? (
+        allowedRoles && !allowedRoles.includes(user.role) ? <Redirect to="/dashboard" /> : <Layout><Component /></Layout>
+      ) : <Redirect to="/sign-in" />}
     </Route>
   );
 }
@@ -191,11 +194,12 @@ function AppRoutes() {
           <ProtectedRoute path="/job-items/:id" component={JobItemDetail} />
           <ProtectedRoute path="/paint-usage" component={PaintUsage} />
           <ProtectedRoute path="/paint-usage/:id" component={PaintUsage} />
+          <ProtectedRoute path="/stock" component={Stock} allowedRoles={["admin", "warehouse"]} />
           <ProtectedRoute path="/materials" component={Materials} />
           <ProtectedRoute path="/colors" component={Colors} />
           <ProtectedRoute path="/brands" component={Brands} />
-          <ProtectedRoute path="/users" component={Users} />
-          <ProtectedRoute path="/audit-log" component={AuditLog} />
+          <ProtectedRoute path="/users" component={Users} allowedRoles={["admin"]} />
+          <ProtectedRoute path="/audit-log" component={AuditLog} allowedRoles={["admin"]} />
 
           <Route>
             <Layout><NotFound /></Layout>

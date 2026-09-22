@@ -50,6 +50,9 @@ import type {
   PaintUsageUpdate,
   SerialNumber,
   SerialNumberBulkInput,
+  StockMovement,
+  StockMovementInput,
+  StockSummary,
   User,
   UserInput,
   UserUpdate
@@ -1822,6 +1825,248 @@ export const useCreateMaterialPrice = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateMaterialPriceMutationOptions(options));
+    }
+
+export const getListStockSummaryUrl = () => {
+
+
+
+
+  return `/api/stock`
+}
+
+/**
+ * @summary List current stock balances by material
+ */
+export const listStockSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<StockSummary[]> => {
+
+  return customFetch<StockSummary[]>(getListStockSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStockSummaryQueryKey = () => {
+    return [
+    `/api/stock`
+    ] as const;
+    }
+
+
+export const getListStockSummaryQueryOptions = <TData = Awaited<ReturnType<typeof listStockSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStockSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStockSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStockSummary>>> = ({ signal }) => listStockSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStockSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStockSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof listStockSummary>>>
+export type ListStockSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List current stock balances by material
+ */
+
+export function useListStockSummary<TData = Awaited<ReturnType<typeof listStockSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStockSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStockSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListStockMovementsUrl = () => {
+
+
+
+
+  return `/api/stock/movements`
+}
+
+/**
+ * @summary List stock movements, newest first
+ */
+export const listStockMovements = async ( options?: Parameters<typeof customFetch>[1]): Promise<StockMovement[]> => {
+
+  return customFetch<StockMovement[]>(getListStockMovementsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStockMovementsQueryKey = () => {
+    return [
+    `/api/stock/movements`
+    ] as const;
+    }
+
+
+export const getListStockMovementsQueryOptions = <TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStockMovementsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStockMovements>>> = ({ signal }) => listStockMovements({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStockMovementsQueryResult = NonNullable<Awaited<ReturnType<typeof listStockMovements>>>
+export type ListStockMovementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List stock movements, newest first
+ */
+
+export function useListStockMovements<TData = Awaited<ReturnType<typeof listStockMovements>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStockMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStockMovementsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStockMovementUrl = () => {
+
+
+
+
+  return `/api/stock/movements`
+}
+
+/**
+ * @summary Record a stock receipt, issue, or adjustment (admin or warehouse)
+ */
+export const createStockMovement = async (stockMovementInput: StockMovementInput, options?: Parameters<typeof customFetch>[1]): Promise<StockMovement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StockMovement>(getCreateStockMovementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(stockMovementInput)
+  }
+);}
+
+
+
+
+
+export const getCreateStockMovementMutationKey = () => ['createStockMovement'] as const;
+
+export const getCreateStockMovementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockMovement>>, TError,CreateStockMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStockMovement>>, TError,CreateStockMovementMutationVariables, TContext> => {
+
+const mutationKey = getCreateStockMovementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStockMovement>>, CreateStockMovementMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStockMovement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStockMovementMutationResult = NonNullable<Awaited<ReturnType<typeof createStockMovement>>>
+    export type CreateStockMovementMutationBody = BodyType<StockMovementInput>
+    export type CreateStockMovementMutationError = ErrorType<void>
+    export type CreateStockMovementMutationVariables = {data: BodyType<StockMovementInput>}
+
+    /**
+ * @summary Record a stock receipt, issue, or adjustment (admin or warehouse)
+ */
+export const useCreateStockMovement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStockMovement>>, TError,CreateStockMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStockMovement>>,
+        TError,
+        CreateStockMovementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateStockMovementMutationOptions(options));
     }
 
 export const getListJobItemsUrl = (params?: ListJobItemsParams,) => {

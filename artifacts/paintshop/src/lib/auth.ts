@@ -2,10 +2,8 @@ import { useGetCurrentUser, UserRole, getGetCurrentUserQueryKey } from "@workspa
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Admin",
-  painter: "Painter / Operator",
+  painter: "Paint Mixer",
   warehouse: "Warehouse",
-  supervisor: "Supervisor",
-  procurement: "Procurement",
   pending: "Menunggu Persetujuan",
 };
 

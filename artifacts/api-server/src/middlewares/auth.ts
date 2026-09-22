@@ -34,7 +34,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   next();
 }
 
-export const ACTIVE_ROLES = ["admin", "painter", "warehouse", "supervisor", "procurement"] as const;
+export const ACTIVE_ROLES = ["admin", "painter", "warehouse"] as const;
 export type ActiveRole = (typeof ACTIVE_ROLES)[number];
 
 /** Requires the signed-in user to be active and hold one of the given roles. */

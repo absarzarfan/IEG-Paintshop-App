@@ -7,4 +7,5 @@ export * from "./materialPrices";
 export * from "./jobItems";
 export * from "./serialNumbers";
 export * from "./paintUsage";
+export * from "./stockMovements";
 export * from "./auditLogs";

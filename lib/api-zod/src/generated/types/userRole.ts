@@ -16,7 +16,5 @@ export const UserRole = {
   admin: 'admin',
   painter: 'painter',
   warehouse: 'warehouse',
-  supervisor: 'supervisor',
-  procurement: 'procurement',
   pending: 'pending',
 } as const;

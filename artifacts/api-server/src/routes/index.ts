@@ -8,6 +8,7 @@ import materialsRouter from "./materials";
 import jobItemsRouter from "./jobItems";
 import serialNumbersRouter from "./serialNumbers";
 import paintUsageRouter from "./paintUsage";
+import stockRouter from "./stock";
 import auditLogRouter from "./auditLog";
 import dashboardRouter from "./dashboard";
 import { requireAuth } from "../middlewares/auth";
@@ -28,6 +29,7 @@ router.use(materialsRouter);
 router.use(jobItemsRouter);
 router.use(serialNumbersRouter);
 router.use(paintUsageRouter);
+router.use(stockRouter);
 router.use(auditLogRouter);
 router.use(dashboardRouter);
 
