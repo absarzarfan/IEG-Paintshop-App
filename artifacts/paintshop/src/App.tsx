@@ -144,10 +144,10 @@ function AuthPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
-                minLength={isSetup ? 8 : 1}
+               minLength={4}
                 autoComplete={isSetup ? "new-password" : "current-password"}
               />
-              {isSetup && <p className="text-xs text-[#6b7078]">Minimal 8 karakter.</p>}
+              <p className="text-xs text-[#6b7078]">Minimal 4 karakter.</p>
             </div>
             <Button type="submit" className="h-11 w-full bg-[#FDDB3A] font-bold uppercase tracking-wide text-[#41444B] hover:bg-[#f2cc27]" disabled={isSubmitting || statusLoading || !!statusError}>
               {isSubmitting ? "Memproses..." : isSetup ? "Buat Admin & Masuk" : "Masuk"}

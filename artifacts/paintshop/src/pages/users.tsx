@@ -114,7 +114,7 @@ export function Users() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="new-password">Temporary password</Label>
-            <Input id="new-password" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} required />
+            <Input id="new-password" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={4} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="new-role">Role</Label>
