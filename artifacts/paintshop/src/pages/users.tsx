@@ -7,7 +7,7 @@ import {
   UserRole
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Users as UsersIcon, ShieldAlert, UserPlus, Trash2 } from "lucide-react";
+import { Loader2, Users as UsersIcon, UserPlus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { ROLE_LABELS } from "@/lib/auth";
@@ -24,10 +24,12 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useAppAuth } from "@/lib/auth";
 
 export function Users() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user: currentUser } = useAppAuth();
   
   const { data: users, isLoading, error } = useListUsers({ query: { queryKey: getListUsersQueryKey() } });
   const updateMutation = useUpdateUser();
@@ -92,6 +94,14 @@ export function Users() {
   };
 
   const handleDeleteUser = async (userId: number, username: string) => {
+    if (currentUser?.id === userId) {
+      toast({
+        title: "Delete blocked",
+        description: "You cannot delete your own account. Ask another Admin to remove it.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!confirm(`Delete user ${username}? This cannot be undone.`)) return;
     try {
       await deleteMutation.mutateAsync({ id: userId });
@@ -106,7 +116,7 @@ export function Users() {
     }
   };
 
-  const roles: UserRole[] = ["admin", "painter", "warehouse", "pending"];
+  const roles: UserRole[] = ["admin", "painter", "warehouse"];
 
   return (
     <div className="space-y-6">
@@ -141,7 +151,7 @@ export function Users() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {roles.filter((role) => role !== "pending").map((role) => (
+                {roles.map((role) => (
                   <SelectItem key={role} value={role} className="font-bold text-xs uppercase tracking-wider">
                     {ROLE_LABELS[role]}
                   </SelectItem>
@@ -180,10 +190,9 @@ export function Users() {
               </thead>
               <tbody className="divide-y divide-border font-medium">
                 {users.map(user => (
-                  <tr key={user.id} className={`hover:bg-secondary/30 transition-colors ${user.role === 'pending' ? 'bg-primary/10' : ''}`}>
+                  <tr key={user.id} className="hover:bg-secondary/30 transition-colors">
                     <td className="py-4">
                       <div className="flex items-center gap-3">
-                        {user.role === 'pending' && <ShieldAlert className="h-5 w-5 text-primary shrink-0" />}
                         <div>
                           <p className="font-bold text-foreground">{user.name || "—"}</p>
                            <p className="font-mono text-xs text-muted-foreground">@{user.username}</p>
@@ -197,7 +206,7 @@ export function Users() {
                         onValueChange={(val) => handleRoleChange(user.id, val)}
                         disabled={updateMutation.isPending}
                       >
-                        <SelectTrigger className={`h-8 font-bold text-xs uppercase tracking-wider ${user.role === 'pending' ? 'border-primary text-primary' : ''}`}>
+                        <SelectTrigger className="h-8 font-bold text-xs uppercase tracking-wider">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

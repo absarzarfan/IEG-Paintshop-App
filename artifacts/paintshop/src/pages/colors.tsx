@@ -187,7 +187,7 @@ export function Colors() {
                        variant="ghost"
                        size="icon"
                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                       disabled={color.isActive || deleteMutation.isPending}
+                        disabled={deleteMutation.isPending}
                        onClick={async () => {
                          if (!confirm(`Delete ${color.name}?`)) return;
                          try {

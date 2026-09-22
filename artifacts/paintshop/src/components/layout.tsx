@@ -12,7 +12,6 @@ import {
   Users,
   Activity,
   LogOut,
-  ShieldAlert,
   ShieldCheck,
   Menu
 } from "lucide-react";
@@ -25,7 +24,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user, isPending, isAdmin } = useAppAuth();
+  const { user, isAdmin } = useAppAuth();
   const canTraceStock = user?.role === "admin" || user?.role === "warehouse";
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -36,39 +35,6 @@ export function Layout({ children }: LayoutProps) {
     queryClient.clear();
     setLocation("/");
   };
-
-  // Handle pending users
-  if (isPending) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-md bg-card border border-border p-8 text-center space-y-6">
-          <div className="w-16 h-16 bg-primary/20 text-primary mx-auto flex items-center justify-center">
-            <ShieldAlert size={32} strokeWidth={2.5} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold font-sans text-foreground">Menunggu Persetujuan</h1>
-            <p className="text-muted-foreground mt-2 font-medium">
-              Akun Anda sedang dalam antrean. Hubungi Administrator untuk mendapatkan akses.
-            </p>
-          </div>
-          <div className="bg-secondary p-4 text-left border-l-4 border-primary">
-            <p className="text-sm font-semibold text-foreground uppercase tracking-wide">Detail Akun</p>
-            <div className="mt-2 space-y-1 text-sm">
-              <p><span className="text-muted-foreground">Username:</span> <span className="font-mono">{user?.username}</span></p>
-              <p><span className="text-muted-foreground">Status:</span> <span className="font-bold text-primary">Pending</span></p>
-            </div>
-          </div>
-          <Button 
-            variant="outline" 
-            className="w-full uppercase font-bold tracking-wide"
-            onClick={handleLogout}
-          >
-            Log Out
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },

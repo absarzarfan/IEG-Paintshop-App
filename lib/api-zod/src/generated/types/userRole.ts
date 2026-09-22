@@ -7,7 +7,7 @@
  */
 
 /**
- * pending users have no permissions until an admin assigns a real role
+ * Application roles managed by an Admin
  */
 export type UserRole = typeof UserRole[keyof typeof UserRole];
 
@@ -16,5 +16,4 @@ export const UserRole = {
   admin: 'admin',
   painter: 'painter',
   warehouse: 'warehouse',
-  pending: 'pending',
 } as const;

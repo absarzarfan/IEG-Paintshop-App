@@ -195,7 +195,7 @@ export function Brands() {
                            variant="ghost"
                            size="icon"
                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                           disabled={brand.isActive || deleteMutation.isPending}
+                            disabled={deleteMutation.isPending}
                            onClick={async () => {
                              if (!confirm(`Delete ${brand.name}? Deactivate it first if it is still in use.`)) return;
                              try {

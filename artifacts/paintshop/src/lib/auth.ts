@@ -4,7 +4,6 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Admin",
   painter: "Paint Mixer",
   warehouse: "Warehouse",
-  pending: "Menunggu Persetujuan",
 };
 
 export function useAppAuth() {
@@ -16,7 +15,6 @@ export function useAppAuth() {
   });
   
   const isAdmin = user?.role === 'admin';
-  const isPending = user?.role === 'pending';
   // Read only access applies to master data for non-admins
   const isReadOnly = !isAdmin;
 
@@ -25,7 +23,6 @@ export function useAppAuth() {
     isLoading,
     error,
     isAdmin,
-    isPending,
     isReadOnly,
   };
 }

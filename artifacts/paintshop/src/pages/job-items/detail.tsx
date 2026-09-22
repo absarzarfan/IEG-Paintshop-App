@@ -160,7 +160,7 @@ export function JobItemDetail() {
                   variant="outline"
                   className="h-10 border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   onClick={handleDeleteJobItem}
-                  disabled={deleteJobItem.isPending || job.serialNumberCount > 0}
+                   disabled={deleteJobItem.isPending}
                 >
                   <Trash2 className="mr-2 h-4 w-4" /> Delete Job
                 </Button>

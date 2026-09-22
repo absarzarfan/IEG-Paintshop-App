@@ -12,6 +12,5 @@ export interface DashboardSummary {
   materialCount: number;
   colorCount: number;
   brandCount: number;
-  pendingUserCount: number;
   recentAuditEntries: AuditLogEntry[];
 }

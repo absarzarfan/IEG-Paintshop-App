@@ -1,7 +1,7 @@
 import { useGetDashboardSummary } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
-import { PaintBucket, Droplet, Palette, Settings, Users, Activity, Loader2, ArrowRight } from "lucide-react";
+import { PaintBucket, Droplet, Palette, Settings, Activity, Loader2, ArrowRight } from "lucide-react";
 
 export function Dashboard() {
   const { data: summary, isLoading, error } = useGetDashboardSummary();
@@ -35,21 +35,6 @@ export function Dashboard() {
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">DASHBOARD</h1>
         <p className="text-muted-foreground font-medium mt-1">Ringkasan master data dan aktivitas Paintshop.</p>
       </div>
-
-      {summary.pendingUserCount > 0 && (
-        <div className="bg-primary/15 border-l-4 border-primary p-4 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-3">
-            <Users className="text-primary h-6 w-6" />
-            <div>
-              <p className="font-bold text-foreground">Menunggu Persetujuan</p>
-              <p className="text-muted-foreground text-sm font-medium">{summary.pendingUserCount} pengguna menunggu akses role.</p>
-            </div>
-          </div>
-          <Link href="/users" className="bg-primary text-white text-xs font-bold uppercase tracking-wider px-4 py-2 hover:bg-primary/90 transition-colors shadow-sm">
-            Tinjau
-          </Link>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => (

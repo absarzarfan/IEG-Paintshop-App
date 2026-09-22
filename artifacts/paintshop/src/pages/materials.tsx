@@ -443,7 +443,7 @@ export function Materials() {
                              variant="ghost"
                              size="icon"
                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                             disabled={mat.isActive || deleteMutation.isPending}
+                              disabled={deleteMutation.isPending}
                              onClick={async () => {
                                if (!confirm(`Delete ${mat.description}?`)) return;
                                try {

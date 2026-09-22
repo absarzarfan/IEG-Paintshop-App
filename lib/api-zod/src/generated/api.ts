@@ -50,7 +50,7 @@ export const SetupAdminResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -77,7 +77,7 @@ export const LoginResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -99,7 +99,7 @@ export const GetCurrentUserResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -113,7 +113,7 @@ export const ListUsersResponseItem = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -138,7 +138,7 @@ export const CreateUserBody = zod.object({
   "password": zod.string().min(createUserBodyPasswordMin).max(createUserBodyPasswordMax),
   "name": zod.string().min(1).max(createUserBodyNameMax),
   "email": zod.string().nullish(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
   "isActive": zod.boolean().optional()
 })
 
@@ -147,7 +147,7 @@ export const CreateUserResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -167,7 +167,7 @@ export const updateUserBodyPasswordMax = 128;
 
 export const UpdateUserBody = zod.object({
   "password": zod.string().min(updateUserBodyPasswordMin).max(updateUserBodyPasswordMax).optional(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).optional().describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse']).optional().describe('Application roles managed by an Admin'),
   "isActive": zod.boolean().optional()
 })
 
@@ -176,7 +176,7 @@ export const UpdateUserResponse = zod.object({
   "username": zod.string(),
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
-  "role": zod.enum(['admin', 'painter', 'warehouse', 'pending']).describe('pending users have no permissions until an admin assigns a real role'),
+  "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -1093,7 +1093,6 @@ export const GetDashboardSummaryResponse = zod.object({
   "materialCount": zod.number().int(),
   "colorCount": zod.number().int(),
   "brandCount": zod.number().int(),
-  "pendingUserCount": zod.number().int(),
   "recentAuditEntries": zod.array(zod.object({
   "id": zod.number().int(),
   "actorUserId": zod.number().int().nullable(),

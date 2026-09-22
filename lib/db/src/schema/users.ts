@@ -2,16 +2,12 @@ import { pgTable, serial, text, boolean, timestamp, pgEnum } from "drizzle-orm/p
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-// "pending" has no permissions until an admin assigns a real role. Accounts are
-// created by the first Admin during setup or by an existing Admin; username is
-// the login identity and passwords are stored only as hashes.
+// Accounts are created by the first Admin during setup or by an existing Admin;
+// username is the login identity and passwords are stored only as hashes.
 export const userRoleEnum = pgEnum("user_role", [
   "admin",
   "painter",
   "warehouse",
-  "supervisor",
-  "procurement",
-  "pending",
 ]);
 
 export const usersTable = pgTable("users", {
@@ -20,7 +16,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   name: text("name"),
   email: text("email"),
-  role: userRoleEnum("role").notNull().default("pending"),
+  role: userRoleEnum("role").notNull().default("painter"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })

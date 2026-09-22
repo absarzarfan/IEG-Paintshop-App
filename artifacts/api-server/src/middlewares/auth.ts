@@ -49,6 +49,6 @@ export function requireRole(...roles: ActiveRole[]) {
   };
 }
 
-/** Any real (non-pending), active role -- used for read access to shared master data. */
+/** Any active application role -- used for read access to shared master data. */
 export const requireAnyRole = requireRole(...ACTIVE_ROLES);
 export const requireAdmin = requireRole("admin");
