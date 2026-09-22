@@ -85,7 +85,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     .from(usersTable)
     .where(eq(usersTable.username, normalizeUsername(parsed.data.username)));
   if (!user || !user.isActive || !verifyPassword(parsed.data.password, user.passwordHash)) {
-    res.status(401).json({ error: "Username atau password tidak valid" });
+    res.status(401).json({ error: "Invalid username or password" });
     return;
   }
 

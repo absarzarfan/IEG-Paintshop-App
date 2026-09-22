@@ -38,11 +38,11 @@ function formatDate(value: string | null) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? value
-    : new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+    : new Intl.DateTimeFormat("en-US", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("id-ID", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -205,7 +205,7 @@ export function Stock() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-[760px]">
-              <thead><tr><th>Material</th><th>Brand</th><th className="text-right">Saldo</th><th className="text-right">Threshold</th><th>Status</th></tr></thead>
+              <thead><tr><th>Material</th><th>Brand</th><th className="text-right">Balance</th><th className="text-right">Threshold</th><th>Status</th></tr></thead>
               <tbody>
                 {(summary ?? []).map((item) => {
                   const isLow = item.stockL <= item.deadStockThreshold;

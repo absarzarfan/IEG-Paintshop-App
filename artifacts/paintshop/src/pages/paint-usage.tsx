@@ -90,7 +90,7 @@ function formatLiters(value: number) {
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
+  return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -393,11 +393,11 @@ function PaintUsageList() {
     <div className="space-y-6 pb-12">
       <header className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary"><ClipboardPenLine className="h-4 w-4" /> Operasional / Paint Usage</p>
+          <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary"><ClipboardPenLine className="h-4 w-4" /> Operations / Paint Usage</p>
           <h1 className="text-3xl font-extrabold uppercase tracking-tight text-foreground" data-testid="heading-paint-usage">Actual Paint Usage</h1>
           <p className="mt-1 max-w-2xl text-sm font-medium text-muted-foreground">Record actual primer and topcoat usage per Job Item Serial Number. Variance is calculated by the server when saved.</p>
         </div>
-         {canRecordUsage ? <Button onClick={() => setLocation("/paint-usage/new")} className="w-full font-bold uppercase tracking-wider sm:w-auto" data-testid="button-new-paint-usage"><Plus className="mr-2 h-4 w-4" /> Catat Pemakaian</Button> : <span className="border border-border bg-secondary px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Read-only access</span>}
+         {canRecordUsage ? <Button onClick={() => setLocation("/paint-usage/new")} className="w-full font-bold uppercase tracking-wider sm:w-auto" data-testid="button-new-paint-usage"><Plus className="mr-2 h-4 w-4" /> Record Usage</Button> : <span className="border border-border bg-secondary px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Read-only access</span>}
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -431,7 +431,7 @@ function PaintUsageList() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-[980px]">
-              <thead><tr><th>Tanggal / Shift</th><th>Job No</th><th>Serial Number</th><th className="text-right">Primer Actual</th><th className="text-right">Topcoat Actual</th><th className="text-right">Variance</th><th>Status</th><th className="w-10" /></tr></thead>
+              <thead><tr><th>Date / Shift</th><th>Job No</th><th>Serial Number</th><th className="text-right">Primer Actual</th><th className="text-right">Topcoat Actual</th><th className="text-right">Variance</th><th>Status</th><th className="w-10" /></tr></thead>
               <tbody>
                 {visibleRecords.map((record) => (
                   <tr key={record.id} className="cursor-pointer transition-colors hover:bg-secondary/30" onClick={() => setLocation(`/paint-usage/${record.id}`)} data-testid={`row-paint-usage-${record.id}`}>
@@ -489,7 +489,7 @@ function PaintUsageDetail({ id }: { id: number }) {
 
 function ComponentTable({ title, accent, rows, total, variance, pct, threshold }: { title: string; accent: "blue" | "orange"; rows: [string, number, number][]; total: number; variance: number; pct: number; threshold: number }) {
   const header = accent === "blue" ? "bg-secondary text-secondary-foreground" : "bg-primary/20 text-foreground";
-  return <div className="border border-border bg-card"><div className={`border-b border-border px-5 py-3 ${header}`}><h2 className="text-sm font-bold uppercase tracking-wider">{title}</h2></div><table><thead><tr><th>Komponen</th><th className="text-right">Actual (L)</th><th className="text-right">Target Ref.</th></tr></thead><tbody>{rows.map(([label, actual, target], index) => <tr key={label}><td className="font-medium">{label}</td><td className="text-right font-mono">{actual.toFixed(3)}</td><td className="text-right font-mono text-muted-foreground">{index === 0 ? target.toFixed(3) : "—"}</td></tr>)}<tr className="bg-secondary/40"><td className="font-bold uppercase tracking-wider">Total</td><td className="text-right font-mono font-bold">{total.toFixed(3)}</td><td className="text-right font-mono text-muted-foreground">Variance {variance >= 0 ? "+" : ""}{variance.toFixed(3)} L</td></tr></tbody></table><div className="flex items-center justify-between border-t border-border px-5 py-3 text-sm"><span className="font-bold uppercase tracking-wider text-muted-foreground">Variance</span><span className={`font-mono text-lg font-bold ${pct > threshold ? "text-destructive" : "text-foreground"}`}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}%</span></div></div>;
+  return <div className="border border-border bg-card"><div className={`border-b border-border px-5 py-3 ${header}`}><h2 className="text-sm font-bold uppercase tracking-wider">{title}</h2></div><table><thead><tr><th>Component</th><th className="text-right">Actual (L)</th><th className="text-right">Target Ref.</th></tr></thead><tbody>{rows.map(([label, actual, target], index) => <tr key={label}><td className="font-medium">{label}</td><td className="text-right font-mono">{actual.toFixed(3)}</td><td className="text-right font-mono text-muted-foreground">{index === 0 ? target.toFixed(3) : "—"}</td></tr>)}<tr className="bg-secondary/40"><td className="font-bold uppercase tracking-wider">Total</td><td className="text-right font-mono font-bold">{total.toFixed(3)}</td><td className="text-right font-mono text-muted-foreground">Variance {variance >= 0 ? "+" : ""}{variance.toFixed(3)} L</td></tr></tbody></table><div className="flex items-center justify-between border-t border-border px-5 py-3 text-sm"><span className="font-bold uppercase tracking-wider text-muted-foreground">Variance</span><span className={`font-mono text-lg font-bold ${pct > threshold ? "text-destructive" : "text-foreground"}`}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}%</span></div></div>;
 }
 
 export function PaintUsage() {
