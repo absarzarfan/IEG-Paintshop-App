@@ -31,7 +31,7 @@ export const GetAuthStatusResponse = zod.object({
 export const setupAdminBodyUsernameMin = 3;
 export const setupAdminBodyUsernameMax = 64;
 
-export const setupAdminBodyPasswordMin = 8;
+export const setupAdminBodyPasswordMin = 4;
 export const setupAdminBodyPasswordMax = 128;
 
 export const setupAdminBodyNameMax = 120;
@@ -61,12 +61,14 @@ export const SetupAdminResponse = zod.object({
  * @summary Sign in with an Admin-provided username and password
  */
 
+export const loginBodyPasswordMin = 4;
+export const loginBodyPasswordMax = 128;
 
 
 
 export const LoginBody = zod.object({
   "username": zod.string().min(1),
-  "password": zod.string().min(1)
+  "password": zod.string().min(loginBodyPasswordMin).max(loginBodyPasswordMax)
 })
 
 export const LoginResponse = zod.object({
@@ -89,7 +91,7 @@ export const LogoutResponse = zod.void()
 
 
 /**
- * Returns the app user record for the signed-in Clerk session, provisioning it on first login. The very first user in the system is auto-provisioned as admin; everyone after that is provisioned as pending until an admin assigns a role.
+ * Returns the app user record for the signed-in internal username/password session.
  * @summary Get the current authenticated user
  */
 export const GetCurrentUserResponse = zod.object({
@@ -124,7 +126,7 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem)
 export const createUserBodyUsernameMin = 3;
 export const createUserBodyUsernameMax = 64;
 
-export const createUserBodyPasswordMin = 8;
+export const createUserBodyPasswordMin = 4;
 export const createUserBodyPasswordMax = 128;
 
 export const createUserBodyNameMax = 120;
@@ -158,7 +160,7 @@ export const UpdateUserParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
-export const updateUserBodyPasswordMin = 8;
+export const updateUserBodyPasswordMin = 4;
 export const updateUserBodyPasswordMax = 128;
 
 

@@ -14,7 +14,7 @@ export interface UserInput {
      */
   username: string;
   /**
-     * @minLength 8
+     * @minLength 4
      * @maxLength 128
      */
   password: string;

@@ -496,7 +496,7 @@ export const getGetCurrentUserUrl = () => {
 }
 
 /**
- * Returns the app user record for the signed-in Clerk session, provisioning it on first login. The very first user in the system is auto-provisioned as admin; everyone after that is provisioned as pending until an admin assigns a role.
+ * Returns the app user record for the signed-in internal username/password session.
  * @summary Get the current authenticated user
  */
 export const getCurrentUser = async ( options?: Parameters<typeof customFetch>[1]): Promise<User> => {

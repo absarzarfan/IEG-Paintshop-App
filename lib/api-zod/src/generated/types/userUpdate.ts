@@ -9,7 +9,7 @@ import type { UserRole } from './userRole';
 
 export interface UserUpdate {
   /**
-     * @minLength 8
+     * @minLength 4
      * @maxLength 128
      */
   password?: string;

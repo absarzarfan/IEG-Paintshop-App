@@ -47,7 +47,10 @@ export interface AuthSession {
 export interface LoginInput {
   /** @minLength 1 */
   username: string;
-  /** @minLength 1 */
+  /**
+     * @minLength 4
+     * @maxLength 128
+     */
   password: string;
 }
 
@@ -58,7 +61,7 @@ export interface AdminSetupInput {
      */
   username: string;
   /**
-     * @minLength 8
+     * @minLength 4
      * @maxLength 128
      */
   password: string;
@@ -76,7 +79,7 @@ export interface UserInput {
      */
   username: string;
   /**
-     * @minLength 8
+     * @minLength 4
      * @maxLength 128
      */
   password: string;
@@ -93,7 +96,7 @@ export interface UserInput {
 
 export interface UserUpdate {
   /**
-     * @minLength 8
+     * @minLength 4
      * @maxLength 128
      */
   password?: string;
