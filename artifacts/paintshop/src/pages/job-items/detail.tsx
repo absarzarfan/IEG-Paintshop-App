@@ -273,14 +273,14 @@ export function JobItemDetail() {
           
           <div className="bg-secondary p-4 border border-border flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total Estimated Cost / Unit</p>
-              <p className="text-2xl font-mono font-extrabold text-foreground">
+              <p className="text-xs font-bold uppercase tracking-widest text-white">Total Estimated Cost / Unit</p>
+              <p className="text-2xl font-mono font-extrabold text-primary">
                 {formatCost((job.costs.primerCostTotal || 0) + (job.costs.topcoatCostTotal || 0), job.costs.currency)}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Overconsumption Threshold</p>
-              <p className="text-lg font-mono font-bold text-destructive">{job.overconsumptionThresholdPct ?? 10}%</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-white">Overconsumption Threshold</p>
+              <p className="text-[1.46rem] font-mono font-bold text-destructive">{job.overconsumptionThresholdPct ?? 10}%</p>
             </div>
           </div>
         </TabsContent>
