@@ -195,14 +195,14 @@ function AppRoutes() {
           <Route path="/sign-in" component={AuthPage} />
 
           <ProtectedRoute path="/dashboard" component={Dashboard} />
-          <ProtectedRoute path="/job-items" component={JobItems} allowedRoles={["admin"]} />
-          <ProtectedRoute path="/job-items/:id" component={JobItemDetail} allowedRoles={["admin"]} />
+          <ProtectedRoute path="/job-items" component={JobItems} allowedRoles={["admin", "painter", "warehouse"]} />
+          <ProtectedRoute path="/job-items/:id" component={JobItemDetail} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/paint-usage" component={PaintUsage} />
           <ProtectedRoute path="/paint-usage/:id" component={PaintUsage} />
           <ProtectedRoute path="/stock" component={Stock} allowedRoles={["admin", "warehouse"]} />
-          <ProtectedRoute path="/materials" component={Materials} allowedRoles={["admin"]} />
-          <ProtectedRoute path="/colors" component={Colors} allowedRoles={["admin"]} />
-          <ProtectedRoute path="/brands" component={Brands} allowedRoles={["admin"]} />
+          <ProtectedRoute path="/materials" component={Materials} allowedRoles={["admin", "painter", "warehouse"]} />
+          <ProtectedRoute path="/colors" component={Colors} allowedRoles={["admin", "painter", "warehouse"]} />
+          <ProtectedRoute path="/brands" component={Brands} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/users" component={Users} allowedRoles={["admin"]} />
           <ProtectedRoute path="/audit-log" component={AuditLog} allowedRoles={["admin"]} />
 
