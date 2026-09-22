@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { 
   useGetJobItem, 
   getGetJobItemQueryKey,
@@ -9,6 +9,7 @@ import {
   useDeleteSerialNumber,
   useListMaterials,
   useUpdateJobItem,
+  useDeleteJobItem,
   getListJobItemsQueryKey,
   getListMaterialsQueryKey
 } from "@workspace/api-client-react";
@@ -46,6 +47,7 @@ export function JobItemDetail() {
   const { id } = useParams<{ id: string }>();
   const jobId = parseInt(id, 10);
   const { isAdmin } = useAppAuth();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
   const { data: job, isLoading: jobLoading, error: jobError } = useGetJobItem(jobId, {
@@ -58,6 +60,7 @@ export function JobItemDetail() {
 
   const createSerials = useCreateJobItemSerialNumbers();
   const deleteSerial = useDeleteSerialNumber();
+  const deleteJobItem = useDeleteJobItem();
 
   const [serialMode, setSerialMode] = useState<"range" | "list">("range");
   const [rangeStart, setRangeStart] = useState("");
@@ -109,6 +112,17 @@ export function JobItemDetail() {
     }
   };
 
+  const handleDeleteJobItem = async () => {
+    if (!confirm(`Delete job item ${job.jobNo}? This is only allowed when it has no serial or paint usage records.`)) return;
+    try {
+      await deleteJobItem.mutateAsync({ id: jobId });
+      queryClient.invalidateQueries({ queryKey: getListJobItemsQueryKey() });
+      setLocation("/job-items");
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Job item is still referenced. Deactivate it instead.");
+    }
+  };
+
   const formatCost = (val: number | null, currency: string | null) => {
     if (val === null) return "—";
     const curr = currency || "IDR";
@@ -126,7 +140,9 @@ export function JobItemDetail() {
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-4xl font-extrabold font-mono text-primary uppercase tracking-tight">{job.jobNo}</h1>
               <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider border ${
-              job.isActive ? 'bg-primary/20 text-foreground border-primary/40' : 'bg-secondary text-muted-foreground border-border'
+              job.isActive
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                : 'bg-red-100 text-red-800 border-red-300'
               }`}>
                 {job.isActive ? "Active" : "Inactive"}
               </span>
@@ -138,7 +154,17 @@ export function JobItemDetail() {
               <ClipboardPenLine className="mr-2 h-4 w-4 text-primary" /> Record Paint Usage
             </Link>
             {isAdmin && (
-              <EditJobItemDialog job={job} />
+              <>
+                <EditJobItemDialog job={job} />
+                <Button
+                  variant="outline"
+                  className="h-10 border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={handleDeleteJobItem}
+                  disabled={deleteJobItem.isPending || job.serialNumberCount > 0}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Job
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -149,12 +175,12 @@ export function JobItemDetail() {
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Surface Area</p>
           <p className="text-2xl font-mono font-bold">{job.surfaceAreaM2 !== null ? `${job.surfaceAreaM2} m²` : "—"}</p>
         </div>
-        <div className="bg-card border border-border p-4 shadow-sm flex flex-col justify-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Total Primer / Unit</p>
-          <p className="text-2xl font-mono font-bold text-foreground">{job.primerTotalL.toFixed(3)} L</p>
+        <div className="bg-secondary border-secondary p-4 shadow-sm flex flex-col justify-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-secondary-foreground mb-1">Total Primer / Unit</p>
+          <p className="text-2xl font-mono font-bold text-primary">{job.primerTotalL.toFixed(3)} L</p>
         </div>
-        <div className="bg-card border border-border p-4 shadow-sm flex flex-col justify-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Total Topcoat / Unit</p>
+        <div className="bg-secondary border-secondary p-4 shadow-sm flex flex-col justify-center">
+          <p className="text-xs font-bold uppercase tracking-widest text-secondary-foreground mb-1">Total Topcoat / Unit</p>
           <p className="text-2xl font-mono font-bold text-primary">{job.topcoatTotalL.toFixed(3)} L</p>
         </div>
       </div>
@@ -170,7 +196,7 @@ export function JobItemDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Primer */}
             <div className="bg-card border border-border shadow-sm">
-              <div className="bg-secondary border-b border-border p-4">
+              <div className="bg-secondary border-b border-secondary p-4">
                 <h3 className="font-bold text-secondary-foreground uppercase tracking-wide">Primer Breakdown</h3>
               </div>
               <table className="w-full text-sm">
@@ -197,7 +223,7 @@ export function JobItemDetail() {
                     <td className="text-right font-mono">{job.primerThinnerL.toFixed(3)}</td>
                     <td className="text-right font-mono">{formatCost(job.costs.primerCostThinner, job.costs.currency)}</td>
                   </tr>
-                  <tr className="bg-secondary/30">
+                  <tr className="bg-secondary">
                     <td className="font-bold text-primary uppercase tracking-wider">Total Primer</td>
                     <td className="text-right font-mono font-bold text-primary">{job.primerTotalL.toFixed(3)}</td>
                     <td className="text-right font-mono font-bold text-primary">{formatCost(job.costs.primerCostTotal, job.costs.currency)}</td>
@@ -208,8 +234,8 @@ export function JobItemDetail() {
 
             {/* Topcoat */}
             <div className="bg-card border border-border shadow-sm">
-              <div className="bg-primary/20 border-b border-border p-4">
-                <h3 className="font-bold text-foreground uppercase tracking-wide">Topcoat Breakdown</h3>
+              <div className="bg-secondary border-b border-secondary p-4">
+                <h3 className="font-bold text-secondary-foreground uppercase tracking-wide">Topcoat Breakdown</h3>
               </div>
               <table className="w-full text-sm">
                 <thead>
@@ -235,7 +261,7 @@ export function JobItemDetail() {
                     <td className="text-right font-mono">{job.topcoatThinnerL.toFixed(3)}</td>
                     <td className="text-right font-mono">{formatCost(job.costs.topcoatCostThinner, job.costs.currency)}</td>
                   </tr>
-                  <tr className="bg-secondary/30">
+                  <tr className="bg-secondary">
                     <td className="font-bold text-primary uppercase tracking-wider">Total Topcoat</td>
                     <td className="text-right font-mono font-bold text-primary">{job.topcoatTotalL.toFixed(3)}</td>
                     <td className="text-right font-mono font-bold text-primary">{formatCost(job.costs.topcoatCostTotal, job.costs.currency)}</td>

@@ -59,4 +59,22 @@ router.patch("/colors/:id", requireAdmin, async (req, res): Promise<void> => {
   res.json(UpdateColorResponse.parse(updated));
 });
 
+router.delete("/colors/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateColorParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [color] = await db.select().from(colorsTable).where(eq(colorsTable.id, params.data.id));
+  if (!color) {
+    res.status(404).json({ error: "Color not found" });
+    return;
+  }
+
+  await db.delete(colorsTable).where(eq(colorsTable.id, params.data.id));
+  await recordAudit({ req, action: "delete", entityType: "color", entityId: color.id, changes: { name: color.name, hexCode: color.hexCode } });
+  res.sendStatus(204);
+});
+
 export default router;

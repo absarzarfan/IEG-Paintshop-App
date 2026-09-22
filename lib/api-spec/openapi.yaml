@@ -187,6 +187,23 @@ paths:
                 $ref: "#/components/schemas/User"
         "404":
           description: Not found
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a user (admin only, except self or last active admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: User cannot be deleted
+        "404":
+          description: Not found
 
   /brands:
     get:
@@ -246,6 +263,23 @@ paths:
                 $ref: "#/components/schemas/Brand"
         "404":
           description: Not found
+    delete:
+      operationId: deleteBrand
+      tags: [brands]
+      summary: Delete a paint brand when no materials reference it (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "409":
+          description: Brand is still referenced by materials
 
   /colors:
     get:
@@ -303,6 +337,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Color"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteColor
+      tags: [colors]
+      summary: Delete a paint color (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
         "404":
           description: Not found
 
@@ -383,6 +432,23 @@ paths:
                 $ref: "#/components/schemas/Material"
         "404":
           description: Not found
+    delete:
+      operationId: deleteMaterial
+      tags: [materials]
+      summary: Delete a material when it has no prices, stock, or job references (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "409":
+          description: Material is still referenced by operational records
 
   /materials/{id}/prices:
     get:
@@ -561,6 +627,23 @@ paths:
                 $ref: "#/components/schemas/JobItem"
         "404":
           description: Not found
+    delete:
+      operationId: deleteJobItem
+      tags: [job-items]
+      summary: Delete a job item with no serial or usage records (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "409":
+          description: Job item is still referenced by serials or usage records
 
   /job-items/{jobItemId}/serial-numbers:
     get:

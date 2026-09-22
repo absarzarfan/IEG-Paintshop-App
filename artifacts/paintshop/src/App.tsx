@@ -36,7 +36,12 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 function LoadingScreen() {
   return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-background">
-      <div className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Memuat...</div>
+      <div className="w-full max-w-xs space-y-3 px-6">
+        <div className="h-2 w-2/3 animate-pulse bg-muted" />
+        <div className="h-2 w-full animate-pulse bg-muted" />
+        <div className="h-2 w-1/2 animate-pulse bg-muted" />
+        <p className="pt-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Memuat sistem</p>
+      </div>
     </div>
   );
 }
@@ -77,7 +82,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-[#f4f5f7] px-4 py-12">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-xl">
         <div className="mb-8 text-center">
           <img
@@ -85,22 +90,22 @@ function AuthPage() {
             alt="Integrated Engineering Group"
             className="mx-auto h-16 w-auto max-w-[220px] object-contain"
           />
-          <h1 className="mt-6 text-3xl font-extrabold uppercase tracking-tight text-[#41444B]">
+          <h1 className="mt-6 text-3xl font-extrabold uppercase tracking-tight text-foreground">
             IEG Paintshop
           </h1>
-          <p className="mt-2 font-mono text-xs text-[#6b7078]">Paint usage and material control system</p>
+          <p className="mt-2 font-mono text-xs text-muted-foreground">Paint usage and material control system</p>
         </div>
 
-        <div className="rounded-xl border border-[#e0e2e5] bg-white p-6 shadow-[0_16px_35px_rgba(65,68,75,0.12)] sm:p-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-medium text-[#6b7078] hover:text-[#41444B]">
+        <div className="rounded-lg border border-card-border bg-card p-6 shadow-lg sm:p-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground">
             <span aria-hidden="true">←</span>
             Pilih halaman utama
           </Link>
           <div className="mt-6">
-            <h2 className="text-2xl font-bold text-[#41444B]">
+            <h2 className="text-2xl font-bold text-foreground">
               {statusLoading ? "Access Control" : isSetup ? "Buat Admin Pertama" : "Masuk ke Sistem"}
             </h2>
-            <p className="mt-2 text-sm text-[#6b7078]">
+            <p className="mt-2 text-sm text-muted-foreground">
               {isSetup
                 ? "Siapkan akun Admin. Setelah ini, hanya Admin yang dapat membuat akun pengguna."
                 : "Gunakan username dan password yang diberikan oleh Admin."}
@@ -148,14 +153,14 @@ function AuthPage() {
                minLength={4}
                 autoComplete={isSetup ? "new-password" : "current-password"}
               />
-              <p className="text-xs text-[#6b7078]">Minimal 4 karakter.</p>
+              <p className="text-xs text-muted-foreground">Minimal 4 karakter.</p>
             </div>
-            <Button type="submit" className="h-11 w-full bg-[#FDDB3A] font-bold uppercase tracking-wide text-[#41444B] hover:bg-[#f2cc27]" disabled={isSubmitting || statusLoading || !!statusError}>
+            <Button type="submit" className="h-11 w-full font-bold uppercase tracking-wide" disabled={isSubmitting || statusLoading || !!statusError}>
               {isSubmitting ? "Memproses..." : isSetup ? "Buat Admin & Masuk" : "Masuk"}
             </Button>
           </form>
 
-          <div className="mt-6 border-t border-[#e6e7e9] pt-4 text-center text-xs font-medium text-[#858a92]">
+          <div className="mt-6 border-t border-border pt-4 text-center text-xs font-medium text-muted-foreground">
             Akses dibuat dan dikelola oleh Administrator IEG.
           </div>
         </div>
@@ -190,14 +195,14 @@ function AppRoutes() {
           <Route path="/sign-in" component={AuthPage} />
 
           <ProtectedRoute path="/dashboard" component={Dashboard} />
-          <ProtectedRoute path="/job-items" component={JobItems} />
-          <ProtectedRoute path="/job-items/:id" component={JobItemDetail} />
+          <ProtectedRoute path="/job-items" component={JobItems} allowedRoles={["admin"]} />
+          <ProtectedRoute path="/job-items/:id" component={JobItemDetail} allowedRoles={["admin"]} />
           <ProtectedRoute path="/paint-usage" component={PaintUsage} />
           <ProtectedRoute path="/paint-usage/:id" component={PaintUsage} />
           <ProtectedRoute path="/stock" component={Stock} allowedRoles={["admin", "warehouse"]} />
-          <ProtectedRoute path="/materials" component={Materials} />
-          <ProtectedRoute path="/colors" component={Colors} />
-          <ProtectedRoute path="/brands" component={Brands} />
+          <ProtectedRoute path="/materials" component={Materials} allowedRoles={["admin"]} />
+          <ProtectedRoute path="/colors" component={Colors} allowedRoles={["admin"]} />
+          <ProtectedRoute path="/brands" component={Brands} allowedRoles={["admin"]} />
           <ProtectedRoute path="/users" component={Users} allowedRoles={["admin"]} />
           <ProtectedRoute path="/audit-log" component={AuditLog} allowedRoles={["admin"]} />
 

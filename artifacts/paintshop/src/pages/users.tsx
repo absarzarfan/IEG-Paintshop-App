@@ -3,10 +3,11 @@ import {
   getListUsersQueryKey,
   useUpdateUser,
   useCreateUser,
+  useDeleteUser,
   UserRole
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Users as UsersIcon, ShieldAlert, UserPlus } from "lucide-react";
+import { Loader2, Users as UsersIcon, ShieldAlert, UserPlus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { ROLE_LABELS } from "@/lib/auth";
@@ -31,6 +32,7 @@ export function Users() {
   const { data: users, isLoading, error } = useListUsers({ query: { queryKey: getListUsersQueryKey() } });
   const updateMutation = useUpdateUser();
   const createMutation = useCreateUser();
+  const deleteMutation = useDeleteUser();
   const [newUsername, setNewUsername] = useState("");
   const [newName, setNewName] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -89,11 +91,27 @@ export function Users() {
     }
   };
 
+  const handleDeleteUser = async (userId: number, username: string) => {
+    if (!confirm(`Delete user ${username}? This cannot be undone.`)) return;
+    try {
+      await deleteMutation.mutateAsync({ id: userId });
+      queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+      toast({ title: "User deleted", description: "The account and active sessions were removed." });
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "The account cannot be deleted.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const roles: UserRole[] = ["admin", "painter", "warehouse", "pending"];
 
   return (
     <div className="space-y-6">
       <div>
+        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Admin Control</p>
         <h1 className="text-3xl font-extrabold text-foreground uppercase tracking-tight">Access Control</h1>
         <p className="text-muted-foreground font-medium mt-1">Create accounts and manage system permissions.</p>
       </div>
@@ -157,6 +175,7 @@ export function Users() {
                   <th className="font-bold">Joined</th>
                   <th className="font-bold w-48">Role</th>
                   <th className="font-bold w-24 text-center">Active</th>
+                   <th className="font-bold w-20 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border font-medium">
@@ -197,6 +216,18 @@ export function Users() {
                         disabled={updateMutation.isPending}
                       />
                     </td>
+                     <td className="text-right px-4">
+                       <Button
+                         variant="ghost"
+                         size="icon"
+                         className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                         disabled={deleteMutation.isPending}
+                         onClick={() => handleDeleteUser(user.id, user.username)}
+                         aria-label={`Delete ${user.username}`}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     </td>
                   </tr>
                 ))}
               </tbody>

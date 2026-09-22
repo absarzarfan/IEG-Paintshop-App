@@ -4,10 +4,11 @@ import {
   getListBrandsQueryKey,
   useCreateBrand,
   useUpdateBrand,
+  useDeleteBrand,
   BrandInput
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Settings, Plus } from "lucide-react";
+import { Loader2, Settings, Plus, Pencil, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -31,6 +32,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -39,7 +41,9 @@ const formSchema = z.object({
 export function Brands() {
   const { isAdmin } = useAppAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [editingBrand, setEditingBrand] = useState<{ id: number; name: string } | null>(null);
 
   const { data: brands, isLoading, error } = useListBrands({ query: { queryKey: getListBrandsQueryKey() } });
   
@@ -60,6 +64,7 @@ export function Brands() {
       }
     }
   });
+  const deleteMutation = useDeleteBrand();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,7 +72,31 @@ export function Brands() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (editingBrand) {
+      updateMutation.mutate({ id: editingBrand.id, data: values }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListBrandsQueryKey() });
+          setOpen(false);
+          setEditingBrand(null);
+          form.reset();
+        },
+        onError: (error) => toast({ title: "Update failed", description: error instanceof Error ? error.message : "Could not update the brand.", variant: "destructive" }),
+      });
+      return;
+    }
     createMutation.mutate({ data: values as BrandInput });
+  }
+
+  function openCreate() {
+    setEditingBrand(null);
+    form.reset({ name: "" });
+    setOpen(true);
+  }
+
+  function openEdit(brand: { id: number; name: string }) {
+    setEditingBrand(brand);
+    form.reset({ name: brand.name });
+    setOpen(true);
   }
 
   const toggleStatus = async (id: number, isActive: boolean) => {
@@ -79,19 +108,20 @@ export function Brands() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Admin Master Data</p>
           <h1 className="text-3xl font-extrabold text-foreground uppercase tracking-tight">Brands</h1>
-          <p className="text-muted-foreground font-medium mt-1">Approved material manufacturers.</p>
+          <p className="text-muted-foreground font-medium mt-1">Approved material manufacturers. Create, edit, deactivate, or delete unused brands.</p>
         </div>
         {isAdmin && (
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) setEditingBrand(null); }}>
             <DialogTrigger asChild>
-              <Button className="font-bold uppercase tracking-wider">
+              <Button className="font-bold uppercase tracking-wider" onClick={openCreate}>
                 <Plus className="mr-2 h-4 w-4" /> Add Brand
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="font-extrabold uppercase tracking-tight text-xl">Add Brand</DialogTitle>
+                <DialogTitle className="font-extrabold uppercase tracking-tight text-xl">{editingBrand ? "Edit Brand" : "Add Brand"}</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -103,9 +133,9 @@ export function Brands() {
                     </FormItem>
                   )} />
                   <div className="flex justify-end pt-2">
-                    <Button type="submit" disabled={createMutation.isPending} className="font-bold uppercase tracking-wider px-8">
-                      {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save
+                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="font-bold uppercase tracking-wider px-8">
+                      {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingBrand ? "Update" : "Save"}
                     </Button>
                   </div>
                 </form>
@@ -133,13 +163,14 @@ export function Brands() {
               <tr>
                 <th className="font-bold">Brand Name</th>
                 <th className="font-bold w-32 text-center">Status</th>
+                {isAdmin && <th className="font-bold w-28 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border font-medium">
               {brands.map(brand => (
                 <tr key={brand.id} className="hover:bg-secondary/30 transition-colors">
                   <td className="font-bold text-foreground py-3 px-4">{brand.name}</td>
-                  <td className="text-center py-3 px-4">
+                   <td className="text-center py-3 px-4">
                     {isAdmin ? (
                       <Switch 
                         checked={brand.isActive} 
@@ -154,6 +185,33 @@ export function Brands() {
                       </span>
                     )}
                   </td>
+                   {isAdmin && (
+                     <td className="text-right py-3 px-4">
+                       <div className="inline-flex items-center gap-1">
+                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(brand)} aria-label={`Edit ${brand.name}`}>
+                           <Pencil className="h-4 w-4" />
+                         </Button>
+                         <Button
+                           variant="ghost"
+                           size="icon"
+                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                           disabled={brand.isActive || deleteMutation.isPending}
+                           onClick={async () => {
+                             if (!confirm(`Delete ${brand.name}? Deactivate it first if it is still in use.`)) return;
+                             try {
+                               await deleteMutation.mutateAsync({ id: brand.id });
+                               queryClient.invalidateQueries({ queryKey: getListBrandsQueryKey() });
+                             } catch (error) {
+                               toast({ title: "Delete failed", description: error instanceof Error ? error.message : "Brand is still referenced by materials.", variant: "destructive" });
+                             }
+                           }}
+                           aria-label={`Delete ${brand.name}`}
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </div>
+                     </td>
+                   )}
                 </tr>
               ))}
             </tbody>

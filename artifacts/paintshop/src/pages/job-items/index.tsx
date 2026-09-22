@@ -230,20 +230,22 @@ export function JobItems() {
               <tbody className="divide-y divide-border font-medium">
                 {jobItems.map(item => (
                   <tr key={item.id} className="hover:bg-secondary/30 transition-colors">
-                    <td className="font-mono font-bold text-primary">{item.jobNo}</td>
+                    <td className="font-mono font-extrabold tracking-tight text-primary">{item.jobNo}</td>
                     <td>{item.description}</td>
                     <td className="font-mono text-right">{item.primerTotalL.toFixed(3)}</td>
                     <td className="font-mono text-right">{item.topcoatTotalL.toFixed(3)}</td>
                     <td className="font-mono text-right">{item.serialNumberCount}</td>
                     <td className="text-center">
                       <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
-                        item.isActive ? 'bg-primary/20 text-foreground border-primary/40' : 'bg-secondary text-muted-foreground border-border'
+                        item.isActive
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : 'bg-red-100 text-red-800 border-red-300'
                       }`}>
                         {item.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td className="text-right">
-                      <Link href={`/job-items/${item.id}`} className="inline-flex items-center justify-center h-8 px-3 text-xs font-bold uppercase tracking-wider bg-secondary border border-border hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
+                      <Link href={`/job-items/${item.id}`} className="inline-flex items-center justify-center h-8 px-3 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground border border-primary hover:bg-primary hover:text-primary-foreground hover:border-primary">
                         Details
                       </Link>
                     </td>

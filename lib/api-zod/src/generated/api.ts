@@ -183,6 +183,16 @@ export const UpdateUserResponse = zod.object({
 
 
 /**
+ * @summary Delete a user (admin only, except self or last active admin)
+ */
+export const DeleteUserParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteUserResponse = zod.void()
+
+
+/**
  * @summary List paint brands
  */
 export const ListBrandsResponseItem = zod.object({
@@ -233,6 +243,16 @@ export const UpdateBrandResponse = zod.object({
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Delete a paint brand when no materials reference it (admin only)
+ */
+export const DeleteBrandParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteBrandResponse = zod.void()
 
 
 /**
@@ -291,6 +311,16 @@ export const UpdateColorResponse = zod.object({
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Delete a paint color (admin only)
+ */
+export const DeleteColorParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteColorResponse = zod.void()
 
 
 /**
@@ -413,6 +443,16 @@ export const UpdateMaterialResponse = zod.object({
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Delete a material when it has no prices, stock, or job references (admin only)
+ */
+export const DeleteMaterialParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteMaterialResponse = zod.void()
 
 
 /**
@@ -748,6 +788,16 @@ export const UpdateJobItemResponse = zod.object({
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Delete a job item with no serial or usage records (admin only)
+ */
+export const DeleteJobItemParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteJobItemResponse = zod.void()
 
 
 /**

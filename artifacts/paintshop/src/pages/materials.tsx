@@ -3,6 +3,8 @@ import {
   useListMaterials, 
   getListMaterialsQueryKey,
   useCreateMaterial,
+  useUpdateMaterial,
+  useDeleteMaterial,
   useListBrands,
   getListBrandsQueryKey,
   useListMaterialPrices,
@@ -13,7 +15,7 @@ import {
   getListMaterialPricesQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Droplet, Plus, History } from "lucide-react";
+import { Loader2, Droplet, Plus, History, Pencil, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -44,6 +46,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 const materialSchema = z.object({
   brandId: z.coerce.number().min(1, "Brand is required"),
@@ -180,7 +184,9 @@ function PriceHistoryDialog({ materialId, currentCurrency, isAdmin }: { material
 export function Materials() {
   const { isAdmin } = useAppAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<number | null>(null);
 
   const { data: materials, isLoading, error } = useListMaterials({ query: { queryKey: getListMaterialsQueryKey() } });
   const { data: brands } = useListBrands({ query: { enabled: open, queryKey: getListBrandsQueryKey() } });
@@ -194,6 +200,8 @@ export function Materials() {
       }
     }
   });
+  const updateMutation = useUpdateMaterial();
+  const deleteMutation = useDeleteMaterial();
 
   const form = useForm<z.infer<typeof materialSchema>>({
     resolver: zodResolver(materialSchema),
@@ -209,26 +217,76 @@ export function Materials() {
   });
 
   function onSubmit(values: z.infer<typeof materialSchema>) {
+    if (editingMaterial) {
+      updateMutation.mutate({ id: editingMaterial, data: values }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey() });
+          setOpen(false);
+          setEditingMaterial(null);
+          form.reset();
+        },
+        onError: (error) => toast({ title: "Update failed", description: error instanceof Error ? error.message : "Could not update the material.", variant: "destructive" }),
+      });
+      return;
+    }
     createMutation.mutate({ data: values as MaterialInput });
+  }
+
+  function openCreate() {
+    setEditingMaterial(null);
+    form.reset({
+      brandId: 0,
+      description: "",
+      type: "Primer",
+      packagingSizeL: 20,
+      color: "",
+      deadStockThreshold: 10,
+      currency: "IDR",
+    });
+    setOpen(true);
+  }
+
+  function openEdit(material: NonNullable<typeof materials>[number]) {
+    setEditingMaterial(material.id);
+    form.reset({
+      brandId: material.brandId,
+      description: material.description,
+      type: material.type,
+      packagingSizeL: material.packagingSizeL,
+      color: material.color ?? "",
+      deadStockThreshold: material.deadStockThreshold,
+      currency: material.currency,
+    });
+    setOpen(true);
+  }
+
+  async function toggleStatus(id: number, isActive: boolean) {
+    try {
+      await updateMutation.mutateAsync({ id, data: { isActive } });
+      queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey() });
+    } catch (error) {
+      toast({ title: "Status update failed", description: error instanceof Error ? error.message : "Could not update material status.", variant: "destructive" });
+    }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Admin Master Data</p>
           <h1 className="text-3xl font-extrabold text-foreground uppercase tracking-tight">Materials</h1>
-          <p className="text-muted-foreground font-medium mt-1">Master catalog of paints, hardeners, and thinners.</p>
+          <p className="text-muted-foreground font-medium mt-1">Master catalog of paints, hardeners, and thinners. Historical references can be deactivated but not deleted.</p>
         </div>
         {isAdmin && (
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) setEditingMaterial(null); }}>
             <DialogTrigger asChild>
-              <Button className="font-bold uppercase tracking-wider">
+              <Button className="font-bold uppercase tracking-wider" onClick={openCreate}>
                 <Plus className="mr-2 h-4 w-4" /> New Material
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle className="font-extrabold uppercase tracking-tight text-xl">Create Material</DialogTitle>
+                <DialogTitle className="font-extrabold uppercase tracking-tight text-xl">{editingMaterial ? "Edit Material" : "Create Material"}</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -310,9 +368,9 @@ export function Materials() {
                   </div>
 
                   <div className="flex justify-end pt-4">
-                    <Button type="submit" disabled={createMutation.isPending} className="font-bold uppercase tracking-wider px-8">
-                      {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Create
+                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="font-bold uppercase tracking-wider px-8">
+                      {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingMaterial ? "Update" : "Create"}
                     </Button>
                   </div>
                 </form>
@@ -346,6 +404,8 @@ export function Materials() {
                   <th className="bg-[#41444B] font-bold text-[#F6F4E6]">Color</th>
                   <th className="bg-[#41444B] font-bold text-right text-[#F6F4E6]">Pack Size</th>
                   <th className="bg-[#41444B] font-bold text-right text-[#F6F4E6]">Current Price</th>
+                  <th className="bg-[#41444B] font-bold text-center text-[#F6F4E6]">Status</th>
+                  {isAdmin && <th className="bg-[#41444B] font-bold text-right text-[#F6F4E6]">Actions</th>}
                   <th className="w-12"></th>
                 </tr>
               </thead>
@@ -364,6 +424,42 @@ export function Materials() {
                       <td className="py-3 px-4 text-right font-mono font-bold text-foreground">
                       {mat.currentUnitPrice ? new Intl.NumberFormat('en-US', { style: 'currency', currency: mat.currency }).format(mat.currentUnitPrice) : "—"}
                     </td>
+                     <td className="py-3 px-4 text-center">
+                       {isAdmin ? (
+                         <Switch checked={mat.isActive} onCheckedChange={(checked) => toggleStatus(mat.id, checked)} disabled={updateMutation.isPending} aria-label={`Toggle ${mat.description}`} />
+                       ) : (
+                         <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold uppercase border ${mat.isActive ? "bg-primary/20 text-foreground border-primary/40" : "bg-secondary text-secondary-foreground border-border"}`}>
+                           {mat.isActive ? "Active" : "Inactive"}
+                         </span>
+                       )}
+                     </td>
+                     {isAdmin && (
+                       <td className="py-3 px-4 text-right">
+                         <div className="inline-flex items-center gap-1">
+                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(mat)} aria-label={`Edit ${mat.description}`}>
+                             <Pencil className="h-4 w-4" />
+                           </Button>
+                           <Button
+                             variant="ghost"
+                             size="icon"
+                             className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                             disabled={mat.isActive || deleteMutation.isPending}
+                             onClick={async () => {
+                               if (!confirm(`Delete ${mat.description}?`)) return;
+                               try {
+                                 await deleteMutation.mutateAsync({ id: mat.id });
+                                 queryClient.invalidateQueries({ queryKey: getListMaterialsQueryKey() });
+                               } catch (error) {
+                                 toast({ title: "Delete failed", description: error instanceof Error ? error.message : "Material is referenced by operational records. Deactivate it instead.", variant: "destructive" });
+                               }
+                             }}
+                             aria-label={`Delete ${mat.description}`}
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       </td>
+                     )}
                     <td className="py-3 px-4 text-right">
                       <PriceHistoryDialog materialId={mat.id} currentCurrency={mat.currency} isAdmin={isAdmin} />
                     </td>

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, eq, count } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, authSessionsTable } from "@workspace/db";
 import {
   CreateUserBody,
   CreateUserResponse,
@@ -113,6 +113,40 @@ router.patch("/users/:id", requireAdmin, async (req, res): Promise<void> => {
   }
 
   res.json(UpdateUserResponse.parse(toPublicUser(updated)));
+});
+
+router.delete("/users/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateUserParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  if (req.appUser?.id === params.data.id) {
+    res.status(400).json({ error: "You cannot delete your own account" });
+    return;
+  }
+
+  const [before] = await db.select().from(usersTable).where(eq(usersTable.id, params.data.id));
+  if (!before) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  if (before.role === "admin" && before.isActive) {
+    const [{ value: activeAdminCount }] = await db
+      .select({ value: count() })
+      .from(usersTable)
+      .where(and(eq(usersTable.role, "admin"), eq(usersTable.isActive, true)));
+    if (Number(activeAdminCount) <= 1) {
+      res.status(400).json({ error: "Cannot delete the last active admin" });
+      return;
+    }
+  }
+
+  await db.delete(authSessionsTable).where(eq(authSessionsTable.userId, before.id));
+  await db.delete(usersTable).where(eq(usersTable.id, before.id));
+  await recordAudit({ req, action: "delete", entityType: "user", entityId: before.id, changes: { username: before.username, role: before.role } });
+  res.sendStatus(204);
 });
 
 export default router;

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, brandsTable } from "@workspace/db";
+import { eq, count } from "drizzle-orm";
+import { db, brandsTable, materialsTable } from "@workspace/db";
 import {
   ListBrandsResponse,
   CreateBrandBody,
@@ -57,6 +57,33 @@ router.patch("/brands/:id", requireAdmin, async (req, res): Promise<void> => {
   }
 
   res.json(UpdateBrandResponse.parse(updated));
+});
+
+router.delete("/brands/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateBrandParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [brand] = await db.select().from(brandsTable).where(eq(brandsTable.id, params.data.id));
+  if (!brand) {
+    res.status(404).json({ error: "Brand not found" });
+    return;
+  }
+
+  const [{ value: materialCount }] = await db
+    .select({ value: count() })
+    .from(materialsTable)
+    .where(eq(materialsTable.brandId, params.data.id));
+  if (Number(materialCount) > 0) {
+    res.status(409).json({ error: "Brand is still referenced by materials. Deactivate it instead." });
+    return;
+  }
+
+  await db.delete(brandsTable).where(eq(brandsTable.id, params.data.id));
+  await recordAudit({ req, action: "delete", entityType: "brand", entityId: brand.id, changes: { name: brand.name } });
+  res.sendStatus(204);
 });
 
 export default router;

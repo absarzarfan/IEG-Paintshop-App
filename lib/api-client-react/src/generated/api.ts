@@ -822,6 +822,80 @@ export const useUpdateUser = <TError = ErrorType<void>,
       return useMutation(getUpdateUserMutationOptions(options));
     }
 
+export const getDeleteUserUrl = (id: number,) => {
+
+
+
+
+  return `/api/users/${id}`
+}
+
+/**
+ * @summary Delete a user (admin only, except self or last active admin)
+ */
+export const deleteUser = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteUserUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteUserMutationKey = () => ['deleteUser'] as const;
+
+export const getDeleteUserMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,DeleteUserMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,DeleteUserMutationVariables, TContext> => {
+
+const mutationKey = getDeleteUserMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUser>>, DeleteUserMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteUser(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteUserMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUser>>>
+
+    export type DeleteUserMutationError = ErrorType<void>
+    export type DeleteUserMutationVariables = {id: number}
+
+    /**
+ * @summary Delete a user (admin only, except self or last active admin)
+ */
+export const useDeleteUser = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUser>>, TError,DeleteUserMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteUser>>,
+        TError,
+        DeleteUserMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteUserMutationOptions(options));
+    }
+
 export const getListBrandsUrl = () => {
 
 
@@ -1076,6 +1150,80 @@ export const useUpdateBrand = <TError = ErrorType<void>,
       return useMutation(getUpdateBrandMutationOptions(options));
     }
 
+export const getDeleteBrandUrl = (id: number,) => {
+
+
+
+
+  return `/api/brands/${id}`
+}
+
+/**
+ * @summary Delete a paint brand when no materials reference it (admin only)
+ */
+export const deleteBrand = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteBrandUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteBrandMutationKey = () => ['deleteBrand'] as const;
+
+export const getDeleteBrandMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBrand>>, TError,DeleteBrandMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteBrand>>, TError,DeleteBrandMutationVariables, TContext> => {
+
+const mutationKey = getDeleteBrandMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteBrand>>, DeleteBrandMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteBrand(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteBrandMutationResult = NonNullable<Awaited<ReturnType<typeof deleteBrand>>>
+
+    export type DeleteBrandMutationError = ErrorType<void>
+    export type DeleteBrandMutationVariables = {id: number}
+
+    /**
+ * @summary Delete a paint brand when no materials reference it (admin only)
+ */
+export const useDeleteBrand = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteBrand>>, TError,DeleteBrandMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteBrand>>,
+        TError,
+        DeleteBrandMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteBrandMutationOptions(options));
+    }
+
 export const getListColorsUrl = () => {
 
 
@@ -1328,6 +1476,80 @@ export const useUpdateColor = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateColorMutationOptions(options));
+    }
+
+export const getDeleteColorUrl = (id: number,) => {
+
+
+
+
+  return `/api/colors/${id}`
+}
+
+/**
+ * @summary Delete a paint color (admin only)
+ */
+export const deleteColor = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteColorUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteColorMutationKey = () => ['deleteColor'] as const;
+
+export const getDeleteColorMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteColor>>, TError,DeleteColorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteColor>>, TError,DeleteColorMutationVariables, TContext> => {
+
+const mutationKey = getDeleteColorMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteColor>>, DeleteColorMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteColor(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteColorMutationResult = NonNullable<Awaited<ReturnType<typeof deleteColor>>>
+
+    export type DeleteColorMutationError = ErrorType<void>
+    export type DeleteColorMutationVariables = {id: number}
+
+    /**
+ * @summary Delete a paint color (admin only)
+ */
+export const useDeleteColor = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteColor>>, TError,DeleteColorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteColor>>,
+        TError,
+        DeleteColorMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteColorMutationOptions(options));
     }
 
 export const getListMaterialsUrl = () => {
@@ -1659,6 +1881,80 @@ export const useUpdateMaterial = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateMaterialMutationOptions(options));
+    }
+
+export const getDeleteMaterialUrl = (id: number,) => {
+
+
+
+
+  return `/api/materials/${id}`
+}
+
+/**
+ * @summary Delete a material when it has no prices, stock, or job references (admin only)
+ */
+export const deleteMaterial = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteMaterialUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteMaterialMutationKey = () => ['deleteMaterial'] as const;
+
+export const getDeleteMaterialMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMaterial>>, TError,DeleteMaterialMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMaterial>>, TError,DeleteMaterialMutationVariables, TContext> => {
+
+const mutationKey = getDeleteMaterialMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMaterial>>, DeleteMaterialMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteMaterial(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMaterialMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMaterial>>>
+
+    export type DeleteMaterialMutationError = ErrorType<void>
+    export type DeleteMaterialMutationVariables = {id: number}
+
+    /**
+ * @summary Delete a material when it has no prices, stock, or job references (admin only)
+ */
+export const useDeleteMaterial = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMaterial>>, TError,DeleteMaterialMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMaterial>>,
+        TError,
+        DeleteMaterialMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteMaterialMutationOptions(options));
     }
 
 export const getListMaterialPricesUrl = (id: number,) => {
@@ -2405,6 +2701,80 @@ export const useUpdateJobItem = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateJobItemMutationOptions(options));
+    }
+
+export const getDeleteJobItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/job-items/${id}`
+}
+
+/**
+ * @summary Delete a job item with no serial or usage records (admin only)
+ */
+export const deleteJobItem = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteJobItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteJobItemMutationKey = () => ['deleteJobItem'] as const;
+
+export const getDeleteJobItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJobItem>>, TError,DeleteJobItemMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteJobItem>>, TError,DeleteJobItemMutationVariables, TContext> => {
+
+const mutationKey = getDeleteJobItemMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteJobItem>>, DeleteJobItemMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteJobItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteJobItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteJobItem>>>
+
+    export type DeleteJobItemMutationError = ErrorType<void>
+    export type DeleteJobItemMutationVariables = {id: number}
+
+    /**
+ * @summary Delete a job item with no serial or usage records (admin only)
+ */
+export const useDeleteJobItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJobItem>>, TError,DeleteJobItemMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteJobItem>>,
+        TError,
+        DeleteJobItemMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteJobItemMutationOptions(options));
     }
 
 export const getListJobItemSerialNumbersUrl = (jobItemId: number,) => {

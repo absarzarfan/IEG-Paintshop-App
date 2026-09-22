@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, asc, count } from "drizzle-orm";
-import { db, jobItemsTable, materialsTable, serialNumbersTable } from "@workspace/db";
+import { db, jobItemsTable, materialsTable, serialNumbersTable, paintUsageTable } from "@workspace/db";
 import {
   ListJobItemsQueryParams,
   ListJobItemsResponse,
@@ -179,6 +179,37 @@ router.patch("/job-items/:id", requireAdmin, async (req, res): Promise<void> => 
     .where(eq(serialNumbersTable.jobItemId, updated.id));
 
   res.json(UpdateJobItemResponse.parse(serializeJobItem(updated, Number(serialCountRow.value))));
+});
+
+router.delete("/job-items/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = GetJobItemParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [jobItem] = await db.select().from(jobItemsTable).where(eq(jobItemsTable.id, params.data.id));
+  if (!jobItem) {
+    res.status(404).json({ error: "Job item not found" });
+    return;
+  }
+
+  const [{ value: serialCount }] = await db
+    .select({ value: count() })
+    .from(serialNumbersTable)
+    .where(eq(serialNumbersTable.jobItemId, params.data.id));
+  const [{ value: usageCount }] = await db
+    .select({ value: count() })
+    .from(paintUsageTable)
+    .where(eq(paintUsageTable.jobItemId, params.data.id));
+  if (Number(serialCount) > 0 || Number(usageCount) > 0) {
+    res.status(409).json({ error: "Job item is referenced by serial numbers or paint usage. Deactivate it instead." });
+    return;
+  }
+
+  await db.delete(jobItemsTable).where(eq(jobItemsTable.id, params.data.id));
+  await recordAudit({ req, action: "delete", entityType: "job_item", entityId: jobItem.id, changes: { jobNo: jobItem.jobNo } });
+  res.sendStatus(204);
 });
 
 export default router;

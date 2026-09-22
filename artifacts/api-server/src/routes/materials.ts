@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, asc } from "drizzle-orm";
-import { db, materialsTable, materialPricesTable, brandsTable } from "@workspace/db";
+import { eq, desc, asc, count, or } from "drizzle-orm";
+import {
+  db,
+  materialsTable,
+  materialPricesTable,
+  brandsTable,
+  stockMovementsTable,
+  jobItemsTable,
+} from "@workspace/db";
 import {
   ListMaterialsResponse,
   CreateMaterialBody,
@@ -156,6 +163,49 @@ router.patch("/materials/:id", requireAdmin, async (req, res): Promise<void> => 
 
   const [brand] = await db.select().from(brandsTable).where(eq(brandsTable.id, updated.brandId));
   res.json(UpdateMaterialResponse.parse(await serializeMaterial({ ...updated, brandName: brand!.name })));
+});
+
+router.delete("/materials/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateMaterialParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [material] = await db.select().from(materialsTable).where(eq(materialsTable.id, params.data.id));
+  if (!material) {
+    res.status(404).json({ error: "Material not found" });
+    return;
+  }
+
+  const [{ value: priceCount }] = await db
+    .select({ value: count() })
+    .from(materialPricesTable)
+    .where(eq(materialPricesTable.materialId, params.data.id));
+  const [{ value: stockCount }] = await db
+    .select({ value: count() })
+    .from(stockMovementsTable)
+    .where(eq(stockMovementsTable.materialId, params.data.id));
+  const [{ value: jobItemCount }] = await db
+    .select({ value: count() })
+    .from(jobItemsTable)
+    .where(or(
+      eq(jobItemsTable.primerBaseMaterialId, params.data.id),
+      eq(jobItemsTable.primerHrdMaterialId, params.data.id),
+      eq(jobItemsTable.primerThinnerMaterialId, params.data.id),
+      eq(jobItemsTable.topcoatBaseMaterialId, params.data.id),
+      eq(jobItemsTable.topcoatHrdMaterialId, params.data.id),
+      eq(jobItemsTable.topcoatThinnerMaterialId, params.data.id),
+    ));
+
+  if (Number(priceCount) > 0 || Number(stockCount) > 0 || Number(jobItemCount) > 0) {
+    res.status(409).json({ error: "Material is referenced by prices, stock, or job items. Deactivate it instead." });
+    return;
+  }
+
+  await db.delete(materialsTable).where(eq(materialsTable.id, params.data.id));
+  await recordAudit({ req, action: "delete", entityType: "material", entityId: material.id, changes: { description: material.description } });
+  res.sendStatus(204);
 });
 
 router.get("/materials/:id/prices", requireAnyRole, async (req, res): Promise<void> => {
