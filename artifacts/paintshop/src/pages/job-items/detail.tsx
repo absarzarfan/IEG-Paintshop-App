@@ -187,9 +187,9 @@ export function JobItemDetail() {
 
       <Tabs defaultValue="targets" className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-secondary p-1 h-auto">
-          <TabsTrigger value="targets" className="font-bold uppercase tracking-wider py-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-sm">Paint Targets & Costs</TabsTrigger>
-          <TabsTrigger value="materials" className="font-bold uppercase tracking-wider py-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-sm">Linked Materials</TabsTrigger>
-          <TabsTrigger value="serials" className="font-bold uppercase tracking-wider py-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-sm">Serial Numbers ({job.serialNumberCount})</TabsTrigger>
+          <TabsTrigger value="targets" className="text-white font-bold uppercase tracking-wider py-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-sm">Paint Targets & Costs</TabsTrigger>
+          <TabsTrigger value="materials" className="text-white font-bold uppercase tracking-wider py-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-sm">Linked Materials</TabsTrigger>
+          <TabsTrigger value="serials" className="text-white font-bold uppercase tracking-wider py-2 data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-sm">Serial Numbers ({job.serialNumberCount})</TabsTrigger>
         </TabsList>
         
         <TabsContent value="targets" className="mt-4 space-y-6">
