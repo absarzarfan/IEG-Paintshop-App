@@ -340,12 +340,12 @@ export function Materials() {
             <table className="w-full text-sm text-left">
               <thead>
                 <tr>
-                  <th className="font-bold">Brand</th>
-                  <th className="font-bold">Description</th>
-                  <th className="font-bold">Type</th>
-                  <th className="font-bold">Color</th>
-                  <th className="font-bold text-right">Pack Size</th>
-                  <th className="font-bold text-right">Current Price</th>
+                  <th className="bg-[#41444B] font-bold text-[#F6F4E6]">Brand</th>
+                  <th className="bg-[#41444B] font-bold text-[#F6F4E6]">Description</th>
+                  <th className="bg-[#41444B] font-bold text-[#F6F4E6]">Type</th>
+                  <th className="bg-[#41444B] font-bold text-[#F6F4E6]">Color</th>
+                  <th className="bg-[#41444B] font-bold text-right text-[#F6F4E6]">Pack Size</th>
+                  <th className="bg-[#41444B] font-bold text-right text-[#F6F4E6]">Current Price</th>
                   <th className="w-12"></th>
                 </tr>
               </thead>
@@ -355,13 +355,13 @@ export function Materials() {
                     <td className="font-bold text-foreground py-3 px-4">{mat.brandName}</td>
                     <td className="py-3 px-4">{mat.description}</td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 bg-secondary text-[10px] font-bold uppercase tracking-wider border border-border">
+                        <span className="px-2 py-0.5 bg-secondary text-secondary-foreground text-[10px] font-bold uppercase tracking-wider border border-secondary">
                         {mat.type}
                       </span>
                     </td>
                     <td className="py-3 px-4">{mat.color || "—"}</td>
                     <td className="py-3 px-4 text-right font-mono">{mat.packagingSizeL} L</td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-primary">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-foreground">
                       {mat.currentUnitPrice ? new Intl.NumberFormat('en-US', { style: 'currency', currency: mat.currency }).format(mat.currentUnitPrice) : "—"}
                     </td>
                     <td className="py-3 px-4 text-right">
