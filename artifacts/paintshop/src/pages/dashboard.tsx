@@ -33,7 +33,7 @@ export function Dashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">DASHBOARD</h1>
-        <p className="text-muted-foreground font-medium mt-1">Ringkasan master data dan aktivitas Paintshop.</p>
+         <p className="text-muted-foreground font-medium mt-1">Master data and Paintshop activity overview.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -59,14 +59,14 @@ export function Dashboard() {
         <div className="border-b border-border px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
-            Aktivitas Terakhir
+             Recent Activity
           </h2>
-          <Link href="/audit-log" className="text-sm font-bold text-primary hover:underline">Lihat Semua</Link>
+           <Link href="/audit-log" className="text-sm font-bold text-primary hover:underline">View All</Link>
         </div>
         
         {summary.recentAuditEntries.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground font-medium">
-            Tidak ada aktivitas terbaru.
+             No recent activity.
           </div>
         ) : (
           <div className="divide-y divide-border">

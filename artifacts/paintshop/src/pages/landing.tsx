@@ -7,7 +7,7 @@ export function Landing() {
       <header className="h-20 bg-sidebar flex items-center justify-between px-6 lg:px-12">
         <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-white.png`} alt="Integrated Engineering Group" className="h-9 w-auto max-w-[190px] object-contain" />
         <Link href="/sign-in" className="text-xs font-bold uppercase tracking-[0.16em] text-sidebar-foreground transition-colors hover:text-primary">
-          Masuk
+           Sign In
         </Link>
       </header>
 

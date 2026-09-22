@@ -40,7 +40,7 @@ function LoadingScreen() {
         <div className="h-2 w-2/3 animate-pulse bg-muted" />
         <div className="h-2 w-full animate-pulse bg-muted" />
         <div className="h-2 w-1/2 animate-pulse bg-muted" />
-        <p className="pt-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Memuat sistem</p>
+    <p className="pt-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Loading system</p>
       </div>
     </div>
   );
@@ -50,7 +50,7 @@ function authErrorMessage(error: unknown): string {
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
     return error.message;
   }
-  return "Tidak dapat memproses permintaan. Silakan coba lagi.";
+  return "Unable to process the request. Please try again.";
 }
 
 function AuthPage() {
@@ -99,23 +99,23 @@ function AuthPage() {
         <div className="rounded-lg border border-card-border bg-card p-6 shadow-lg sm:p-8">
           <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground">
             <span aria-hidden="true">←</span>
-            Pilih halaman utama
+            Back to home
           </Link>
           <div className="mt-6">
             <h2 className="text-2xl font-bold text-foreground">
-              {statusLoading ? "Access Control" : isSetup ? "Buat Admin Pertama" : "Masuk ke Sistem"}
+              {statusLoading ? "Access Control" : isSetup ? "Create First Admin" : "Sign In"}
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               {isSetup
-                ? "Siapkan akun Admin. Setelah ini, hanya Admin yang dapat membuat akun pengguna."
-                : "Gunakan username dan password yang diberikan oleh Admin."}
+                ? "Set up the Admin account. After this, only Admins can create user accounts."
+                : "Use the username and password provided by an Admin."}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-7 space-y-5">
             {statusError && (
               <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-                Server autentikasi belum siap. Silakan muat ulang halaman.
+                Authentication server is not ready. Please reload the page.
               </div>
             )}
             {(loginMutation.error || setupMutation.error) && (
@@ -126,7 +126,7 @@ function AuthPage() {
 
             {isSetup && (
               <div className="space-y-2">
-                <Label htmlFor="name">Nama lengkap</Label>
+                <Label htmlFor="name">Full name</Label>
                 <Input id="name" value={name} onChange={(event) => setName(event.target.value)} required autoComplete="name" />
               </div>
             )}
@@ -153,15 +153,15 @@ function AuthPage() {
                minLength={4}
                 autoComplete={isSetup ? "new-password" : "current-password"}
               />
-              <p className="text-xs text-muted-foreground">Minimal 4 karakter.</p>
+               <p className="text-xs text-muted-foreground">Minimum 4 characters.</p>
             </div>
             <Button type="submit" className="h-11 w-full font-bold uppercase tracking-wide" disabled={isSubmitting || statusLoading || !!statusError}>
-              {isSubmitting ? "Memproses..." : isSetup ? "Buat Admin & Masuk" : "Masuk"}
+              {isSubmitting ? "Processing..." : isSetup ? "Create Admin & Sign In" : "Sign In"}
             </Button>
           </form>
 
           <div className="mt-6 border-t border-border pt-4 text-center text-xs font-medium text-muted-foreground">
-            Akses dibuat dan dikelola oleh Administrator IEG.
+             Access is created and managed by an IEG Administrator.
           </div>
         </div>
       </div>

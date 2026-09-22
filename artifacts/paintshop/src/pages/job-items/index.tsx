@@ -91,19 +91,19 @@ export function JobItems() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-foreground uppercase tracking-tight">Job Items</h1>
-          <p className="text-muted-foreground font-medium mt-1">Katalog job dan target konsumsi cat per unit.</p>
+          <p className="text-muted-foreground font-medium mt-1">Job catalog and paint consumption targets per unit.</p>
         </div>
 
         {isAdmin && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="font-bold uppercase tracking-wider">
-                <Plus className="mr-2 h-4 w-4" /> Job Item Baru
+                <Plus className="mr-2 h-4 w-4" /> New Job Item
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="font-extrabold text-xl uppercase tracking-tight">Buat Job Item</DialogTitle>
+                <DialogTitle className="font-extrabold text-xl uppercase tracking-tight">Create Job Item</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">

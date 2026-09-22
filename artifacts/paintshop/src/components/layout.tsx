@@ -181,7 +181,7 @@ export function Layout({ children }: LayoutProps) {
             onClick={handleLogout}
           >
             <LogOut size={18} />
-            <span className={isSidebarCollapsed ? "md:hidden" : ""}>Log Keluar</span>
+            <span className={isSidebarCollapsed ? "md:hidden" : ""}>Sign Out</span>
           </button>
         </div>
       </aside>

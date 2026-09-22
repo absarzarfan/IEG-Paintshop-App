@@ -24,9 +24,9 @@ import {
 } from "@/components/ui/select";
 
 const movementLabels: Record<StockMovementType, string> = {
-  in: "Penerimaan",
-  out: "Pengeluaran",
-  adjustment: "Penyesuaian",
+  in: "Receipt",
+  out: "Issue",
+  adjustment: "Adjustment",
 };
 
 function formatLiters(value: number) {
@@ -84,11 +84,11 @@ export function Stock() {
     const parsedMaterialId = Number(materialId);
     const parsedQuantity = Number(quantity);
     if (!parsedMaterialId || !Number.isFinite(parsedQuantity)) {
-      setFormError("Material dan quantity wajib diisi.");
+      setFormError("Material and quantity are required.");
       return;
     }
     if (movementType === "adjustment" ? parsedQuantity === 0 : parsedQuantity <= 0) {
-      setFormError(movementType === "adjustment" ? "Penyesuaian tidak boleh bernilai nol." : "Quantity harus lebih besar dari nol.");
+      setFormError(movementType === "adjustment" ? "Adjustment cannot be zero." : "Quantity must be greater than zero.");
       return;
     }
 
@@ -112,7 +112,7 @@ export function Stock() {
       setExpiryDate("");
       setNotes("");
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Pergerakan stok gagal disimpan.");
+      setFormError(error instanceof Error ? error.message : "Stock movement could not be saved.");
     }
   }
 
@@ -124,21 +124,21 @@ export function Stock() {
         </p>
         <h1 className="text-3xl font-extrabold uppercase tracking-tight">Stock Control</h1>
         <p className="max-w-2xl text-sm font-medium text-muted-foreground">
-          Catat penerimaan, pengeluaran, dan penyesuaian stok. Saldo material dihitung dari ledger dan setiap transaksi masuk audit log.
+           Record stock receipts, issues, and adjustments. Material balances are calculated from the ledger, and every transaction is added to the audit log.
         </p>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="border border-border bg-card px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Total Stok</p>
+           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Total Stock</p>
           <p className="mt-1 font-mono text-lg font-bold">{formatLiters(totalStock)}</p>
         </div>
         <div className="border border-border bg-card px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Material Dipantau</p>
+           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Tracked Materials</p>
           <p className="mt-1 font-mono text-lg font-bold">{summary?.length ?? 0}</p>
         </div>
         <div className={`border bg-card px-4 py-3 ${lowStockCount ? "border-destructive/50" : "border-border"}`}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Di Bawah Threshold</p>
+           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Below Threshold</p>
           <p className={`mt-1 font-mono text-lg font-bold ${lowStockCount ? "text-destructive" : "text-foreground"}`}>{lowStockCount}</p>
         </div>
       </div>
@@ -146,13 +146,13 @@ export function Stock() {
       <section className="border border-border bg-card">
         <div className="flex items-center gap-2 border-b border-border bg-secondary/30 px-5 py-3">
           <Plus className="h-4 w-4 text-primary" />
-          <h2 className="text-xs font-bold uppercase tracking-[0.16em]">Catat Pergerakan Stok</h2>
+           <h2 className="text-xs font-bold uppercase tracking-[0.16em]">Record Stock Movement</h2>
         </div>
         <form onSubmit={handleSubmit} className="grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2 lg:col-span-2">
             <Label htmlFor="stock-material">Material</Label>
             <Select value={materialId} onValueChange={setMaterialId}>
-              <SelectTrigger id="stock-material"><SelectValue placeholder={materialsLoading ? "Memuat material..." : "Pilih material"} /></SelectTrigger>
+               <SelectTrigger id="stock-material"><SelectValue placeholder={materialsLoading ? "Loading materials..." : "Select material"} /></SelectTrigger>
               <SelectContent>
                 {materials?.filter((material) => material.isActive).map((material) => (
                   <SelectItem value={String(material.id)} key={material.id}>{material.description} — {material.type}</SelectItem>
@@ -161,7 +161,7 @@ export function Stock() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="stock-movement-type">Jenis Transaksi</Label>
+             <Label htmlFor="stock-movement-type">Transaction Type</Label>
             <Select value={movementType} onValueChange={(value) => setMovementType(value as StockMovementType)}>
               <SelectTrigger id="stock-movement-type"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -176,21 +176,21 @@ export function Stock() {
             <Input id="stock-quantity" type="number" step="0.001" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder={movementType === "adjustment" ? "Contoh: -2.5 atau 2.5" : "Contoh: 25"} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="stock-lot">Lot / Batch <span className="font-normal text-muted-foreground">(opsional)</span></Label>
+             <Label htmlFor="stock-lot">Lot / Batch <span className="font-normal text-muted-foreground">(optional)</span></Label>
             <Input id="stock-lot" value={lotNo} onChange={(event) => setLotNo(event.target.value)} maxLength={120} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="stock-expiry">Expiry <span className="font-normal text-muted-foreground">(opsional)</span></Label>
+             <Label htmlFor="stock-expiry">Expiry <span className="font-normal text-muted-foreground">(optional)</span></Label>
             <Input id="stock-expiry" type="date" value={expiryDate} onChange={(event) => setExpiryDate(event.target.value)} />
           </div>
           <div className="space-y-2 md:col-span-2 lg:col-span-3">
-            <Label htmlFor="stock-notes">Catatan <span className="font-normal text-muted-foreground">(opsional)</span></Label>
-            <Textarea id="stock-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={500} placeholder="Dokumen penerimaan, alasan adjustment, atau referensi transaksi..." />
+             <Label htmlFor="stock-notes">Notes <span className="font-normal text-muted-foreground">(optional)</span></Label>
+             <Textarea id="stock-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={500} placeholder="Receipt document, adjustment reason, or transaction reference..." />
           </div>
           {formError && <div className="flex items-start gap-2 text-sm font-semibold text-destructive md:col-span-2 lg:col-span-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />{formError}</div>}
           <div className="md:col-span-2 lg:col-span-3">
             <Button type="submit" disabled={createMutation.isPending} className="font-bold uppercase tracking-wider">
-              {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Simpan Transaksi
+               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Transaction
             </Button>
           </div>
         </form>
@@ -198,10 +198,10 @@ export function Stock() {
 
       <section className="border border-border bg-card">
         <div className="border-b border-border bg-secondary/20 px-5 py-3">
-          <h2 className="text-xs font-bold uppercase tracking-[0.16em]">Saldo Material</h2>
+           <h2 className="text-xs font-bold uppercase tracking-[0.16em]">Material Balances</h2>
         </div>
         {summaryLoading ? <div className="p-8 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" /></div> : summaryError ? (
-          <div className="p-8 text-center font-bold text-destructive">Saldo stok gagal dimuat.</div>
+           <div className="p-8 text-center font-bold text-destructive">Stock balances could not be loaded.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-[760px]">
@@ -225,14 +225,14 @@ export function Stock() {
 
       <section className="border border-border bg-card">
         <div className="border-b border-border bg-secondary/20 px-5 py-3">
-          <h2 className="text-xs font-bold uppercase tracking-[0.16em]">Riwayat Pergerakan</h2>
+           <h2 className="text-xs font-bold uppercase tracking-[0.16em]">Movement History</h2>
         </div>
         {movementsLoading ? <div className="p-8 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" /></div> : movementsError ? (
-          <div className="p-8 text-center font-bold text-destructive">Riwayat stok gagal dimuat.</div>
+           <div className="p-8 text-center font-bold text-destructive">Stock history could not be loaded.</div>
         ) : movements?.length ? (
           <div className="overflow-x-auto">
             <table className="min-w-[980px]">
-              <thead><tr><th>Waktu</th><th>Material</th><th>Transaksi</th><th className="text-right">Quantity</th><th>Lot / Expiry</th><th>Dicatat Oleh</th></tr></thead>
+               <thead><tr><th>Time</th><th>Material</th><th>Transaction</th><th className="text-right">Quantity</th><th>Lot / Expiry</th><th>Recorded By</th></tr></thead>
               <tbody>
                 {movements.map((movement) => (
                   <tr key={movement.id}>
@@ -248,7 +248,7 @@ export function Stock() {
             </table>
           </div>
         ) : (
-          <div className="p-12 text-center text-sm font-medium text-muted-foreground"><XCircle className="mx-auto mb-2 h-6 w-6" />Belum ada transaksi stok.</div>
+           <div className="p-12 text-center text-sm font-medium text-muted-foreground"><XCircle className="mx-auto mb-2 h-6 w-6" />No stock transactions yet.</div>
         )}
       </section>
     </div>
