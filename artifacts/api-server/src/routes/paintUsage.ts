@@ -66,6 +66,7 @@ function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
     primerThinnerActualL: usage.primerThinnerActualL,
     topcoatBaseActualL: usage.topcoatBaseActualL,
     topcoatHrdActualL: usage.topcoatHrdActualL,
+    topcoatThinnerActualL: usage.topcoatThinnerActualL,
     ...calculateUsageVariance(jobItem, toActuals(usage)),
     notes: usage.notes,
     createdByUserId: usage.createdByUserId,
