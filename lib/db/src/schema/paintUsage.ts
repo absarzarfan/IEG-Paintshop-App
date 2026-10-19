@@ -25,6 +25,7 @@ export const paintUsageTable = pgTable(
       .references(() => serialNumbersTable.id),
     usageDate: date("usage_date", { mode: "date" }).notNull(),
     shift: text("shift").notNull(),
+    category: text("category").notNull().default("preparation"),
     primerBaseActualL: liters("primer_base_actual_l"),
     primerHrdActualL: liters("primer_hrd_actual_l"),
     primerThinnerActualL: liters("primer_thinner_actual_l"),

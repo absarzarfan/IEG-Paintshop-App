@@ -9,6 +9,15 @@ import type { AuditLogEntry } from './auditLogEntry';
 
 export interface DashboardSummary {
   jobItemCount: number;
+  queuedCount: number;
+  ongoingCount: number;
+  completedTodayCount: number;
+  shipmentPendingCount: number;
+  paintMixersOnlineCount: number;
+  paintMixersWorkingCount: number;
+  paintMixersIdlingCount: number;
+  newJobsTodayCount: number;
+  delayedCount: number;
   materialCount: number;
   colorCount: number;
   brandCount: number;

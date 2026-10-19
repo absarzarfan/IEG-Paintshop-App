@@ -55,14 +55,15 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAppAuth } from "@/lib/auth";
+import { useLanguage } from "@/lib/language";
 
 const actualFields = [
-  { name: "primerBaseActualL", label: "Primer Base" },
-  { name: "primerHrdActualL", label: "Primer Hardener" },
-  { name: "primerThinnerActualL", label: "Primer Thinner" },
-  { name: "topcoatBaseActualL", label: "Topcoat Base" },
-  { name: "topcoatHrdActualL", label: "Topcoat Hardener" },
-  { name: "topcoatThinnerActualL", label: "Topcoat Thinner" },
+  { name: "primerBaseActualL", label: "primerBase" },
+  { name: "primerHrdActualL", label: "hardener" },
+  { name: "primerThinnerActualL", label: "thinner" },
+  { name: "topcoatBaseActualL", label: "topcoatBase" },
+  { name: "topcoatHrdActualL", label: "hardener" },
+  { name: "topcoatThinnerActualL", label: "thinner" },
 ] as const;
 
 const usageSchema = z.object({
@@ -70,6 +71,7 @@ const usageSchema = z.object({
   serialNumberId: z.coerce.number().int().positive("Select a Serial Number"),
   usageDate: z.string().min(1, "Usage date is required"),
   shift: z.string().min(1, "Shift is required").max(50),
+  category: z.enum(["preparation", "blasting", "washing", "cleaning", "finishing"]),
   primerBaseActualL: z.coerce.number().min(0, "Value cannot be negative"),
   primerHrdActualL: z.coerce.number().min(0, "Value cannot be negative"),
   primerThinnerActualL: z.coerce.number().min(0, "Value cannot be negative"),
@@ -87,10 +89,10 @@ function formatLiters(value: number) {
   return `${value.toFixed(3)} L`;
 }
 
-function formatDate(value: string) {
+function formatDate(value: string, language: "id" | "en") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -143,6 +145,8 @@ function UsageForm({
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [serverError, setServerError] = useState("");
+  const [volumeUnit, setVolumeUnit] = useState<"L" | "mL">("L");
+  const { t, language } = useLanguage();
   const isEdit = mode === "edit";
 
   const { data: jobs, isLoading: jobsLoading, error: jobsError } = useListJobItems(
@@ -156,6 +160,7 @@ function UsageForm({
       ? {
           usageDate: usage?.usageDate?.slice(0, 10) ?? "",
           shift: usage?.shift ?? "",
+          category: usage?.category ?? "preparation",
           primerBaseActualL: usage?.primerBaseActualL ?? 0,
           primerHrdActualL: usage?.primerHrdActualL ?? 0,
           primerThinnerActualL: usage?.primerThinnerActualL ?? 0,
@@ -169,6 +174,7 @@ function UsageForm({
           serialNumberId: 0,
           usageDate: new Date().toISOString().slice(0, 10),
           shift: "Shift 1",
+          category: "preparation",
           primerBaseActualL: 0,
           primerHrdActualL: 0,
           primerThinnerActualL: 0,
@@ -178,7 +184,11 @@ function UsageForm({
           notes: null,
         },
   });
-  const selectedJobId = Number(form.watch("jobItemId") || initialJobId);
+  const selectedJobId = Number(form.watch("jobItemId") || initialJobId || usage?.jobItemId || 0);
+  const selectedJob = jobs?.find((job) => job.id === selectedJobId);
+  const targetPerSerial = selectedJob
+    ? selectedJob.targetBasis === "order_total" ? 1 / Math.max(selectedJob.orderQuantity, 1) : 1
+    : 0;
   const { data: serials, isLoading: serialsLoading } = useListJobItemSerialNumbers(selectedJobId, {
     query: { enabled: !isEdit && selectedJobId > 0, queryKey: getListJobItemSerialNumbersQueryKey(selectedJobId) },
   });
@@ -200,6 +210,7 @@ function UsageForm({
         const data: PaintUsageUpdate = {
           usageDate: editValues.usageDate,
           shift: editValues.shift,
+          category: editValues.category,
           primerBaseActualL: Number(editValues.primerBaseActualL),
           primerHrdActualL: Number(editValues.primerHrdActualL),
           primerThinnerActualL: Number(editValues.primerThinnerActualL),
@@ -219,6 +230,7 @@ function UsageForm({
           serialNumberId: Number(createValues.serialNumberId),
           usageDate: createValues.usageDate,
           shift: createValues.shift,
+          category: createValues.category,
           primerBaseActualL: Number(createValues.primerBaseActualL),
           primerHrdActualL: Number(createValues.primerHrdActualL),
           primerThinnerActualL: Number(createValues.primerThinnerActualL),
@@ -245,7 +257,7 @@ function UsageForm({
         {!isEdit && (
           <section className="border border-border bg-card">
             <div className="border-b border-border bg-secondary/40 px-5 py-3">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Production Identity</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{t("productionIdentity")}</p>
             </div>
             <div className="grid gap-4 p-5 md:grid-cols-2">
               <FormField
@@ -253,7 +265,7 @@ function UsageForm({
                 name="jobItemId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Job Item</FormLabel>
+                    <FormLabel className="font-bold">{t("jobs")}</FormLabel>
                     <Select value={field.value ? String(field.value) : ""} onValueChange={(value) => { field.onChange(Number(value)); form.setValue("serialNumberId", 0); }}>
                       <FormControl><SelectTrigger data-testid="select-job-item"><SelectValue placeholder={jobsLoading ? "Loading Job Items..." : "Select Job Item"} /></SelectTrigger></FormControl>
                       <SelectContent>
@@ -270,7 +282,7 @@ function UsageForm({
                 name="serialNumberId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold">Serial Number</FormLabel>
+                    <FormLabel className="font-bold">{t("serial")}</FormLabel>
                     <Select value={field.value ? String(field.value) : ""} onValueChange={(value) => field.onChange(Number(value))} disabled={!selectedJobId || serialsLoading}>
                       <FormControl><SelectTrigger data-testid="select-serial-number"><SelectValue placeholder={serialsLoading ? "Loading Serial Numbers..." : "Select Serial Number"} /></SelectTrigger></FormControl>
                       <SelectContent>
@@ -297,32 +309,48 @@ function UsageForm({
 
         <section className="border border-border bg-card">
           <div className="border-b border-border bg-secondary/40 px-5 py-3">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Application Time</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{t("applicationTime")}</p>
           </div>
           <div className="grid gap-4 p-5 md:grid-cols-2">
             <FormField control={form.control} name="usageDate" render={({ field }) => (
-              <FormItem><FormLabel className="font-bold">Usage Date</FormLabel><FormControl><Input type="date" {...field} data-testid="input-usage-date" /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel className="font-bold">{t("usageDate")}</FormLabel><FormControl><Input type="date" {...field} data-testid="input-usage-date" /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="shift" render={({ field }) => (
               <FormItem><FormLabel className="font-bold">Shift</FormLabel><FormControl><Input {...field} placeholder="Shift 1 / Shift 2 / Shift 3" data-testid="input-shift" /></FormControl><FormMessage /></FormItem>
             )} />
+            <FormField control={form.control} name="category" render={({ field }) => (
+              <FormItem><FormLabel className="font-bold">{t("category")}</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger data-testid="select-usage-category"><SelectValue /></SelectTrigger></FormControl><SelectContent>
+                <SelectItem value="preparation">{t("preparation")}</SelectItem><SelectItem value="blasting">{t("blasting")}</SelectItem><SelectItem value="washing">{t("washing")}</SelectItem><SelectItem value="cleaning">{t("cleaning")}</SelectItem><SelectItem value="finishing">{t("finishing")}</SelectItem>
+              </SelectContent></Select><FormMessage /></FormItem>
+            )} />
+          </div>
+        </section>
+
+        <section className="grid gap-3 border border-border bg-card p-4 sm:grid-cols-2" data-testid="paint-target-card">
+          <div className="border-l-4 border-foreground bg-secondary/30 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("primer")} · {t("targetPerSerial")}</p>
+            <p className="mt-1 font-mono text-2xl font-extrabold">{selectedJob ? (selectedJob.primerTotalL * targetPerSerial).toFixed(3) : "—"} L</p>
+          </div>
+          <div className="border-l-4 border-primary bg-secondary/30 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("topcoat")} · {t("targetPerSerial")}</p>
+            <p className="mt-1 font-mono text-2xl font-extrabold text-primary">{selectedJob ? (selectedJob.topcoatTotalL * targetPerSerial).toFixed(3) : "—"} L</p>
           </div>
         </section>
 
         <section className="border border-border bg-card">
           <div className="grid border-b border-border bg-secondary/40 md:grid-cols-2">
-            <div className="border-b border-border px-5 py-3 md:border-b-0 md:border-r"><p className="text-xs font-bold uppercase tracking-[0.16em] text-foreground">Actual Primer (Liter)</p></div>
-            <div className="px-5 py-3"><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Actual Topcoat (Liter)</p></div>
+            <div className="flex items-center justify-between border-b border-border px-5 py-3 md:border-b-0 md:border-r"><p className="text-xs font-bold uppercase tracking-[0.16em] text-foreground">{t("actualPrimer")} ({volumeUnit})</p><div className="flex gap-1" aria-label={t("volumeUnit")}><Button type="button" size="sm" variant={volumeUnit === "L" ? "default" : "outline"} onClick={() => setVolumeUnit("L")}>L</Button><Button type="button" size="sm" variant={volumeUnit === "mL" ? "default" : "outline"} onClick={() => setVolumeUnit("mL")}>mL</Button></div></div>
+            <div className="px-5 py-3"><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{t("actualTopcoat")} ({volumeUnit})</p></div>
           </div>
           <div className="grid gap-5 p-5 md:grid-cols-2">
             <div className="grid gap-4 sm:grid-cols-3">
               {actualFields.slice(0, 3).map((fieldConfig) => (
-                <ActualField key={fieldConfig.name} control={form.control} config={fieldConfig} data-testid={`input-${fieldConfig.name}`} />
+                <ActualField key={fieldConfig.name} control={form.control} config={{ ...fieldConfig, label: t(fieldConfig.label) }} volumeUnit={volumeUnit} data-testid={`input-${fieldConfig.name}`} />
               ))}
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               {actualFields.slice(3).map((fieldConfig) => (
-                <ActualField key={fieldConfig.name} control={form.control} config={fieldConfig} data-testid={`input-${fieldConfig.name}`} />
+                <ActualField key={fieldConfig.name} control={form.control} config={{ ...fieldConfig, label: t(fieldConfig.label) }} volumeUnit={volumeUnit} data-testid={`input-${fieldConfig.name}`} />
               ))}
             </div>
           </div>
@@ -330,7 +358,7 @@ function UsageForm({
 
         <FormField control={form.control} name="notes" render={({ field }) => (
           <FormItem className="border border-border bg-card p-5">
-            <FormLabel className="font-bold">Operational Notes <span className="font-normal text-muted-foreground">(optional)</span></FormLabel>
+            <FormLabel className="font-bold">{t("operationalNotes")} <span className="font-normal text-muted-foreground">({t("optional")})</span></FormLabel>
             <FormControl><Textarea value={field.value ?? ""} onChange={field.onChange} placeholder="Application conditions, rework, or field notes..." className="mt-2 min-h-[96px]" data-testid="input-usage-notes" /></FormControl>
             <FormMessage />
           </FormItem>
@@ -342,10 +370,10 @@ function UsageForm({
           </div>
         )}
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={() => setLocation(isEdit && usage ? `/paint-usage/${usage.id}` : "/paint-usage")} data-testid="button-cancel-paint-usage">Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => setLocation(isEdit && usage ? `/paint-usage/${usage.id}` : "/paint-usage")} data-testid="button-cancel-paint-usage">{t("cancel")}</Button>
           <Button type="submit" disabled={mutationPending || (!isEdit && (!jobs?.length || !serials?.length))} className="font-bold uppercase tracking-wider" data-testid="button-save-paint-usage">
             {mutationPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEdit ? "Save Changes" : "Save Usage"}
+            {isEdit ? t("saveChanges") : t("saveUsage")}
           </Button>
         </div>
       </form>
@@ -353,12 +381,12 @@ function UsageForm({
   );
 }
 
-function ActualField({ control, config, "data-testid": testId }: { control: any; config: { name: string; label: string }; "data-testid": string }) {
+function ActualField({ control, config, volumeUnit, "data-testid": testId }: { control: any; config: { name: string; label: string }; volumeUnit: "L" | "mL"; "data-testid": string }) {
   return (
     <FormField control={control} name={config.name} render={({ field }: { field: any }) => (
       <FormItem>
         <FormLabel className="text-xs font-bold text-muted-foreground">{config.label}</FormLabel>
-        <FormControl><Input type="number" min="0" step="0.001" {...field} className="font-mono" data-testid={testId} /></FormControl>
+        <FormControl><Input type="number" min="0" step={volumeUnit === "mL" ? 50 : 0.05} value={volumeUnit === "mL" ? Number(field.value ?? 0) * 1000 : field.value} onChange={(event) => field.onChange(event.target.value === "" ? 0 : Number(event.target.value) / (volumeUnit === "mL" ? 1000 : 1))} className="font-mono" data-testid={testId} /></FormControl>
         <FormMessage />
       </FormItem>
     )} />
@@ -368,6 +396,7 @@ function ActualField({ control, config, "data-testid": testId }: { control: any;
 function PaintUsageList() {
   const [, setLocation] = useLocation();
   const { user } = useAppAuth();
+  const { t, language } = useLanguage();
   const canRecordUsage = user?.role === "admin" || user?.role === "painter";
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
@@ -394,16 +423,16 @@ function PaintUsageList() {
       <header className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary"><ClipboardPenLine className="h-4 w-4" /> Operations / Paint Usage</p>
-          <h1 className="text-3xl font-extrabold uppercase tracking-tight text-foreground" data-testid="heading-paint-usage">Actual Paint Usage</h1>
-          <p className="mt-1 max-w-2xl text-sm font-medium text-muted-foreground">Record actual primer and topcoat usage per Job Item Serial Number. Variance is calculated by the server when saved.</p>
+          <h1 className="text-3xl font-extrabold uppercase tracking-tight text-foreground" data-testid="heading-paint-usage">{t("usageTitle")}</h1>
+          <p className="mt-1 max-w-2xl text-sm font-medium text-muted-foreground">{t("usageIntro")}</p>
         </div>
-         {canRecordUsage ? <Button onClick={() => setLocation("/paint-usage/new")} className="w-full font-bold uppercase tracking-wider sm:w-auto" data-testid="button-new-paint-usage"><Plus className="mr-2 h-4 w-4" /> Record Usage</Button> : <span className="border border-border bg-secondary px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Read-only access</span>}
+         {canRecordUsage ? <Button onClick={() => setLocation("/paint-usage/new")} className="w-full font-bold uppercase tracking-wider sm:w-auto" data-testid="button-new-paint-usage"><Plus className="mr-2 h-4 w-4" /> {t("saveUsage")}</Button> : <span className="border border-border bg-secondary px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("readOnly")}</span>}
       </header>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Metric label="Records Shown" value={String(visibleRecords.length)} />
-        <Metric label="Overconsumption" value={String(overCount)} tone={overCount ? "red" : "neutral"} />
-        <Metric label="Threshold Status" value={overCount ? "Needs Review" : "Under Control"} tone={overCount ? "orange" : "blue"} />
+         <Metric label={t("recordsShown")} value={String(visibleRecords.length)} />
+         <Metric label={t("overconsumption")} value={String(overCount)} tone={overCount ? "red" : "neutral"} />
+         <Metric label={t("thresholdStatus")} value={overCount ? t("needsReview") : t("underControl")} tone={overCount ? "orange" : "blue"} />
       </div>
 
       <section className="border border-border bg-card">
@@ -435,7 +464,7 @@ function PaintUsageList() {
               <tbody>
                 {visibleRecords.map((record) => (
                   <tr key={record.id} className="cursor-pointer transition-colors hover:bg-secondary/30" onClick={() => setLocation(`/paint-usage/${record.id}`)} data-testid={`row-paint-usage-${record.id}`}>
-                    <td><p className="font-mono text-xs font-bold">{formatDate(record.usageDate)}</p><p className="mt-1 text-xs text-muted-foreground">{record.shift}</p></td>
+                    <td><p className="font-mono text-xs font-bold">{formatDate(record.usageDate, language)}</p><p className="mt-1 text-xs text-muted-foreground">{record.shift} · {t(record.category)}</p></td>
                     <td className="font-mono font-bold">{record.jobNo}</td>
                     <td className="font-mono font-bold text-primary">{record.serialNo}</td>
                     <td className="text-right font-mono">{formatLiters(record.primerActualTotalL)}<p className="text-xs text-muted-foreground">target {formatLiters(record.primerTargetTotalL)}</p></td>
@@ -457,6 +486,7 @@ function PaintUsageList() {
 function PaintUsageDetail({ id }: { id: number }) {
   const [, setLocation] = useLocation();
   const { user } = useAppAuth();
+  const { t, language } = useLanguage();
   const canRecordUsage = user?.role === "admin" || user?.role === "painter";
   const [editing, setEditing] = useState(false);
   const { data: usage, isLoading, error } = useGetPaintUsage(id, { query: { enabled: id > 0, queryKey: getGetPaintUsageQueryKey(id) } });
@@ -473,16 +503,16 @@ function PaintUsageDetail({ id }: { id: number }) {
   return (
     <div className="space-y-6 pb-12">
       <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div><Link href="/paint-usage" className="mb-3 inline-flex items-center text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-primary" data-testid="link-back-paint-usage"><ArrowLeft className="mr-2 h-4 w-4" /> Paint Usage</Link><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Usage Record #{usage.id}</p><h1 className="mt-1 font-mono text-3xl font-extrabold text-foreground">{usage.jobNo} <span className="text-muted-foreground">/</span> {usage.serialNo}</h1><p className="mt-1 text-sm font-medium text-muted-foreground">{formatDate(usage.usageDate)} · {usage.shift}</p></div>
+        <div><Link href="/paint-usage" className="mb-3 inline-flex items-center text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-primary" data-testid="link-back-paint-usage"><ArrowLeft className="mr-2 h-4 w-4" /> {t("usage")}</Link><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{t("usageTitle")} #{usage.id}</p><h1 className="mt-1 font-mono text-3xl font-extrabold text-foreground">{usage.jobNo} <span className="text-muted-foreground">/</span> {usage.serialNo}</h1><p className="mt-1 text-sm font-medium text-muted-foreground">{formatDate(usage.usageDate, language)} · {usage.shift} · {t(usage.category)}</p></div>
          {canRecordUsage && <Button onClick={() => setEditing(true)} variant="outline" className="font-bold uppercase tracking-wider" data-testid="button-edit-paint-usage"><Edit3 className="mr-2 h-4 w-4" /> Edit Record</Button>}
       </div>
-      <div className="flex flex-wrap items-center gap-3"><VarianceBadge over={usage.isOverconsumption} /><span className="border border-border bg-secondary px-3 py-1 font-mono text-xs font-bold">Overconsumption Threshold {usage.thresholdPct.toFixed(1)}%</span><span className="text-xs font-medium text-muted-foreground">Recorded by {usage.createdByName || "System"} · updated {formatDate(usage.updatedAt)}</span></div>
+      <div className="flex flex-wrap items-center gap-3"><VarianceBadge over={usage.isOverconsumption} /><span className="border border-border bg-secondary px-3 py-1 font-mono text-xs font-bold">{t("thresholdStatus")} {usage.thresholdPct.toFixed(1)}%</span><span className="text-xs font-medium text-muted-foreground">{t("recordedBy")} {usage.createdByName || "System"} · {t("updated")} {formatDate(usage.updatedAt, language)}</span></div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Primer Actual" value={formatLiters(usage.primerActualTotalL)} tone={primerTone} /><Metric label="Primer Target" value={formatLiters(usage.primerTargetTotalL)} tone="blue" /><Metric label="Topcoat Actual" value={formatLiters(usage.topcoatActualTotalL)} tone={topcoatTone} /><Metric label="Topcoat Target" value={formatLiters(usage.topcoatTargetTotalL)} tone="orange" /></div>
       <section className="grid gap-5 lg:grid-cols-2">
         <ComponentTable title="Primer Actual vs Target" accent="blue" rows={[["Base", usage.primerBaseActualL, usage.primerTargetTotalL], ["Hardener", usage.primerHrdActualL, 0], ["Thinner", usage.primerThinnerActualL, 0]]} total={usage.primerActualTotalL} variance={usage.primerVarianceL} pct={usage.primerVariancePct} threshold={usage.thresholdPct} />
         <ComponentTable title="Topcoat Actual vs Target" accent="orange" rows={[["Base", usage.topcoatBaseActualL, usage.topcoatTargetTotalL], ["Hardener", usage.topcoatHrdActualL, 0], ["Thinner", usage.topcoatThinnerActualL, 0]]} total={usage.topcoatActualTotalL} variance={usage.topcoatVarianceL} pct={usage.topcoatVariancePct} threshold={usage.thresholdPct} />
       </section>
-      <section className="border border-border bg-card p-5"><p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Operational Notes</p><p className="mt-2 whitespace-pre-wrap text-sm font-medium">{usage.notes || "No notes."}</p></section>
+      <section className="border border-border bg-card p-5"><p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{t("operationalNotes")}</p><p className="mt-2 whitespace-pre-wrap text-sm font-medium">{usage.notes || "—"}</p></section>
     </div>
   );
 }
@@ -496,6 +526,7 @@ export function PaintUsage() {
   const params = useParams<{ id?: string }>();
   const [location, setLocation] = useLocation();
   const { user } = useAppAuth();
+  const { t } = useLanguage();
   const canRecordUsage = user?.role === "admin" || user?.role === "painter";
   const id = params.id ? Number(params.id) : 0;
   const queryJobId = Number(new URLSearchParams(location.split("?")[1] || "").get("jobItemId") || 0);
@@ -503,7 +534,7 @@ export function PaintUsage() {
     if (!canRecordUsage) {
       return <div className="border border-amber-200 bg-amber-50 p-6 text-sm font-semibold text-amber-900">Your account has read-only access. The Paint Mixer or Admin role is required to record Paint Usage.</div>;
     }
-    return <div className="space-y-5 pb-12"><Link href="/paint-usage" className="inline-flex items-center text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-primary" data-testid="link-back-paint-usage-create"><ArrowLeft className="mr-2 h-4 w-4" /> Paint Usage</Link><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Operations / Input</p><h1 className="mt-1 text-3xl font-extrabold uppercase tracking-tight">Record Actual Paint Usage</h1><p className="mt-1 text-sm font-medium text-muted-foreground">Enter actual usage per Serial Number. Targets and variance are calculated by the server.</p></div><UsageForm mode="create" initialJobId={queryJobId} onComplete={(record) => setLocation(`/paint-usage/${record.id}`)} /></div>;
+    return <div className="space-y-5 pb-12"><Link href="/paint-usage" className="inline-flex items-center text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-primary" data-testid="link-back-paint-usage-create"><ArrowLeft className="mr-2 h-4 w-4" /> {t("usage")}</Link><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Operations / Input</p><h1 className="mt-1 text-3xl font-extrabold uppercase tracking-tight">{t("usageTitle")}</h1><p className="mt-1 text-sm font-medium text-muted-foreground">{t("usageIntro")}</p></div><UsageForm mode="create" initialJobId={queryJobId} onComplete={(record) => setLocation(`/paint-usage/${record.id}`)} /></div>;
   }
   return id > 0 ? <PaintUsageDetail id={id} /> : <PaintUsageList />;
 }

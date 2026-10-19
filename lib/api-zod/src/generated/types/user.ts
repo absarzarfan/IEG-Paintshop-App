@@ -15,6 +15,7 @@ export interface User {
   /** @nullable */
   email: string | null;
   role: UserRole;
+  isPaintLeader: boolean;
   isActive: boolean;
   createdAt: Date;
 }

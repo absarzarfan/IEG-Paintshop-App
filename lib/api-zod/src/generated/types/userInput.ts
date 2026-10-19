@@ -26,5 +26,6 @@ export interface UserInput {
   /** @nullable */
   email?: string | null;
   role: UserRole;
+  isPaintLeader?: boolean;
   isActive?: boolean;
 }

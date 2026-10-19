@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, jobItemsTable, serialNumbersTable } from "@workspace/db";
+import { eq, inArray, count } from "drizzle-orm";
+import { db, jobItemsTable, serialNumbersTable, paintUsageTable, jobWorkEventsTable } from "@workspace/db";
 import {
   ListJobItemSerialNumbersParams,
   ListJobItemSerialNumbersResponse,
@@ -9,7 +9,7 @@ import {
   CreateJobItemSerialNumbersResponse,
   DeleteSerialNumberParams,
 } from "@workspace/api-zod";
-import { requireAdmin, requireAnyRole } from "../middlewares/auth";
+import { requireAdmin, requireAnyRole, requireRole } from "../middlewares/auth";
 import { recordAudit } from "../lib/audit";
 
 const router: IRouter = Router();
@@ -58,7 +58,7 @@ router.get("/job-items/:jobItemId/serial-numbers", requireAnyRole, async (req, r
   res.json(ListJobItemSerialNumbersResponse.parse(rows));
 });
 
-router.post("/job-items/:jobItemId/serial-numbers", requireAdmin, async (req, res): Promise<void> => {
+router.post("/job-items/:jobItemId/serial-numbers", requireRole("admin", "painter"), async (req, res): Promise<void> => {
   const params = CreateJobItemSerialNumbersParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -104,11 +104,30 @@ router.post("/job-items/:jobItemId/serial-numbers", requireAdmin, async (req, re
     return;
   }
 
-  const created = await db
-    .insert(serialNumbersTable)
-    .values(values.map((serialNo) => ({ jobItemId: params.data.jobItemId, serialNo })))
-    .onConflictDoNothing({ target: serialNumbersTable.serialNo })
-    .returning();
+  const existing = await db
+    .select({ serialNo: serialNumbersTable.serialNo })
+    .from(serialNumbersTable)
+    .where(inArray(serialNumbersTable.serialNo, values));
+  if (existing.length > 0) {
+    res.status(409).json({
+      error: `Serial Number already exists: ${existing.map((row) => row.serialNo).join(", ")}. Search Jobs or Ongoing Jobs instead of adding it again.`,
+    });
+    return;
+  }
+
+  let created: typeof serialNumbersTable.$inferSelect[];
+  try {
+    created = await db
+      .insert(serialNumbersTable)
+      .values(values.map((serialNo) => ({ jobItemId: params.data.jobItemId, serialNo })))
+      .returning();
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+      res.status(409).json({ error: "A Job Number / Serial Number combination already exists. Search Jobs or Ongoing Jobs." });
+      return;
+    }
+    throw error;
+  }
 
   if (created.length > 0) {
     await recordAudit({
@@ -127,6 +146,19 @@ router.delete("/serial-numbers/:id", requireAdmin, async (req, res): Promise<voi
   const params = DeleteSerialNumberParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [{ value: usageCount }] = await db
+    .select({ value: count() })
+    .from(paintUsageTable)
+    .where(eq(paintUsageTable.serialNumberId, params.data.id));
+  const [{ value: eventCount }] = await db
+    .select({ value: count() })
+    .from(jobWorkEventsTable)
+    .where(eq(jobWorkEventsTable.serialNumberId, params.data.id));
+  if (Number(usageCount) > 0 || Number(eventCount) > 0) {
+    res.status(409).json({ error: "Serial Number has work history and cannot be deleted." });
     return;
   }
 

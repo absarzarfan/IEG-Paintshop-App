@@ -1,5 +1,29 @@
 import { eq, desc } from "drizzle-orm";
-import { db, materialPricesTable } from "@workspace/db";
+import { db, materialPricesTable, type JobItem } from "@workspace/db";
+
+const targetFields = [
+  "primerBaseL",
+  "primerHrdL",
+  "primerThinnerL",
+  "topcoatBaseL",
+  "topcoatHrdL",
+  "topcoatThinnerL",
+] as const;
+
+/**
+ * New orders store targets for the whole JN quantity. Workflow and usage
+ * variance are per physical serial, so convert those targets at the boundary.
+ * Legacy records remain per-unit by default.
+ */
+export function targetsPerUnit(jobItem: JobItem): JobItem {
+  if (jobItem.targetBasis !== "order_total") return jobItem;
+  const quantity = Math.max(jobItem.orderQuantity, 1);
+  const normalized = { ...jobItem };
+  for (const field of targetFields) {
+    normalized[field] = normalized[field] / quantity;
+  }
+  return normalized;
+}
 
 interface MaterialPriceInfo {
   unitPrice: number;
@@ -87,4 +111,36 @@ export async function computeJobItemCosts(jobItem: JobItemCostInputs) {
     topcoatCostThinner,
     topcoatCostTotal: sumOrNull(topcoatCostBase, topcoatCostHrd, topcoatCostThinner),
   };
+}
+
+export async function computePaintUsageCost(
+  jobItem: JobItemCostInputs,
+  actuals: Pick<
+    JobItemCostInputs,
+    "primerBaseL" | "primerHrdL" | "primerThinnerL" | "topcoatBaseL" | "topcoatHrdL" | "topcoatThinnerL"
+  >,
+) {
+  const materialIds = [
+    jobItem.primerBaseMaterialId,
+    jobItem.primerHrdMaterialId,
+    jobItem.primerThinnerMaterialId,
+    jobItem.topcoatBaseMaterialId,
+    jobItem.topcoatHrdMaterialId,
+    jobItem.topcoatThinnerMaterialId,
+  ];
+  const prices = await Promise.all(materialIds.map(getCurrentPrice));
+  const currencies = new Set(prices.filter((price): price is MaterialPriceInfo => price !== null).map((price) => price.currency));
+  const currency = currencies.size === 1 ? [...currencies][0]! : null;
+  if (!currency || prices.some((price) => !price || price.currency !== currency)) {
+    return { currency: null, total: null };
+  }
+
+  const total =
+    actuals.primerBaseL * prices[0]!.unitPrice +
+    actuals.primerHrdL * prices[1]!.unitPrice +
+    actuals.primerThinnerL * prices[2]!.unitPrice +
+    actuals.topcoatBaseL * prices[3]!.unitPrice +
+    actuals.topcoatHrdL * prices[4]!.unitPrice +
+    actuals.topcoatThinnerL * prices[5]!.unitPrice;
+  return { currency, total: round4(total) };
 }

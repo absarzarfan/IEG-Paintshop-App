@@ -14,5 +14,6 @@ export interface UserUpdate {
      */
   password?: string;
   role?: UserRole;
+  isPaintLeader?: boolean;
   isActive?: boolean;
 }

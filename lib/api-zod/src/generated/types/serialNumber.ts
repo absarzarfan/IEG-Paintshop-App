@@ -5,10 +5,18 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { JobWorkStatus } from './jobWorkStatus';
 
 export interface SerialNumber {
   id: number;
   jobItemId: number;
   serialNo: string;
+  workStatus: JobWorkStatus;
+  progressPct: number;
+  /** @nullable */
+  currentCategory: string | null;
+  activeShift: number;
+  /** @nullable */
+  handoverToShift: number | null;
   createdAt: Date;
 }

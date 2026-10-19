@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { JobWorkCategory } from './jobWorkCategory';
 
 export interface PaintUsageInput {
   jobItemId: number;
@@ -15,6 +16,7 @@ export interface PaintUsageInput {
      * @maxLength 50
      */
   shift: string;
+  category?: JobWorkCategory;
   /** @minimum 0 */
   primerBaseActualL: number;
   /** @minimum 0 */

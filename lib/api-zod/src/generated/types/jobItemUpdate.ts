@@ -5,10 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { JobItemUpdateTargetBasis } from './jobItemUpdateTargetBasis';
 
 export interface JobItemUpdate {
   /** @minLength 1 */
   jobNo?: string;
+  /** @maxLength 160 */
+  customerName?: string;
+  /** @minimum 1 */
+  orderQuantity?: number;
+  targetBasis?: JobItemUpdateTargetBasis;
   /** @minLength 1 */
   description?: string;
   /**

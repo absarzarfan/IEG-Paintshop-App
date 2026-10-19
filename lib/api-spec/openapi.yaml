@@ -708,6 +708,81 @@ paths:
         "404":
           description: Not found
 
+  /job-workflow:
+    get:
+      operationId: listJobWorkflow
+      tags: [job-workflow]
+      summary: List unit-level work and shipment progress
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/JobWorkStatus"
+      responses:
+        "200":
+          description: Work items with order, progress, and material cost variance
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobWorkflowItem"
+
+  /serial-numbers/{id}/workflow:
+    post:
+      operationId: updateJobWorkflow
+      tags: [job-workflow]
+      summary: Start, update, hand over, complete, or verify a unit's workflow
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobWorkflowActionInput"
+      responses:
+        "200":
+          description: Updated workflow state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobWorkflowItem"
+        "400":
+          description: Invalid or out-of-order workflow action
+        "403":
+          description: User is not permitted to perform this action
+        "404":
+          description: Serial number not found
+        "409":
+          description: Workflow state conflict
+
+  /serial-numbers/{id}/workflow/history:
+    get:
+      operationId: listJobWorkflowHistory
+      tags: [job-workflow]
+      summary: List the work and handover history for a serial number
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Workflow history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobWorkEvent"
+
   /paint-usage:
     get:
       operationId: listPaintUsage
@@ -873,9 +948,10 @@ components:
         email: { type: ["string", "null"] }
         role:
           $ref: "#/components/schemas/UserRole"
+        isPaintLeader: { type: boolean }
         isActive: { type: boolean }
         createdAt: { type: string, format: date-time }
-      required: [id, username, name, email, role, isActive, createdAt]
+      required: [id, username, name, email, role, isPaintLeader, isActive, createdAt]
 
     AuthStatus:
       type: object
@@ -914,6 +990,7 @@ components:
         email: { type: ["string", "null"] }
         role:
           $ref: "#/components/schemas/UserRole"
+        isPaintLeader: { type: boolean }
         isActive: { type: boolean }
       required: [username, password, name, role]
 
@@ -923,6 +1000,7 @@ components:
         password: { type: string, minLength: 4, maxLength: 128, format: password }
         role:
           $ref: "#/components/schemas/UserRole"
+        isPaintLeader: { type: boolean }
         isActive: { type: boolean }
 
     Brand:
@@ -1105,6 +1183,11 @@ components:
       properties:
         id: { type: integer }
         jobNo: { type: string }
+        customerName: { type: string }
+        orderQuantity: { type: integer }
+        targetBasis:
+          type: string
+          enum: [per_unit, order_total]
         description: { type: string }
         surfaceAreaM2: { type: ["number", "null"] }
         primerBaseL: { type: number }
@@ -1129,6 +1212,9 @@ components:
         [
           id,
           jobNo,
+          customerName,
+          orderQuantity,
+          targetBasis,
           description,
           surfaceAreaM2,
           primerBaseL,
@@ -1190,6 +1276,11 @@ components:
       type: object
       properties:
         jobNo: { type: string, minLength: 1 }
+        customerName: { type: string, maxLength: 160 }
+        orderQuantity: { type: integer, minimum: 1 }
+        targetBasis:
+          type: string
+          enum: [per_unit, order_total]
         description: { type: string, minLength: 1 }
         surfaceAreaM2: { type: number, minimum: 0 }
         primerBaseL: { type: number, minimum: 0 }
@@ -1208,6 +1299,9 @@ components:
       required:
         [
           jobNo,
+          customerName,
+          orderQuantity,
+          targetBasis,
           description,
           primerBaseL,
           primerHrdL,
@@ -1221,6 +1315,11 @@ components:
       type: object
       properties:
         jobNo: { type: string, minLength: 1 }
+        customerName: { type: string, maxLength: 160 }
+        orderQuantity: { type: integer, minimum: 1 }
+        targetBasis:
+          type: string
+          enum: [per_unit, order_total]
         description: { type: string, minLength: 1 }
         surfaceAreaM2: { type: ["number", "null"], minimum: 0 }
         primerBaseL: { type: number, minimum: 0 }
@@ -1244,8 +1343,88 @@ components:
         id: { type: integer }
         jobItemId: { type: integer }
         serialNo: { type: string }
+        workStatus:
+          $ref: "#/components/schemas/JobWorkStatus"
+        progressPct: { type: integer }
+        currentCategory: { type: ["string", "null"] }
+        activeShift: { type: integer }
+        handoverToShift: { type: ["integer", "null"] }
         createdAt: { type: string, format: date-time }
-      required: [id, jobItemId, serialNo, createdAt]
+      required: [id, jobItemId, serialNo, workStatus, progressPct, currentCategory, activeShift, handoverToShift, createdAt]
+
+    JobWorkStatus:
+      type: string
+      enum: [queued, ongoing, shipment, shipped]
+
+    JobWorkCategory:
+      type: string
+      enum: [preparation, blasting, washing, cleaning, finishing]
+
+    JobWorkflowItem:
+      type: object
+      properties:
+        serialNumberId: { type: integer }
+        jobItemId: { type: integer }
+        jobNo: { type: string }
+        customerName: { type: string }
+        description: { type: string }
+        serialNo: { type: string }
+        orderQuantity: { type: integer }
+        workStatus:
+          $ref: "#/components/schemas/JobWorkStatus"
+        progressPct: { type: integer }
+        currentCategory: { type: ["string", "null"] }
+        activeShift: { type: integer }
+        handoverToShift: { type: ["integer", "null"] }
+        targetTotalL: { type: number }
+        actualTotalL: { type: number }
+        expectedProgressLiters: { type: number }
+        literVariance: { type: number }
+        materialCostCurrency: { type: ["string", "null"] }
+        expectedMaterialCost: { type: ["number", "null"] }
+        actualMaterialCost: { type: ["number", "null"] }
+        materialCostVariance: { type: ["number", "null"] }
+        materialCostVariancePct: { type: ["number", "null"] }
+        createdAt: { type: string, format: date-time }
+      required:
+        [
+          serialNumberId, jobItemId, jobNo, customerName, description, serialNo,
+          orderQuantity, workStatus, progressPct, currentCategory, activeShift,
+          handoverToShift, targetTotalL, actualTotalL, expectedProgressLiters,
+          literVariance, materialCostCurrency, expectedMaterialCost,
+          actualMaterialCost, materialCostVariance, materialCostVariancePct, createdAt
+        ]
+
+    JobWorkflowActionInput:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [start, update_progress, handover, complete, verify_shipment]
+        shift: { type: integer, minimum: 1, maximum: 3 }
+        progressPct: { type: integer, minimum: 0, maximum: 100 }
+        category:
+          $ref: "#/components/schemas/JobWorkCategory"
+        handoverToShift: { type: integer, minimum: 2, maximum: 3 }
+        note: { type: ["string", "null"], maxLength: 500 }
+      required: [action]
+
+    JobWorkEvent:
+      type: object
+      properties:
+        id: { type: integer }
+        serialNumberId: { type: integer }
+        actorUserId: { type: ["integer", "null"] }
+        actorName: { type: ["string", "null"] }
+        eventType:
+          type: string
+          enum: [started, progress_updated, handed_over, completed, shipment_verified]
+        shift: { type: ["integer", "null"] }
+        progressPct: { type: ["integer", "null"] }
+        category: { type: ["string", "null"] }
+        note: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, serialNumberId, actorUserId, actorName, eventType, shift, progressPct, category, note, createdAt]
 
     SerialNumberBulkInput:
       type: object
@@ -1271,6 +1450,8 @@ components:
         serialNo: { type: string }
         usageDate: { type: string, format: date }
         shift: { type: string }
+        category:
+          $ref: "#/components/schemas/JobWorkCategory"
         primerBaseActualL: { type: number }
         primerHrdActualL: { type: number }
         primerThinnerActualL: { type: number }
@@ -1294,7 +1475,7 @@ components:
         updatedAt: { type: string, format: date-time }
       required:
         [
-          id, jobItemId, jobNo, serialNumberId, serialNo, usageDate, shift,
+          id, jobItemId, jobNo, serialNumberId, serialNo, usageDate, shift, category,
           primerBaseActualL, primerHrdActualL, primerThinnerActualL,
           primerActualTotalL, topcoatBaseActualL, topcoatHrdActualL,
           topcoatThinnerActualL, topcoatActualTotalL, primerTargetTotalL,
@@ -1311,6 +1492,8 @@ components:
         serialNumberId: { type: integer }
         usageDate: { type: string, format: date }
         shift: { type: string, minLength: 1, maxLength: 50 }
+        category:
+          $ref: "#/components/schemas/JobWorkCategory"
         primerBaseActualL: { type: number, minimum: 0 }
         primerHrdActualL: { type: number, minimum: 0 }
         primerThinnerActualL: { type: number, minimum: 0 }
@@ -1330,6 +1513,8 @@ components:
       properties:
         usageDate: { type: string, format: date }
         shift: { type: string, minLength: 1, maxLength: 50 }
+        category:
+          $ref: "#/components/schemas/JobWorkCategory"
         primerBaseActualL: { type: number, minimum: 0 }
         primerHrdActualL: { type: number, minimum: 0 }
         primerThinnerActualL: { type: number, minimum: 0 }
@@ -1372,6 +1557,15 @@ components:
       type: object
       properties:
         jobItemCount: { type: integer }
+        queuedCount: { type: integer }
+        ongoingCount: { type: integer }
+        completedTodayCount: { type: integer }
+        shipmentPendingCount: { type: integer }
+        paintMixersOnlineCount: { type: integer }
+        paintMixersWorkingCount: { type: integer }
+        paintMixersIdlingCount: { type: integer }
+        newJobsTodayCount: { type: integer }
+        delayedCount: { type: integer }
         materialCount: { type: integer }
         colorCount: { type: integer }
         brandCount: { type: integer }
@@ -1382,6 +1576,15 @@ components:
       required:
         [
           jobItemCount,
+          queuedCount,
+          ongoingCount,
+          completedTodayCount,
+          shipmentPendingCount,
+          paintMixersOnlineCount,
+          paintMixersWorkingCount,
+          paintMixersIdlingCount,
+          newJobsTodayCount,
+          delayedCount,
           materialCount,
           colorCount,
            brandCount,

@@ -51,6 +51,7 @@ export const SetupAdminResponse = zod.object({
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
+  "isPaintLeader": zod.boolean(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -78,6 +79,7 @@ export const LoginResponse = zod.object({
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
+  "isPaintLeader": zod.boolean(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -100,6 +102,7 @@ export const GetCurrentUserResponse = zod.object({
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
+  "isPaintLeader": zod.boolean(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -114,6 +117,7 @@ export const ListUsersResponseItem = zod.object({
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
+  "isPaintLeader": zod.boolean(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -139,6 +143,7 @@ export const CreateUserBody = zod.object({
   "name": zod.string().min(1).max(createUserBodyNameMax),
   "email": zod.string().nullish(),
   "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
+  "isPaintLeader": zod.boolean().optional(),
   "isActive": zod.boolean().optional()
 })
 
@@ -148,6 +153,7 @@ export const CreateUserResponse = zod.object({
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
+  "isPaintLeader": zod.boolean(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -168,6 +174,7 @@ export const updateUserBodyPasswordMax = 128;
 export const UpdateUserBody = zod.object({
   "password": zod.string().min(updateUserBodyPasswordMin).max(updateUserBodyPasswordMax).optional(),
   "role": zod.enum(['admin', 'painter', 'warehouse']).optional().describe('Application roles managed by an Admin'),
+  "isPaintLeader": zod.boolean().optional(),
   "isActive": zod.boolean().optional()
 })
 
@@ -177,6 +184,7 @@ export const UpdateUserResponse = zod.object({
   "name": zod.string().nullable(),
   "email": zod.string().nullable(),
   "role": zod.enum(['admin', 'painter', 'warehouse']).describe('Application roles managed by an Admin'),
+  "isPaintLeader": zod.boolean(),
   "isActive": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
@@ -580,6 +588,9 @@ export const ListJobItemsQueryParams = zod.object({
 export const ListJobItemsResponseItem = zod.object({
   "id": zod.number().int(),
   "jobNo": zod.string(),
+  "customerName": zod.string(),
+  "orderQuantity": zod.number().int(),
+  "targetBasis": zod.enum(['per_unit', 'order_total']),
   "description": zod.string(),
   "surfaceAreaM2": zod.number().nullable(),
   "primerBaseL": zod.number(),
@@ -608,6 +619,9 @@ export const ListJobItemsResponse = zod.array(ListJobItemsResponseItem)
  * @summary Create a job/item catalog entry (admin only)
  */
 
+export const createJobItemBodyCustomerNameMax = 160;
+
+
 
 export const createJobItemBodySurfaceAreaM2Min = 0;
 
@@ -629,6 +643,9 @@ export const createJobItemBodyOverconsumptionThresholdPctMin = 0;
 
 export const CreateJobItemBody = zod.object({
   "jobNo": zod.string().min(1),
+  "customerName": zod.string().max(createJobItemBodyCustomerNameMax),
+  "orderQuantity": zod.number().int().min(1),
+  "targetBasis": zod.enum(['per_unit', 'order_total']),
   "description": zod.string().min(1),
   "surfaceAreaM2": zod.number().min(createJobItemBodySurfaceAreaM2Min).optional(),
   "primerBaseL": zod.number().min(createJobItemBodyPrimerBaseLMin),
@@ -649,6 +666,9 @@ export const CreateJobItemBody = zod.object({
 export const CreateJobItemResponse = zod.object({
   "id": zod.number().int(),
   "jobNo": zod.string(),
+  "customerName": zod.string(),
+  "orderQuantity": zod.number().int(),
+  "targetBasis": zod.enum(['per_unit', 'order_total']),
   "description": zod.string(),
   "surfaceAreaM2": zod.number().nullable(),
   "primerBaseL": zod.number(),
@@ -682,6 +702,9 @@ export const GetJobItemParams = zod.object({
 export const GetJobItemResponse = zod.object({
   "id": zod.number().int(),
   "jobNo": zod.string(),
+  "customerName": zod.string(),
+  "orderQuantity": zod.number().int(),
+  "targetBasis": zod.enum(['per_unit', 'order_total']),
   "description": zod.string(),
   "surfaceAreaM2": zod.number().nullable(),
   "primerBaseL": zod.number(),
@@ -725,6 +748,9 @@ export const UpdateJobItemParams = zod.object({
 })
 
 
+export const updateJobItemBodyCustomerNameMax = 160;
+
+
 
 export const updateJobItemBodySurfaceAreaM2Min = 0;
 
@@ -746,6 +772,9 @@ export const updateJobItemBodyOverconsumptionThresholdPctMin = 0;
 
 export const UpdateJobItemBody = zod.object({
   "jobNo": zod.string().min(1).optional(),
+  "customerName": zod.string().max(updateJobItemBodyCustomerNameMax).optional(),
+  "orderQuantity": zod.number().int().min(1).optional(),
+  "targetBasis": zod.enum(['per_unit', 'order_total']).optional(),
   "description": zod.string().min(1).optional(),
   "surfaceAreaM2": zod.number().min(updateJobItemBodySurfaceAreaM2Min).nullish(),
   "primerBaseL": zod.number().min(updateJobItemBodyPrimerBaseLMin).optional(),
@@ -767,6 +796,9 @@ export const UpdateJobItemBody = zod.object({
 export const UpdateJobItemResponse = zod.object({
   "id": zod.number().int(),
   "jobNo": zod.string(),
+  "customerName": zod.string(),
+  "orderQuantity": zod.number().int(),
+  "targetBasis": zod.enum(['per_unit', 'order_total']),
   "description": zod.string(),
   "surfaceAreaM2": zod.number().nullable(),
   "primerBaseL": zod.number(),
@@ -811,6 +843,11 @@ export const ListJobItemSerialNumbersResponseItem = zod.object({
   "id": zod.number().int(),
   "jobItemId": zod.number().int(),
   "serialNo": zod.string(),
+  "workStatus": zod.enum(['queued', 'ongoing', 'shipment', 'shipped']),
+  "progressPct": zod.number().int(),
+  "currentCategory": zod.string().nullable(),
+  "activeShift": zod.number().int(),
+  "handoverToShift": zod.number().int().nullable(),
   "createdAt": zod.coerce.date()
 })
 export const ListJobItemSerialNumbersResponse = zod.array(ListJobItemSerialNumbersResponseItem)
@@ -834,6 +871,11 @@ export const CreateJobItemSerialNumbersResponseItem = zod.object({
   "id": zod.number().int(),
   "jobItemId": zod.number().int(),
   "serialNo": zod.string(),
+  "workStatus": zod.enum(['queued', 'ongoing', 'shipment', 'shipped']),
+  "progressPct": zod.number().int(),
+  "currentCategory": zod.string().nullable(),
+  "activeShift": zod.number().int(),
+  "handoverToShift": zod.number().int().nullable(),
   "createdAt": zod.coerce.date()
 })
 export const CreateJobItemSerialNumbersResponse = zod.array(CreateJobItemSerialNumbersResponseItem)
@@ -847,6 +889,116 @@ export const DeleteSerialNumberParams = zod.object({
 })
 
 export const DeleteSerialNumberResponse = zod.void()
+
+
+/**
+ * @summary List unit-level work and shipment progress
+ */
+export const ListJobWorkflowQueryParams = zod.object({
+  "status": zod.enum(['queued', 'ongoing', 'shipment', 'shipped']).optional()
+})
+
+export const ListJobWorkflowResponseItem = zod.object({
+  "serialNumberId": zod.number().int(),
+  "jobItemId": zod.number().int(),
+  "jobNo": zod.string(),
+  "customerName": zod.string(),
+  "description": zod.string(),
+  "serialNo": zod.string(),
+  "orderQuantity": zod.number().int(),
+  "workStatus": zod.enum(['queued', 'ongoing', 'shipment', 'shipped']),
+  "progressPct": zod.number().int(),
+  "currentCategory": zod.string().nullable(),
+  "activeShift": zod.number().int(),
+  "handoverToShift": zod.number().int().nullable(),
+  "targetTotalL": zod.number(),
+  "actualTotalL": zod.number(),
+  "expectedProgressLiters": zod.number(),
+  "literVariance": zod.number(),
+  "materialCostCurrency": zod.string().nullable(),
+  "expectedMaterialCost": zod.number().nullable(),
+  "actualMaterialCost": zod.number().nullable(),
+  "materialCostVariance": zod.number().nullable(),
+  "materialCostVariancePct": zod.number().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListJobWorkflowResponse = zod.array(ListJobWorkflowResponseItem)
+
+
+/**
+ * @summary Start, update, hand over, complete, or verify a unit's workflow
+ */
+export const UpdateJobWorkflowParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateJobWorkflowBodyShiftMax = 3;
+
+export const updateJobWorkflowBodyProgressPctMin = 0;
+export const updateJobWorkflowBodyProgressPctMax = 100;
+
+export const updateJobWorkflowBodyHandoverToShiftMin = 2;
+export const updateJobWorkflowBodyHandoverToShiftMax = 3;
+
+export const updateJobWorkflowBodyNoteMax = 500;
+
+
+
+export const UpdateJobWorkflowBody = zod.object({
+  "action": zod.enum(['start', 'update_progress', 'handover', 'complete', 'verify_shipment']),
+  "shift": zod.number().int().min(1).max(updateJobWorkflowBodyShiftMax).optional(),
+  "progressPct": zod.number().int().min(updateJobWorkflowBodyProgressPctMin).max(updateJobWorkflowBodyProgressPctMax).optional(),
+  "category": zod.enum(['preparation', 'blasting', 'washing', 'cleaning', 'finishing']).optional(),
+  "handoverToShift": zod.number().int().min(updateJobWorkflowBodyHandoverToShiftMin).max(updateJobWorkflowBodyHandoverToShiftMax).optional(),
+  "note": zod.string().max(updateJobWorkflowBodyNoteMax).nullish()
+})
+
+export const UpdateJobWorkflowResponse = zod.object({
+  "serialNumberId": zod.number().int(),
+  "jobItemId": zod.number().int(),
+  "jobNo": zod.string(),
+  "customerName": zod.string(),
+  "description": zod.string(),
+  "serialNo": zod.string(),
+  "orderQuantity": zod.number().int(),
+  "workStatus": zod.enum(['queued', 'ongoing', 'shipment', 'shipped']),
+  "progressPct": zod.number().int(),
+  "currentCategory": zod.string().nullable(),
+  "activeShift": zod.number().int(),
+  "handoverToShift": zod.number().int().nullable(),
+  "targetTotalL": zod.number(),
+  "actualTotalL": zod.number(),
+  "expectedProgressLiters": zod.number(),
+  "literVariance": zod.number(),
+  "materialCostCurrency": zod.string().nullable(),
+  "expectedMaterialCost": zod.number().nullable(),
+  "actualMaterialCost": zod.number().nullable(),
+  "materialCostVariance": zod.number().nullable(),
+  "materialCostVariancePct": zod.number().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List the work and handover history for a serial number
+ */
+export const ListJobWorkflowHistoryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ListJobWorkflowHistoryResponseItem = zod.object({
+  "id": zod.number().int(),
+  "serialNumberId": zod.number().int(),
+  "actorUserId": zod.number().int().nullable(),
+  "actorName": zod.string().nullable(),
+  "eventType": zod.enum(['started', 'progress_updated', 'handed_over', 'completed', 'shipment_verified']),
+  "shift": zod.number().int().nullable(),
+  "progressPct": zod.number().int().nullable(),
+  "category": zod.string().nullable(),
+  "note": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListJobWorkflowHistoryResponse = zod.array(ListJobWorkflowHistoryResponseItem)
 
 
 /**
@@ -867,6 +1019,7 @@ export const ListPaintUsageResponseItem = zod.object({
   "serialNo": zod.string(),
   "usageDate": zod.coerce.date(),
   "shift": zod.string(),
+  "category": zod.enum(['preparation', 'blasting', 'washing', 'cleaning', 'finishing']),
   "primerBaseActualL": zod.number(),
   "primerHrdActualL": zod.number(),
   "primerThinnerActualL": zod.number(),
@@ -916,6 +1069,7 @@ export const CreatePaintUsageBody = zod.object({
   "serialNumberId": zod.number().int(),
   "usageDate": zod.coerce.date(),
   "shift": zod.string().min(1).max(createPaintUsageBodyShiftMax),
+  "category": zod.enum(['preparation', 'blasting', 'washing', 'cleaning', 'finishing']).optional(),
   "primerBaseActualL": zod.number().min(createPaintUsageBodyPrimerBaseActualLMin),
   "primerHrdActualL": zod.number().min(createPaintUsageBodyPrimerHrdActualLMin),
   "primerThinnerActualL": zod.number().min(createPaintUsageBodyPrimerThinnerActualLMin),
@@ -933,6 +1087,7 @@ export const CreatePaintUsageResponse = zod.object({
   "serialNo": zod.string(),
   "usageDate": zod.coerce.date(),
   "shift": zod.string(),
+  "category": zod.enum(['preparation', 'blasting', 'washing', 'cleaning', 'finishing']),
   "primerBaseActualL": zod.number(),
   "primerHrdActualL": zod.number(),
   "primerThinnerActualL": zod.number(),
@@ -972,6 +1127,7 @@ export const GetPaintUsageResponse = zod.object({
   "serialNo": zod.string(),
   "usageDate": zod.coerce.date(),
   "shift": zod.string(),
+  "category": zod.enum(['preparation', 'blasting', 'washing', 'cleaning', 'finishing']),
   "primerBaseActualL": zod.number(),
   "primerHrdActualL": zod.number(),
   "primerThinnerActualL": zod.number(),
@@ -1022,6 +1178,7 @@ export const updatePaintUsageBodyTopcoatThinnerActualLMin = 0;
 export const UpdatePaintUsageBody = zod.object({
   "usageDate": zod.coerce.date().optional(),
   "shift": zod.string().min(1).max(updatePaintUsageBodyShiftMax).optional(),
+  "category": zod.enum(['preparation', 'blasting', 'washing', 'cleaning', 'finishing']).optional(),
   "primerBaseActualL": zod.number().min(updatePaintUsageBodyPrimerBaseActualLMin).optional(),
   "primerHrdActualL": zod.number().min(updatePaintUsageBodyPrimerHrdActualLMin).optional(),
   "primerThinnerActualL": zod.number().min(updatePaintUsageBodyPrimerThinnerActualLMin).optional(),
@@ -1039,6 +1196,7 @@ export const UpdatePaintUsageResponse = zod.object({
   "serialNo": zod.string(),
   "usageDate": zod.coerce.date(),
   "shift": zod.string(),
+  "category": zod.enum(['preparation', 'blasting', 'washing', 'cleaning', 'finishing']),
   "primerBaseActualL": zod.number(),
   "primerHrdActualL": zod.number(),
   "primerThinnerActualL": zod.number(),
@@ -1090,6 +1248,15 @@ export const ListAuditLogResponse = zod.array(ListAuditLogResponseItem)
  */
 export const GetDashboardSummaryResponse = zod.object({
   "jobItemCount": zod.number().int(),
+  "queuedCount": zod.number().int(),
+  "ongoingCount": zod.number().int(),
+  "completedTodayCount": zod.number().int(),
+  "shipmentPendingCount": zod.number().int(),
+  "paintMixersOnlineCount": zod.number().int(),
+  "paintMixersWorkingCount": zod.number().int(),
+  "paintMixersIdlingCount": zod.number().int(),
+  "newJobsTodayCount": zod.number().int(),
+  "delayedCount": zod.number().int(),
   "materialCount": zod.number().int(),
   "colorCount": zod.number().int(),
   "brandCount": zod.number().int(),

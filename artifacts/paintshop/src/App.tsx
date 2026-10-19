@@ -30,30 +30,36 @@ import { Users } from "./pages/users";
 import { AuditLog } from "./pages/audit-log";
 import { PaintUsage } from "./pages/paint-usage";
 import { Stock } from "./pages/stock";
+import { Ongoing } from "./pages/ongoing";
+import { Shipment } from "./pages/shipment";
+import { LanguageProvider } from "./lib/language";
+import { useLanguage } from "./lib/language";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function LoadingScreen() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-background">
       <div className="w-full max-w-xs space-y-3 px-6">
         <div className="h-2 w-2/3 animate-pulse bg-muted" />
         <div className="h-2 w-full animate-pulse bg-muted" />
         <div className="h-2 w-1/2 animate-pulse bg-muted" />
-    <p className="pt-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Loading system</p>
+    <p className="pt-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{t("loadingSystem")}</p>
       </div>
     </div>
   );
 }
 
-function authErrorMessage(error: unknown): string {
+function authErrorMessage(error: unknown, fallback: string): string {
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
     return error.message;
   }
-  return "Unable to process the request. Please try again.";
+  return fallback;
 }
 
 function AuthPage() {
+  const { language, setLanguage, t } = useLanguage();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { data: status, isLoading: statusLoading, error: statusError } = useGetAuthStatus();
@@ -93,45 +99,48 @@ function AuthPage() {
           <h1 className="mt-6 text-3xl font-extrabold uppercase tracking-tight text-foreground">
             IEG Paintshop
           </h1>
-          <p className="mt-2 font-mono text-xs text-muted-foreground">Paint usage and material control system</p>
+          <p className="mt-2 font-mono text-xs text-muted-foreground">{t("authSystemDesc")}</p>
         </div>
 
         <div className="rounded-lg border border-card-border bg-card p-6 shadow-lg sm:p-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground">
-            <span aria-hidden="true">←</span>
-            Back to home
-          </Link>
+          <div className="flex items-center justify-between gap-3">
+            <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground"><span aria-hidden="true">←</span>{t("backHome")}</Link>
+            <div className="inline-flex border border-border" aria-label="Language">
+              <button type="button" onClick={() => setLanguage("id")} aria-pressed={language === "id"} className={`px-2 py-1 text-xs font-bold ${language === "id" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`} data-testid="button-language-id-auth">ID</button>
+              <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`px-2 py-1 text-xs font-bold ${language === "en" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`} data-testid="button-language-en-auth">EN</button>
+            </div>
+          </div>
           <div className="mt-6">
             <h2 className="text-2xl font-bold text-foreground">
-              {statusLoading ? "Access Control" : isSetup ? "Create First Admin" : "Sign In"}
+              {statusLoading ? t("authAccess") : isSetup ? t("createFirstAdmin") : t("signIn")}
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               {isSetup
-                ? "Set up the Admin account. After this, only Admins can create user accounts."
-                : "Use the username and password provided by an Admin."}
+                ? t("authSetupHelp")
+                : t("authSignInHelp")}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-7 space-y-5">
             {statusError && (
               <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-                Authentication server is not ready. Please reload the page.
+                {t("authServerError")}
               </div>
             )}
             {(loginMutation.error || setupMutation.error) && (
               <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
-                {authErrorMessage(loginMutation.error || setupMutation.error)}
+                {authErrorMessage(loginMutation.error || setupMutation.error, t("genericAuthError"))}
               </div>
             )}
 
             {isSetup && (
               <div className="space-y-2">
-                <Label htmlFor="name">Full name</Label>
+                <Label htmlFor="name">{t("fullName")}</Label>
                 <Input id="name" value={name} onChange={(event) => setName(event.target.value)} required autoComplete="name" />
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t("username")}</Label>
               <Input
                 id="username"
                 value={username}
@@ -139,11 +148,11 @@ function AuthPage() {
                 required
                 minLength={isSetup ? 3 : 1}
                 autoComplete="username"
-                placeholder="contoh: operator.batam"
+                placeholder={t("usernamePlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -153,15 +162,15 @@ function AuthPage() {
                minLength={4}
                 autoComplete={isSetup ? "new-password" : "current-password"}
               />
-               <p className="text-xs text-muted-foreground">Minimum 4 characters.</p>
+               <p className="text-xs text-muted-foreground">{t("minimumPassword")}</p>
             </div>
             <Button type="submit" className="h-11 w-full font-bold uppercase tracking-wide" disabled={isSubmitting || statusLoading || !!statusError}>
-              {isSubmitting ? "Processing..." : isSetup ? "Create Admin & Sign In" : "Sign In"}
+              {isSubmitting ? t("processing") : isSetup ? t("createAdminSignIn") : t("signIn")}
             </Button>
           </form>
 
           <div className="mt-6 border-t border-border pt-4 text-center text-xs font-medium text-muted-foreground">
-             Access is created and managed by an IEG Administrator.
+             {t("authFooter")}
           </div>
         </div>
       </div>
@@ -189,17 +198,20 @@ function ProtectedRoute({ component: Component, path, allowedRoles }: { componen
 function AppRoutes() {
   return (
     <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
       <TooltipProvider>
         <Switch>
           <Route path="/" component={HomeRedirect} />
           <Route path="/sign-in" component={AuthPage} />
 
           <ProtectedRoute path="/dashboard" component={Dashboard} />
+          <ProtectedRoute path="/ongoing" component={Ongoing} allowedRoles={["admin", "painter", "warehouse"]} />
+          <ProtectedRoute path="/shipment" component={Shipment} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/job-items" component={JobItems} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/job-items/:id" component={JobItemDetail} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/paint-usage" component={PaintUsage} />
           <ProtectedRoute path="/paint-usage/:id" component={PaintUsage} />
-          <ProtectedRoute path="/stock" component={Stock} allowedRoles={["admin", "warehouse"]} />
+          <ProtectedRoute path="/stock" component={Stock} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/materials" component={Materials} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/colors" component={Colors} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/brands" component={Brands} allowedRoles={["admin", "painter", "warehouse"]} />
@@ -212,6 +224,7 @@ function AppRoutes() {
         </Switch>
         <Toaster />
       </TooltipProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

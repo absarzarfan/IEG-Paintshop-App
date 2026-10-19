@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ClipboardPenLine } from "lucide-react";
 import { useAppAuth, ROLE_LABELS } from "@/lib/auth";
+import { useLanguage } from "@/lib/language";
 import { Button } from "./ui/button";
 
 interface LayoutProps {
@@ -28,7 +29,8 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { user, isAdmin } = useAppAuth();
-  const canTraceStock = user?.role === "admin" || user?.role === "warehouse";
+  const { language, setLanguage, t } = useLanguage();
+  const canTraceStock = user?.role === "admin" || user?.role === "warehouse" || user?.role === "painter";
   const [location, setLocation] = useLocation();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -60,18 +62,20 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const navLinks = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Job Items", href: "/job-items", icon: PaintBucket },
-    { name: "Paint Usage", href: "/paint-usage", icon: ClipboardPenLine },
-    ...(canTraceStock ? [{ name: "Stock", href: "/stock", icon: Boxes }] : []),
-    { name: "Materials", href: "/materials", icon: Droplet },
-    { name: "Colors", href: "/colors", icon: Palette },
-    { name: "Brands", href: "/brands", icon: Settings },
+    { name: t("dashboard"), href: "/dashboard", icon: LayoutDashboard },
+    { name: t("jobs"), href: "/job-items", icon: PaintBucket },
+    { name: t("ongoing"), href: "/ongoing", icon: ClipboardPenLine },
+    { name: t("shipment"), href: "/shipment", icon: Boxes },
+    { name: t("usage"), href: "/paint-usage", icon: ClipboardPenLine },
+    ...(canTraceStock ? [{ name: t("stock"), href: "/stock", icon: Boxes }] : []),
+    { name: t("materials"), href: "/materials", icon: Droplet },
+    { name: t("colors"), href: "/colors", icon: Palette },
+    { name: t("brands"), href: "/brands", icon: Settings },
   ];
 
   const adminLinks = [
-    { name: "Users", href: "/users", icon: Users },
-    { name: "Audit Log", href: "/audit-log", icon: Activity },
+    { name: t("users"), href: "/users", icon: Users },
+    { name: t("audit"), href: "/audit-log", icon: Activity },
   ];
 
   return (
@@ -131,7 +135,7 @@ export function Layout({ children }: LayoutProps) {
               </p>
             </div>
             <p className={`mt-3 text-[10px] font-bold uppercase tracking-[0.16em] ${isAdmin ? "text-primary" : "text-sidebar-foreground/50"}`}>
-              {isAdmin ? "Admin Control · Full Access" : "Operational Access"}
+              {isAdmin ? t("roleAdmin") : t("ops")}
             </p>
           </div>
           {isSidebarCollapsed && (
@@ -143,7 +147,7 @@ export function Layout({ children }: LayoutProps) {
 
         <nav className={`flex-1 overflow-y-auto py-4 ${isSidebarCollapsed ? "px-2" : "px-3"} space-y-1`}>
           <div className={`mb-2 px-3 ${isSidebarCollapsed ? "md:hidden" : ""}`}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40">Master Data</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40">{t("master")}</p>
           </div>
           {navLinks.map((link) => {
             const isActive = location === link.href || location.startsWith(`${link.href}/`);
@@ -158,7 +162,7 @@ export function Layout({ children }: LayoutProps) {
           {isAdmin && (
             <>
               <div className={`mt-8 mb-2 px-3 ${isSidebarCollapsed ? "md:hidden" : ""}`}>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Admin Control</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">{t("admin")}</p>
               </div>
               {adminLinks.map((link) => {
                 const isActive = location === link.href;
@@ -209,13 +213,23 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.16em]">
               <span className="text-primary">IEG</span>
               <span className="text-sidebar-foreground/45">/</span>
-              <span>Paintshop Control</span>
+              <span>{t("control")}</span>
             </div>
             <div className="flex items-center gap-3 text-xs">
+              <div className="inline-flex border border-sidebar-border" aria-label="Language">
+                <button type="button" onClick={() => setLanguage("id")} aria-pressed={language === "id"} className={`px-2 py-1 font-bold ${language === "id" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} data-testid="button-language-id">ID</button>
+                <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`px-2 py-1 font-bold ${language === "en" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} data-testid="button-language-en">EN</button>
+              </div>
               <span className="text-sidebar-foreground/60">{user?.name || user?.username}</span>
               <span className="border border-sidebar-primary/50 bg-sidebar-primary px-2 py-1 font-bold uppercase tracking-wider text-sidebar-primary-foreground">
                 {user ? ROLE_LABELS[user.role] : "Loading"}
               </span>
+            </div>
+          </div>
+          <div className="flex justify-end bg-sidebar px-3 py-2 md:hidden">
+            <div className="inline-flex border border-sidebar-border" aria-label="Language">
+              <button type="button" onClick={() => setLanguage("id")} aria-pressed={language === "id"} className={`px-3 py-1 text-xs font-bold ${language === "id" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} data-testid="button-language-id-mobile">ID</button>
+              <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`px-3 py-1 text-xs font-bold ${language === "en" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} data-testid="button-language-en-mobile">EN</button>
             </div>
           </div>
           <div className="p-3 sm:p-5 lg:p-8">

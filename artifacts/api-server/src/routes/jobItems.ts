@@ -26,6 +26,9 @@ function serializeJobItem(row: typeof jobItemsTable.$inferSelect, serialNumberCo
   return {
     id: row.id,
     jobNo: row.jobNo,
+    customerName: row.customerName,
+    orderQuantity: row.orderQuantity,
+    targetBasis: row.targetBasis,
     description: row.description,
     surfaceAreaM2: row.surfaceAreaM2,
     primerBaseL: row.primerBaseL,
@@ -104,7 +107,16 @@ router.post("/job-items", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
 
-  const [created] = await db.insert(jobItemsTable).values(parsed.data).returning();
+  let created: typeof jobItemsTable.$inferSelect;
+  try {
+    [created] = await db.insert(jobItemsTable).values(parsed.data).returning();
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+      res.status(409).json({ error: "This Job Number already exists. Search Jobs before adding it again." });
+      return;
+    }
+    throw error;
+  }
   await recordAudit({ req, action: "create", entityType: "job_item", entityId: created.id, changes: { ...parsed.data } });
 
   res.status(201).json(CreateJobItemResponse.parse(serializeJobItem(created, 0)));

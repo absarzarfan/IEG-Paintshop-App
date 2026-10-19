@@ -36,8 +36,12 @@ import type {
   JobItemDetail,
   JobItemInput,
   JobItemUpdate,
+  JobWorkEvent,
+  JobWorkflowActionInput,
+  JobWorkflowItem,
   ListAuditLogParams,
   ListJobItemsParams,
+  ListJobWorkflowParams,
   ListPaintUsageParams,
   LoginInput,
   Material,
@@ -3016,6 +3020,256 @@ export const useDeleteSerialNumber = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeleteSerialNumberMutationOptions(options));
     }
+
+export const getListJobWorkflowUrl = (params?: ListJobWorkflowParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/job-workflow?${stringifiedParams}` : `/api/job-workflow`
+}
+
+/**
+ * @summary List unit-level work and shipment progress
+ */
+export const listJobWorkflow = async (params?: ListJobWorkflowParams, options?: Parameters<typeof customFetch>[1]): Promise<JobWorkflowItem[]> => {
+
+  return customFetch<JobWorkflowItem[]>(getListJobWorkflowUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJobWorkflowQueryKey = (params?: ListJobWorkflowParams,) => {
+    return [
+    `/api/job-workflow`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListJobWorkflowQueryOptions = <TData = Awaited<ReturnType<typeof listJobWorkflow>>, TError = ErrorType<unknown>>(params?: ListJobWorkflowParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJobWorkflow>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJobWorkflowQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJobWorkflow>>> = ({ signal }) => listJobWorkflow(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJobWorkflow>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJobWorkflowQueryResult = NonNullable<Awaited<ReturnType<typeof listJobWorkflow>>>
+export type ListJobWorkflowQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List unit-level work and shipment progress
+ */
+
+export function useListJobWorkflow<TData = Awaited<ReturnType<typeof listJobWorkflow>>, TError = ErrorType<unknown>>(
+ params?: ListJobWorkflowParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJobWorkflow>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJobWorkflowQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateJobWorkflowUrl = (id: number,) => {
+
+
+
+
+  return `/api/serial-numbers/${id}/workflow`
+}
+
+/**
+ * @summary Start, update, hand over, complete, or verify a unit's workflow
+ */
+export const updateJobWorkflow = async (id: number,
+    jobWorkflowActionInput: JobWorkflowActionInput, options?: Parameters<typeof customFetch>[1]): Promise<JobWorkflowItem> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<JobWorkflowItem>(getUpdateJobWorkflowUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(jobWorkflowActionInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateJobWorkflowMutationKey = () => ['updateJobWorkflow'] as const;
+
+export const getUpdateJobWorkflowMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJobWorkflow>>, TError,UpdateJobWorkflowMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJobWorkflow>>, TError,UpdateJobWorkflowMutationVariables, TContext> => {
+
+const mutationKey = getUpdateJobWorkflowMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJobWorkflow>>, UpdateJobWorkflowMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateJobWorkflow(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJobWorkflowMutationResult = NonNullable<Awaited<ReturnType<typeof updateJobWorkflow>>>
+    export type UpdateJobWorkflowMutationBody = BodyType<JobWorkflowActionInput>
+    export type UpdateJobWorkflowMutationError = ErrorType<void>
+    export type UpdateJobWorkflowMutationVariables = {id: number;data: BodyType<JobWorkflowActionInput>}
+
+    /**
+ * @summary Start, update, hand over, complete, or verify a unit's workflow
+ */
+export const useUpdateJobWorkflow = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJobWorkflow>>, TError,UpdateJobWorkflowMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJobWorkflow>>,
+        TError,
+        UpdateJobWorkflowMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateJobWorkflowMutationOptions(options));
+    }
+
+export const getListJobWorkflowHistoryUrl = (id: number,) => {
+
+
+
+
+  return `/api/serial-numbers/${id}/workflow/history`
+}
+
+/**
+ * @summary List the work and handover history for a serial number
+ */
+export const listJobWorkflowHistory = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<JobWorkEvent[]> => {
+
+  return customFetch<JobWorkEvent[]>(getListJobWorkflowHistoryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJobWorkflowHistoryQueryKey = (id: number,) => {
+    return [
+    `/api/serial-numbers/${id}/workflow/history`
+    ] as const;
+    }
+
+
+export const getListJobWorkflowHistoryQueryOptions = <TData = Awaited<ReturnType<typeof listJobWorkflowHistory>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJobWorkflowHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJobWorkflowHistoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJobWorkflowHistory>>> = ({ signal }) => listJobWorkflowHistory(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJobWorkflowHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJobWorkflowHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof listJobWorkflowHistory>>>
+export type ListJobWorkflowHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the work and handover history for a serial number
+ */
+
+export function useListJobWorkflowHistory<TData = Awaited<ReturnType<typeof listJobWorkflowHistory>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJobWorkflowHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJobWorkflowHistoryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListPaintUsageUrl = (params?: ListPaintUsageParams,) => {
   const normalizedParams = new URLSearchParams();

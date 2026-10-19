@@ -5,10 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { JobItemTargetBasis } from './jobItemTargetBasis';
 
 export interface JobItem {
   id: number;
   jobNo: string;
+  customerName: string;
+  orderQuantity: number;
+  targetBasis: JobItemTargetBasis;
   description: string;
   /** @nullable */
   surfaceAreaM2: number | null;

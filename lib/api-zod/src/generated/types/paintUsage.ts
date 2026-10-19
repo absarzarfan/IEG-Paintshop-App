@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { JobWorkCategory } from './jobWorkCategory';
 
 export interface PaintUsage {
   id: number;
@@ -14,6 +15,7 @@ export interface PaintUsage {
   serialNo: string;
   usageDate: Date;
   shift: string;
+  category: JobWorkCategory;
   primerBaseActualL: number;
   primerHrdActualL: number;
   primerThinnerActualL: number;

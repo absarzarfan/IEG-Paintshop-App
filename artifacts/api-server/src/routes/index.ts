@@ -11,6 +11,7 @@ import paintUsageRouter from "./paintUsage";
 import stockRouter from "./stock";
 import auditLogRouter from "./auditLog";
 import dashboardRouter from "./dashboard";
+import jobWorkflowRouter from "./jobWorkflow";
 import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -30,6 +31,7 @@ router.use(jobItemsRouter);
 router.use(serialNumbersRouter);
 router.use(paintUsageRouter);
 router.use(stockRouter);
+router.use(jobWorkflowRouter);
 router.use(auditLogRouter);
 router.use(dashboardRouter);
 

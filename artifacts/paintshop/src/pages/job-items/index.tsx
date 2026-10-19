@@ -1,261 +1,85 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { Link } from "wouter";
-import { 
-  useListJobItems, 
-  useCreateJobItem, 
-  getListJobItemsQueryKey,
-  JobItemInput
-} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, Loader2, PaintBucket, AlertTriangle } from "lucide-react";
+import { getListJobItemSerialNumbersQueryKey, getListJobItemsQueryKey, useCreateJobItem, useCreateJobItemSerialNumbers, useListJobItemSerialNumbers, useListJobItems, type JobItem, type JobItemInput } from "@workspace/api-client-react";
+import { AlertTriangle, Loader2, PaintBucket, Plus, Search } from "lucide-react";
 import { useAppAuth } from "@/lib/auth";
+import { useLanguage } from "@/lib/language";
 import { useDebounce } from "@/hooks/use-debounce";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 
-const formSchema = z.object({
-  jobNo: z.string().min(1, "Job No is required"),
-  description: z.string().min(1, "Description is required"),
-  surfaceAreaM2: z.coerce.number().optional(),
-  primerBaseL: z.coerce.number().min(0),
-  primerHrdL: z.coerce.number().min(0),
-  primerThinnerL: z.coerce.number().min(0),
-  topcoatBaseL: z.coerce.number().min(0),
-  topcoatHrdL: z.coerce.number().min(0),
-  topcoatThinnerL: z.coerce.number().min(0),
-  overconsumptionThresholdPct: z.coerce.number().optional(),
-});
+function JobRow({ item, search, canRegister, onRegister, t }: { item: JobItem; search: string; canRegister: boolean; onRegister: () => void; t: (key: string) => string }) {
+  const serialQuery = useListJobItemSerialNumbers(item.id, { query: { queryKey: getListJobItemSerialNumbersQueryKey(item.id) } });
+  const serials = serialQuery.data ?? [];
+  const term = search.trim().toLocaleLowerCase();
+  if (term && !`${item.jobNo} ${item.customerName} ${item.description} ${serials.map(serial => serial.serialNo).join(" ")}`.toLocaleLowerCase().includes(term)) return null;
+  const orderTarget = (target: number) => item.targetBasis === "order_total" ? target : target * item.orderQuantity;
+  return <tr data-testid={`row-job-${item.id}`}><td className="min-w-56"><Link href={`/job-items/${item.id}`} className="block hover:underline" data-testid={`link-job-${item.id}`}><span className="block text-xs font-semibold text-muted-foreground">{item.customerName || "—"}</span><span className="font-mono font-extrabold text-primary">{item.jobNo}</span></Link><div className="mt-1 flex max-w-[260px] flex-wrap gap-1">{serialQuery.isLoading ? <span className="text-xs text-muted-foreground">{t("loading")}</span> : serials.length ? serials.map(sn=><span key={sn.id} className="border border-border bg-secondary/50 px-1.5 py-0.5 font-mono text-[10px]" data-testid={`text-serial-${sn.id}`}>SN {sn.serialNo}</span>) : "—"}</div></td><td className="font-mono">{item.orderQuantity}</td><td>{item.description}</td><td className="text-right font-mono">{orderTarget(item.primerTotalL).toFixed(3)} L</td><td className="text-right font-mono">{orderTarget(item.topcoatTotalL).toFixed(3)} L</td><td><span className={`border px-2 py-1 text-[10px] font-bold uppercase ${item.isActive?"border-emerald-700/30 bg-emerald-50 text-emerald-800":"border-destructive/30 bg-destructive/10 text-destructive"}`}>{item.isActive?t("activeStatus"):t("inactiveStatus")}</span></td><td className="text-right">{canRegister && <Button variant="outline" size="sm" onClick={onRegister} data-testid={`button-register-serials-${item.id}`}><Plus size={14} className="mr-1"/>{t("register")}</Button>}</td></tr>;
+}
 
 export function JobItems() {
-  const { isAdmin } = useAppAuth();
+  const { t, language } = useLanguage();
+  const { user } = useAppAuth();
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 500);
-  const [open, setOpen] = useState(false);
-  const queryClient = useQueryClient();
+  const [showCreate, setShowCreate] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [registerTarget, setRegisterTarget] = useState<number | null>(null);
+  const [mode, setMode] = useState<"range" | "list">("range");
+  const [rangeStart, setRangeStart] = useState("");
+  const [rangeEnd, setRangeEnd] = useState("");
+  const [manualList, setManualList] = useState("");
+  const debounced = useDebounce(search, 250);
+  const qc = useQueryClient();
+  const query = useListJobItems(undefined, { query: { queryKey: getListJobItemsQueryKey() } });
+  const create = useCreateJobItem();
+  const createSerials = useCreateJobItemSerialNumbers();
+  const canRegister = user?.role === "admin" || user?.role === "painter";
+  const canCreate = user?.role === "admin";
+  const [jobNo, setJobNo] = useState("");
+  const [customerName, setCustomer] = useState("");
+  const [orderQuantity, setQuantity] = useState("1");
+  const [description, setDescription] = useState("");
+  const [primerBaseL, setPrimer] = useState("0");
+  const [topcoatBaseL, setTopcoat] = useState("0");
+  const all = useMemo(() => query.data ?? [], [query.data]);
 
-  const { data: jobItems, isLoading, error } = useListJobItems(
-    { search: debouncedSearch || undefined }, 
-    { query: { queryKey: [...getListJobItemsQueryKey(), debouncedSearch] } }
-  );
-  
-  const createMutation = useCreateJobItem({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListJobItemsQueryKey() });
-        setOpen(false);
-      }
-    }
-  });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      jobNo: "",
-      description: "",
-      primerBaseL: 0,
-      primerHrdL: 0,
-      primerThinnerL: 0,
-      topcoatBaseL: 0,
-      topcoatHrdL: 0,
-      topcoatThinnerL: 0,
-    }
-  });
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    createMutation.mutate({ data: values as JobItemInput });
+  async function submitJob(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setFormError("");
+    const payload: JobItemInput = { jobNo, customerName, orderQuantity: Number(orderQuantity), targetBasis: "order_total", description, primerBaseL: Number(primerBaseL), primerHrdL: 0, primerThinnerL: 0, topcoatBaseL: Number(topcoatBaseL), topcoatHrdL: 0, topcoatThinnerL: 0 };
+    try {
+      await create.mutateAsync({ data: payload });
+      await qc.invalidateQueries({ queryKey: getListJobItemsQueryKey() });
+      setShowCreate(false); setJobNo(""); setCustomer(""); setQuantity("1"); setDescription("");
+    } catch (e) { setFormError(e instanceof Error ? e.message : t("error")); }
   }
-
-  // Removed client-side filteredItems; using server-side search
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-foreground uppercase tracking-tight">Job Items</h1>
-          <p className="text-muted-foreground font-medium mt-1">Job catalog and paint consumption targets per unit.</p>
-        </div>
-
-        {isAdmin && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="font-bold uppercase tracking-wider">
-                <Plus className="mr-2 h-4 w-4" /> New Job Item
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="font-extrabold text-xl uppercase tracking-tight">Create Job Item</DialogTitle>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="jobNo" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-bold">Job No</FormLabel>
-                        <FormControl><Input {...field} className="font-mono" placeholder="e.g. JB-2024-001" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="surfaceAreaM2" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-bold">Surface Area (m²)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" {...field} className="font-mono" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                  <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">Description</FormLabel>
-                      <FormControl><Input {...field} placeholder="Part or unit description" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <div className="space-y-4">
-                    <h4 className="font-bold uppercase tracking-wider text-sm border-b pb-2">Primer Targets (Liters/Unit)</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <FormField control={form.control} name="primerBaseL" render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Base</FormLabel><FormControl><Input type="number" step="0.001" {...field} className="font-mono" /></FormControl></FormItem>
-                      )} />
-                      <FormField control={form.control} name="primerHrdL" render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Hardener</FormLabel><FormControl><Input type="number" step="0.001" {...field} className="font-mono" /></FormControl></FormItem>
-                      )} />
-                      <FormField control={form.control} name="primerThinnerL" render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Thinner</FormLabel><FormControl><Input type="number" step="0.001" {...field} className="font-mono" /></FormControl></FormItem>
-                      )} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="font-bold uppercase tracking-wider text-sm border-b pb-2">Topcoat Targets (Liters/Unit)</h4>
-                    <div className="grid grid-cols-3 gap-4">
-                      <FormField control={form.control} name="topcoatBaseL" render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Base</FormLabel><FormControl><Input type="number" step="0.001" {...field} className="font-mono" /></FormControl></FormItem>
-                      )} />
-                      <FormField control={form.control} name="topcoatHrdL" render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Hardener</FormLabel><FormControl><Input type="number" step="0.001" {...field} className="font-mono" /></FormControl></FormItem>
-                      )} />
-                      <FormField control={form.control} name="topcoatThinnerL" render={({ field }) => (
-                        <FormItem><FormLabel className="text-xs">Thinner</FormLabel><FormControl><Input type="number" step="0.001" {...field} className="font-mono" /></FormControl></FormItem>
-                      )} />
-                    </div>
-                  </div>
-
-                  <FormField control={form.control} name="overconsumptionThresholdPct" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">Overconsumption Threshold (%)</FormLabel>
-                      <FormControl><Input type="number" {...field} placeholder="Default: 10" className="font-mono" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <div className="flex justify-end pt-4">
-                    <Button type="submit" disabled={createMutation.isPending} className="font-bold uppercase tracking-wider px-8">
-                      {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
-
-      <div className="bg-card border border-border shadow-sm flex flex-col">
-        <div className="p-4 border-b border-border bg-secondary/20">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search by Job No or Description..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-white"
-            />
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="p-12 flex justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : error || !jobItems ? (
-          <div className="p-8 text-center text-destructive flex items-center justify-center gap-2 font-bold">
-            <AlertTriangle className="h-5 w-5" /> Failed to load job items
-          </div>
-        ) : jobItems.length === 0 ? (
-          <div className="p-16 text-center">
-            <div className="w-16 h-16 bg-secondary text-muted-foreground mx-auto flex items-center justify-center mb-4 border border-border">
-              <PaintBucket size={32} />
-            </div>
-            <h3 className="text-lg font-bold text-foreground">No Job Items Found</h3>
-            <p className="text-muted-foreground font-medium mt-1">
-              {search ? "No matches for your search." : "Create a job item to establish paint targets."}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead>
-                <tr>
-                  <th className="font-bold">Job No</th>
-                  <th className="font-bold">Description</th>
-                  <th className="font-bold text-right">Primer Total (L)</th>
-                  <th className="font-bold text-right">Topcoat Total (L)</th>
-                  <th className="font-bold text-right">Serials</th>
-                  <th className="font-bold text-center">Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border font-medium">
-                {jobItems.map(item => (
-                  <tr key={item.id} className="hover:bg-secondary/30 transition-colors">
-                    <td className="font-mono font-extrabold tracking-tight text-primary">{item.jobNo}</td>
-                    <td>{item.description}</td>
-                    <td className="font-mono text-right">{item.primerTotalL.toFixed(3)}</td>
-                    <td className="font-mono text-right">{item.topcoatTotalL.toFixed(3)}</td>
-                    <td className="font-mono text-right">{item.serialNumberCount}</td>
-                    <td className="text-center">
-                      <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
-                        item.isActive
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : 'bg-red-100 text-red-800 border-red-300'
-                      }`}>
-                        {item.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="text-right">
-                      <Link href={`/job-items/${item.id}`} className="inline-flex items-center justify-center h-8 px-3 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground border border-primary hover:bg-primary hover:text-primary-foreground hover:border-primary">
-                        Details
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  async function register(id: number) {
+    setFormError("");
+    try {
+      await createSerials.mutateAsync({ jobItemId: id, data: mode === "range" ? { mode, rangeStart, rangeEnd } : { mode, values: manualList.split(/[\n,]+/).map(x => x.trim()).filter(Boolean) } });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: getListJobItemsQueryKey() }),
+        qc.invalidateQueries({ queryKey: getListJobItemSerialNumbersQueryKey(id) }),
+      ]);
+      setRegisterTarget(null); setRangeStart(""); setRangeEnd(""); setManualList("");
+    } catch (e) { setFormError(`${e instanceof Error ? e.message : t("error")} ${t("duplicate")}`); }
+  }
+  return <div className="space-y-5 pb-10">
+    <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">IEG / Production Register</p><h1 className="mt-1 text-3xl font-extrabold uppercase tracking-tight">{t("jobTitle")}</h1><p className="mt-1 text-sm text-muted-foreground">{t("jobDesc")}</p></div>{canCreate && <Button onClick={() => {setFormError("");setShowCreate(v=>!v)}} data-testid="button-create-job"><Plus size={16} className="mr-2"/>{t("createJob")}</Button>}</header>
+    {showCreate && <form onSubmit={submitJob} className="grid gap-4 border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="form-create-job">
+      <label className="space-y-1 text-xs font-bold uppercase text-muted-foreground">{t("jobNo")}<Input value={jobNo} onChange={e=>setJobNo(e.target.value)} required data-testid="input-job-no"/></label>
+      <label className="space-y-1 text-xs font-bold uppercase text-muted-foreground">{t("customer")}<Input value={customerName} onChange={e=>setCustomer(e.target.value)} required data-testid="input-customer"/></label>
+      <label className="space-y-1 text-xs font-bold uppercase text-muted-foreground">{t("quantity")}<Input type="number" min="1" value={orderQuantity} onChange={e=>setQuantity(e.target.value)} required data-testid="input-order-quantity"/></label>
+      <label className="space-y-1 text-xs font-bold uppercase text-muted-foreground">{t("description")}<Input value={description} onChange={e=>setDescription(e.target.value)} required data-testid="input-job-description"/></label>
+       <label className="space-y-1 text-xs font-bold uppercase text-muted-foreground">{t("primer")} (L / {t("wholeOrder")})<Input type="number" min="0" step="0.05" value={primerBaseL} onChange={e=>setPrimer(e.target.value)} data-testid="input-primer-target"/></label>
+       <label className="space-y-1 text-xs font-bold uppercase text-muted-foreground">{t("topcoat")} (L / {t("wholeOrder")})<Input type="number" min="0" step="0.05" value={topcoatBaseL} onChange={e=>setTopcoat(e.target.value)} data-testid="input-topcoat-target"/></label>
+      <div className="flex items-end gap-2"><Button type="submit" disabled={create.isPending} data-testid="button-save-job">{create.isPending && <Loader2 size={14} className="mr-2 animate-spin"/>}{t("save")}</Button><Button type="button" variant="outline" onClick={()=>setShowCreate(false)} data-testid="button-cancel-job">{t("cancel")}</Button></div>
+    </form>}
+    {formError && <div className="flex gap-2 border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive" data-testid="error-job-form"><AlertTriangle size={16} className="shrink-0"/>{formError}</div>}
+    <section className="border border-border bg-card"><div className="flex flex-col gap-3 border-b border-border bg-secondary/20 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-widest">{all.length} {t("jobs")}</p><p className="mt-1 text-xs text-muted-foreground">{t("duplicate")}</p></div><div className="relative w-full sm:max-w-md"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/><Input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("search")} className="bg-background pl-9" aria-label={t("search")} data-testid="input-search-job-items"/></div></div>
+       {query.isLoading ? <div className="space-y-3 p-5"><div className="h-12 animate-pulse bg-muted"/><div className="h-12 animate-pulse bg-muted"/><div className="h-12 animate-pulse bg-muted"/></div> : query.error ? <div className="flex items-center justify-center gap-2 p-12 font-bold text-destructive" data-testid="error-job-items"><AlertTriangle size={18}/>{t("error")} <button onClick={()=>void query.refetch()} className="underline">{t("retry")}</button></div> : all.length===0 ? <div className="p-14 text-center"><PaintBucket size={30} className="mx-auto text-muted-foreground"/><p className="mt-3 text-sm font-semibold">{t("noJobs")}</p></div> : <div className="overflow-x-auto"><table className="min-w-[980px]"><thead><tr><th>{t("customer")} / {t("jobNo")} / {t("serial")}</th><th>{t("quantity")}</th><th>{t("description")}</th><th className="text-right">{t("primer")}</th><th className="text-right">{t("topcoat")}</th><th>{t("status")}</th><th/></tr></thead><tbody>{all.map(item=><JobRow key={item.id} item={item} search={debounced} canRegister={canRegister} onRegister={()=>{setRegisterTarget(registerTarget===item.id?null:item.id);setFormError("")}} t={t}/>)}</tbody></table></div>}
+    </section>
+    {registerTarget !== null && <div className="border border-primary/40 bg-card p-4" data-testid="panel-register-serials"><div className="flex items-center justify-between"><h2 className="font-bold">{t("register")} · {all.find(x=>x.id===registerTarget)?.jobNo}</h2><button onClick={()=>setRegisterTarget(null)} aria-label={t("cancel")} data-testid="button-close-register">×</button></div><p className="mt-1 text-xs text-muted-foreground">{t("duplicate")}</p><div className="mt-4 flex gap-4"><label className="flex items-center gap-2 text-sm"><input type="radio" checked={mode==="range"} onChange={()=>setMode("range")} data-testid="radio-serial-range"/>Range</label><label className="flex items-center gap-2 text-sm"><input type="radio" checked={mode==="list"} onChange={()=>setMode("list")} data-testid="radio-serial-list"/>List</label></div>{mode==="range"?<div className="mt-3 grid gap-3 sm:grid-cols-2"><Input placeholder="Start" value={rangeStart} onChange={e=>setRangeStart(e.target.value)} data-testid="input-serial-range-start"/><Input placeholder="End" value={rangeEnd} onChange={e=>setRangeEnd(e.target.value)} data-testid="input-serial-range-end"/></div>:<textarea className="mt-3 min-h-24 w-full border border-input bg-background p-3 font-mono text-sm" placeholder="SN-001&#10;SN-002" value={manualList} onChange={e=>setManualList(e.target.value)} data-testid="input-serial-list"/>}<Button className="mt-3" onClick={()=>void register(registerTarget)} disabled={createSerials.isPending} data-testid="button-submit-serials">{createSerials.isPending&&<Loader2 size={14} className="mr-2 animate-spin"/>}{t("register")}</Button></div>}
+    <p className="text-right font-mono text-[10px] text-muted-foreground">{new Intl.DateTimeFormat(language==="id"?"id-ID":"en-US",{dateStyle:"medium"}).format(new Date())}</p>
+  </div>;
 }

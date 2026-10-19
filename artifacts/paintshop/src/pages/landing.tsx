@@ -1,14 +1,20 @@
 import { Link } from "wouter";
 import { ArrowRight, ClipboardPenLine, PackageCheck, ShieldCheck } from "lucide-react";
+import { useLanguage } from "@/lib/language";
 
 export function Landing() {
+  const { language, setLanguage, t } = useLanguage();
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col font-sans selection:bg-primary selection:text-primary-foreground">
       <header className="h-20 bg-sidebar flex items-center justify-between px-6 lg:px-12">
         <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-white.png`} alt="Integrated Engineering Group" className="h-9 w-auto max-w-[190px] object-contain" />
-        <Link href="/sign-in" className="text-xs font-bold uppercase tracking-[0.16em] text-sidebar-foreground transition-colors hover:text-primary">
-           Sign In
-        </Link>
+        <div className="flex items-center gap-4">
+          <div className="inline-flex border border-sidebar-border" aria-label="Language">
+            <button type="button" onClick={() => setLanguage("id")} aria-pressed={language === "id"} className={`px-2 py-1 text-xs font-bold ${language === "id" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/75"}`} data-testid="button-language-id-landing">ID</button>
+            <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`px-2 py-1 text-xs font-bold ${language === "en" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/75"}`} data-testid="button-language-en-landing">EN</button>
+          </div>
+          <Link href="/sign-in" className="text-xs font-bold uppercase tracking-[0.16em] text-sidebar-foreground transition-colors hover:text-primary">{t("signIn")}</Link>
+        </div>
       </header>
 
         <main className="flex-1 flex flex-col items-center px-5 py-14 text-center">
@@ -19,34 +25,34 @@ export function Landing() {
 
            <div className="mx-auto mb-4 inline-flex items-center gap-2 border border-primary/40 bg-primary/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-foreground">
              <span className="h-2 w-2 bg-primary" />
-             Internal operations console
+              {t("landingEyebrow")}
            </div>
            <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight uppercase">
             IEG Paintshop
           </h1>
            <p className="mt-3 text-sm sm:text-base font-medium text-muted-foreground">
-            Paint usage and material control system
+             {t("authSystemDesc")}
           </p>
 
           <div className="mt-12 grid grid-cols-1 gap-4 text-left md:grid-cols-3">
             {[
               {
                 icon: ShieldCheck,
-                eyebrow: "System Control",
-                title: "Admin",
-                description: "Manage users, roles, master data, and the complete Paintshop operation.",
+                eyebrow: t("systemControl"),
+                title: t("roleAdminShort"),
+                description: t("landingAdmin"),
               },
               {
                 icon: ClipboardPenLine,
-                eyebrow: "Paint Operation",
-                title: "Paint Mixer",
-                description: "Record actual primer and topcoat usage for every job and serial number.",
+                eyebrow: t("paintOperation"),
+                title: t("rolePainterShort"),
+                description: t("landingMixer"),
               },
               {
                 icon: PackageCheck,
-                eyebrow: "Material Control",
-                title: "Warehouse",
-                description: "Monitor paint materials, stock thresholds, batches, and expiry dates.",
+                eyebrow: t("materialControl"),
+                title: t("roleWarehouseShort"),
+                description: t("landingWarehouse"),
               },
             ].map(({ icon: Icon, eyebrow, title, description }) => (
               <Link
@@ -64,7 +70,7 @@ export function Landing() {
                  <h2 className="mt-2 text-lg font-extrabold text-foreground">{title}</h2>
                  <p className="mt-2 text-sm leading-5 text-muted-foreground">{description}</p>
                  <div className="mt-5 border-t border-border pt-3 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                  Continue to sign in
+                   {t("continueSignIn")}
                 </div>
               </Link>
             ))}

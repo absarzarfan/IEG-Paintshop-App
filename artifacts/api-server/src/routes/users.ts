@@ -32,6 +32,11 @@ router.post("/users", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
 
+  if (parsed.data.isPaintLeader && parsed.data.role !== "painter") {
+    res.status(400).json({ error: "Only Paint Mixer accounts can be designated as shipment leaders" });
+    return;
+  }
+
   try {
     const [created] = await db
       .insert(usersTable)
@@ -41,6 +46,7 @@ router.post("/users", requireAdmin, async (req, res): Promise<void> => {
         name: parsed.data.name.trim(),
         email: parsed.data.email ?? null,
         role: parsed.data.role,
+        isPaintLeader: parsed.data.isPaintLeader ?? false,
         isActive: parsed.data.isActive ?? true,
       })
       .returning();
@@ -77,6 +83,13 @@ router.patch("/users/:id", requireAdmin, async (req, res): Promise<void> => {
   const [before] = await db.select().from(usersTable).where(eq(usersTable.id, params.data.id));
   if (!before) {
     res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const nextRole = parsed.data.role ?? before.role;
+  const nextIsPaintLeader = parsed.data.isPaintLeader ?? before.isPaintLeader;
+  if (nextIsPaintLeader && nextRole !== "painter") {
+    res.status(400).json({ error: "Only Paint Mixer accounts can be designated as shipment leaders" });
     return;
   }
 

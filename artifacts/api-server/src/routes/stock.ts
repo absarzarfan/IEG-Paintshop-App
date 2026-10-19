@@ -18,7 +18,7 @@ import { requireAnyRole, requireRole } from "../middlewares/auth";
 import { recordAudit } from "../lib/audit";
 
 const router: IRouter = Router();
-const canManageStock = requireRole("admin", "warehouse");
+const canManageStock = requireRole("admin", "warehouse", "painter");
 
 function signedQuantity(movementType: "in" | "out" | "adjustment", quantityL: number): number {
   return movementType === "out" ? -quantityL : quantityL;
@@ -134,12 +134,9 @@ router.post("/stock/movements", canManageStock, async (req, res): Promise<void> 
     return;
   }
 
-  if (
-    (parsed.data.movementType !== "adjustment" && parsed.data.quantityL <= 0) ||
-    (parsed.data.movementType === "adjustment" && parsed.data.quantityL === 0)
-  ) {
+  if (parsed.data.quantityL <= 0) {
     res.status(400).json({
-      error: parsed.data.movementType === "adjustment" ? "Adjustment quantity cannot be zero" : "Receipt and issue quantities must be greater than zero",
+      error: "Receipt, issue, and return-to-stock quantities must be greater than zero",
     });
     return;
   }

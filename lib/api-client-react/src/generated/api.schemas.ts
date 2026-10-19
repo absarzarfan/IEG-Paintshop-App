@@ -29,6 +29,7 @@ export interface User {
   /** @nullable */
   email: string | null;
   role: UserRole;
+  isPaintLeader: boolean;
   isActive: boolean;
   createdAt: string;
 }
@@ -88,6 +89,7 @@ export interface UserInput {
   /** @nullable */
   email?: string | null;
   role: UserRole;
+  isPaintLeader?: boolean;
   isActive?: boolean;
 }
 
@@ -98,6 +100,7 @@ export interface UserUpdate {
      */
   password?: string;
   role?: UserRole;
+  isPaintLeader?: boolean;
   isActive?: boolean;
 }
 
@@ -275,9 +278,20 @@ export interface StockMovementInput {
   notes?: string | null;
 }
 
+export type JobItemTargetBasis = typeof JobItemTargetBasis[keyof typeof JobItemTargetBasis];
+
+
+export const JobItemTargetBasis = {
+  per_unit: 'per_unit',
+  order_total: 'order_total',
+} as const;
+
 export interface JobItem {
   id: number;
   jobNo: string;
+  customerName: string;
+  orderQuantity: number;
+  targetBasis: JobItemTargetBasis;
   description: string;
   /** @nullable */
   surfaceAreaM2: number | null;
@@ -336,9 +350,22 @@ export type JobItemDetail = JobItem & {
   costs: JobItemCosts;
 };
 
+export type JobItemInputTargetBasis = typeof JobItemInputTargetBasis[keyof typeof JobItemInputTargetBasis];
+
+
+export const JobItemInputTargetBasis = {
+  per_unit: 'per_unit',
+  order_total: 'order_total',
+} as const;
+
 export interface JobItemInput {
   /** @minLength 1 */
   jobNo: string;
+  /** @maxLength 160 */
+  customerName: string;
+  /** @minimum 1 */
+  orderQuantity: number;
+  targetBasis: JobItemInputTargetBasis;
   /** @minLength 1 */
   description: string;
   /** @minimum 0 */
@@ -365,9 +392,22 @@ export interface JobItemInput {
   topcoatThinnerMaterialId?: number;
 }
 
+export type JobItemUpdateTargetBasis = typeof JobItemUpdateTargetBasis[keyof typeof JobItemUpdateTargetBasis];
+
+
+export const JobItemUpdateTargetBasis = {
+  per_unit: 'per_unit',
+  order_total: 'order_total',
+} as const;
+
 export interface JobItemUpdate {
   /** @minLength 1 */
   jobNo?: string;
+  /** @maxLength 160 */
+  customerName?: string;
+  /** @minimum 1 */
+  orderQuantity?: number;
+  targetBasis?: JobItemUpdateTargetBasis;
   /** @minLength 1 */
   description?: string;
   /**
@@ -407,10 +447,136 @@ export interface JobItemUpdate {
   isActive?: boolean;
 }
 
+export type JobWorkStatus = typeof JobWorkStatus[keyof typeof JobWorkStatus];
+
+
+export const JobWorkStatus = {
+  queued: 'queued',
+  ongoing: 'ongoing',
+  shipment: 'shipment',
+  shipped: 'shipped',
+} as const;
+
 export interface SerialNumber {
   id: number;
   jobItemId: number;
   serialNo: string;
+  workStatus: JobWorkStatus;
+  progressPct: number;
+  /** @nullable */
+  currentCategory: string | null;
+  activeShift: number;
+  /** @nullable */
+  handoverToShift: number | null;
+  createdAt: string;
+}
+
+export type JobWorkCategory = typeof JobWorkCategory[keyof typeof JobWorkCategory];
+
+
+export const JobWorkCategory = {
+  preparation: 'preparation',
+  blasting: 'blasting',
+  washing: 'washing',
+  cleaning: 'cleaning',
+  finishing: 'finishing',
+} as const;
+
+export interface JobWorkflowItem {
+  serialNumberId: number;
+  jobItemId: number;
+  jobNo: string;
+  customerName: string;
+  description: string;
+  serialNo: string;
+  orderQuantity: number;
+  workStatus: JobWorkStatus;
+  progressPct: number;
+  /** @nullable */
+  currentCategory: string | null;
+  activeShift: number;
+  /** @nullable */
+  handoverToShift: number | null;
+  targetTotalL: number;
+  actualTotalL: number;
+  expectedProgressLiters: number;
+  literVariance: number;
+  /** @nullable */
+  materialCostCurrency: string | null;
+  /** @nullable */
+  expectedMaterialCost: number | null;
+  /** @nullable */
+  actualMaterialCost: number | null;
+  /** @nullable */
+  materialCostVariance: number | null;
+  /** @nullable */
+  materialCostVariancePct: number | null;
+  createdAt: string;
+}
+
+export type JobWorkflowActionInputAction = typeof JobWorkflowActionInputAction[keyof typeof JobWorkflowActionInputAction];
+
+
+export const JobWorkflowActionInputAction = {
+  start: 'start',
+  update_progress: 'update_progress',
+  handover: 'handover',
+  complete: 'complete',
+  verify_shipment: 'verify_shipment',
+} as const;
+
+export interface JobWorkflowActionInput {
+  action: JobWorkflowActionInputAction;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  shift?: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  progressPct?: number;
+  category?: JobWorkCategory;
+  /**
+     * @minimum 2
+     * @maximum 3
+     */
+  handoverToShift?: number;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export type JobWorkEventEventType = typeof JobWorkEventEventType[keyof typeof JobWorkEventEventType];
+
+
+export const JobWorkEventEventType = {
+  started: 'started',
+  progress_updated: 'progress_updated',
+  handed_over: 'handed_over',
+  completed: 'completed',
+  shipment_verified: 'shipment_verified',
+} as const;
+
+export interface JobWorkEvent {
+  id: number;
+  serialNumberId: number;
+  /** @nullable */
+  actorUserId: number | null;
+  /** @nullable */
+  actorName: string | null;
+  eventType: JobWorkEventEventType;
+  /** @nullable */
+  shift: number | null;
+  /** @nullable */
+  progressPct: number | null;
+  /** @nullable */
+  category: string | null;
+  /** @nullable */
+  note: string | null;
   createdAt: string;
 }
 
@@ -440,6 +606,7 @@ export interface PaintUsage {
   serialNo: string;
   usageDate: string;
   shift: string;
+  category: JobWorkCategory;
   primerBaseActualL: number;
   primerHrdActualL: number;
   primerThinnerActualL: number;
@@ -475,6 +642,7 @@ export interface PaintUsageInput {
      * @maxLength 50
      */
   shift: string;
+  category?: JobWorkCategory;
   /** @minimum 0 */
   primerBaseActualL: number;
   /** @minimum 0 */
@@ -498,6 +666,7 @@ export interface PaintUsageUpdate {
      * @maxLength 50
      */
   shift?: string;
+  category?: JobWorkCategory;
   /** @minimum 0 */
   primerBaseActualL?: number;
   /** @minimum 0 */
@@ -540,6 +709,15 @@ export interface AuditLogEntry {
 
 export interface DashboardSummary {
   jobItemCount: number;
+  queuedCount: number;
+  ongoingCount: number;
+  completedTodayCount: number;
+  shipmentPendingCount: number;
+  paintMixersOnlineCount: number;
+  paintMixersWorkingCount: number;
+  paintMixersIdlingCount: number;
+  newJobsTodayCount: number;
+  delayedCount: number;
   materialCount: number;
   colorCount: number;
   brandCount: number;
@@ -551,6 +729,10 @@ export type ListJobItemsParams = {
  * Case-insensitive search over job number and description
  */
 search?: string;
+};
+
+export type ListJobWorkflowParams = {
+status?: JobWorkStatus;
 };
 
 export type ListPaintUsageParams = {

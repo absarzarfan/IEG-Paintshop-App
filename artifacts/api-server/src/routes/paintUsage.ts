@@ -21,6 +21,7 @@ import {
 import { requireAnyRole, requireRole } from "../middlewares/auth";
 import { recordAudit, diffFields } from "../lib/audit";
 import { calculateUsageVariance, type UsageActuals } from "../lib/variance";
+import { targetsPerUnit } from "../lib/costs";
 
 const router: IRouter = Router();
 const canRecordUsage = requireRole("admin", "painter");
@@ -61,13 +62,14 @@ function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
     serialNo: serial.serialNo,
     usageDate: usage.usageDate,
     shift: usage.shift,
+    category: usage.category,
     primerBaseActualL: usage.primerBaseActualL,
     primerHrdActualL: usage.primerHrdActualL,
     primerThinnerActualL: usage.primerThinnerActualL,
     topcoatBaseActualL: usage.topcoatBaseActualL,
     topcoatHrdActualL: usage.topcoatHrdActualL,
     topcoatThinnerActualL: usage.topcoatThinnerActualL,
-    ...calculateUsageVariance(jobItem, toActuals(usage)),
+    ...calculateUsageVariance(targetsPerUnit(jobItem), toActuals(usage)),
     notes: usage.notes,
     createdByUserId: usage.createdByUserId,
     createdByName: actor?.name ?? actor?.email ?? null,

@@ -13,6 +13,9 @@ const liters = (name: string) =>
 export const jobItemsTable = pgTable("job_items", {
   id: serial("id").primaryKey(),
   jobNo: text("job_no").notNull().unique(),
+  customerName: text("customer_name").notNull().default(""),
+  orderQuantity: integer("order_quantity").notNull().default(1),
+  targetBasis: text("target_basis").notNull().default("per_unit"),
   description: text("description").notNull(),
   surfaceAreaM2: numeric("surface_area_m2", { mode: "number", precision: 12, scale: 4 }),
   primerBaseL: liters("primer_base_l"),

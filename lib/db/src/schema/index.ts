@@ -5,6 +5,7 @@ export * from "./colors";
 export * from "./materials";
 export * from "./materialPrices";
 export * from "./jobItems";
+export * from "./jobWorkEvents";
 export * from "./serialNumbers";
 export * from "./paintUsage";
 export * from "./stockMovements";
