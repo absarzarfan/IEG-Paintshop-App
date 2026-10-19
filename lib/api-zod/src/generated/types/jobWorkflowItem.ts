@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CustomPaintStageSummary } from './customPaintStageSummary';
 import type { JobWorkStatus } from './jobWorkStatus';
 
 export interface JobWorkflowItem {
@@ -22,6 +23,7 @@ export interface JobWorkflowItem {
   activeShift: number;
   /** @nullable */
   handoverToShift: number | null;
+  customPaintStages: CustomPaintStageSummary[];
   targetTotalL: number;
   actualTotalL: number;
   expectedProgressLiters: number;

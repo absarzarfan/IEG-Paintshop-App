@@ -1,18 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import {
   getGetJobItemQueryKey,
   getGetPaintUsageQueryKey,
+  getListPaintUsagePhotosQueryKey,
   getListJobItemSerialNumbersQueryKey,
   getListJobItemsQueryKey,
   getListPaintUsageQueryKey,
   PaintUsageInput,
   PaintUsageUpdate,
   useCreatePaintUsage,
+  useCreatePaintUsagePhoto,
   useGetPaintUsage,
   useListJobItemSerialNumbers,
   useListJobItems,
   useListPaintUsage,
+  useListPaintUsagePhotos,
+  useRequestPaintUsagePhotoUploadUrl,
   useUpdatePaintUsage,
 } from "@workspace/api-client-react";
 import type { PaintUsage } from "@workspace/api-client-react";
@@ -146,6 +150,9 @@ function UsageForm({
   const queryClient = useQueryClient();
   const [serverError, setServerError] = useState("");
   const [volumeUnit, setVolumeUnit] = useState<"L" | "mL">("L");
+  const [customActuals, setCustomActuals] = useState<Record<string, number>>(() =>
+    Object.fromEntries((usage?.customPaintActuals ?? []).map((actual) => [actual.stageId, actual.actualLiters])),
+  );
   const { t, language } = useLanguage();
   const isEdit = mode === "edit";
 
@@ -189,6 +196,13 @@ function UsageForm({
   const targetPerSerial = selectedJob
     ? selectedJob.targetBasis === "order_total" ? 1 / Math.max(selectedJob.orderQuantity, 1) : 1
     : 0;
+  useEffect(() => {
+    const stages = selectedJob?.customPaintStages ?? [];
+    setCustomActuals((current) => Object.fromEntries(stages.map((stage) => [
+      stage.id,
+      current[stage.id] ?? usage?.customPaintActuals?.find((actual) => actual.stageId === stage.id)?.actualLiters ?? 0,
+    ])));
+  }, [selectedJobId, usage?.id, selectedJob?.customPaintStages]);
   const { data: serials, isLoading: serialsLoading } = useListJobItemSerialNumbers(selectedJobId, {
     query: { enabled: !isEdit && selectedJobId > 0, queryKey: getListJobItemSerialNumbersQueryKey(selectedJobId) },
   });
@@ -217,6 +231,10 @@ function UsageForm({
           topcoatBaseActualL: Number(editValues.topcoatBaseActualL),
           topcoatHrdActualL: Number(editValues.topcoatHrdActualL),
           topcoatThinnerActualL: Number(editValues.topcoatThinnerActualL),
+          customPaintActuals: (selectedJob?.customPaintStages ?? []).map((stage) => ({
+            stageId: stage.id,
+            actualLiters: Number(customActuals[stage.id] ?? 0),
+          })),
           notes: editValues.notes || null,
         };
         const saved = await updateMutation.mutateAsync({ id: usage.id, data });
@@ -237,6 +255,10 @@ function UsageForm({
           topcoatBaseActualL: Number(createValues.topcoatBaseActualL),
           topcoatHrdActualL: Number(createValues.topcoatHrdActualL),
           topcoatThinnerActualL: Number(createValues.topcoatThinnerActualL),
+          customPaintActuals: (selectedJob?.customPaintStages ?? []).map((stage) => ({
+            stageId: stage.id,
+            actualLiters: Number(customActuals[stage.id] ?? 0),
+          })),
           notes: createValues.notes || null,
         };
         const saved = await createMutation.mutateAsync({ data });
@@ -336,6 +358,35 @@ function UsageForm({
             <p className="mt-1 font-mono text-2xl font-extrabold text-primary">{selectedJob ? (selectedJob.topcoatTotalL * targetPerSerial).toFixed(3) : "—"} L</p>
           </div>
         </section>
+
+        {!!selectedJob?.customPaintStages?.length && (
+          <section className="space-y-3 border border-border bg-card p-5" data-testid="custom-paint-stages">
+            <h2 className="text-xs font-bold uppercase tracking-[0.16em]">{t("paintStages")}</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {selectedJob.customPaintStages.map((stage) => (
+                <div className="border-l-4 border-primary bg-secondary/30 p-4" key={stage.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-bold">{stage.name}</p>
+                    <span className="text-[10px] font-bold uppercase text-muted-foreground">{stage.coatType === "primer" ? t("stagePrimer") : t("stageTopcoat")}</span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{t("targetPerSerial")}: {(stage.targetLitersTotal * targetPerSerial).toFixed(3)} L</p>
+                  <label className="mt-3 block text-xs font-bold text-muted-foreground">{t("customActual")} ({volumeUnit})</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step={volumeUnit === "mL" ? 50 : 0.05}
+                    value={volumeUnit === "mL" ? Number(customActuals[stage.id] ?? 0) * 1000 : customActuals[stage.id] ?? 0}
+                    onChange={(event) => setCustomActuals((current) => ({
+                      ...current,
+                      [stage.id]: event.target.value === "" ? 0 : Number(event.target.value) / (volumeUnit === "mL" ? 1000 : 1),
+                    }))}
+                    data-testid={`input-custom-stage-${stage.id}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="border border-border bg-card">
           <div className="grid border-b border-border bg-secondary/40 md:grid-cols-2">
@@ -483,6 +534,105 @@ function PaintUsageList() {
   );
 }
 
+function PaintUsagePhotos({ usageId, canManage }: { usageId: number; canManage: boolean }) {
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
+  const { data: photos, isLoading, error } = useListPaintUsagePhotos(usageId, {
+    query: { queryKey: getListPaintUsagePhotosQueryKey(usageId) },
+  });
+  const requestUpload = useRequestPaintUsagePhotoUploadUrl();
+  const createPhoto = useCreatePaintUsagePhoto();
+  const [label, setLabel] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  const uploadPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    setUploadError("");
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setUploadError(t("invalidPhoto"));
+      input.value = "";
+      return;
+    }
+    setUploading(true);
+    try {
+      const upload = await requestUpload.mutateAsync({
+        data: {
+          name: file.name,
+          size: file.size,
+          contentType: file.type as "image/jpeg" | "image/png" | "image/webp",
+        },
+      });
+      const result = await fetch(upload.uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!result.ok) throw new Error("upload");
+      await createPhoto.mutateAsync({
+        id: usageId,
+        data: {
+          objectPath: upload.objectPath,
+          label: label.trim() || t("primer"),
+          originalName: file.name,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: getListPaintUsagePhotosQueryKey(usageId) });
+      setLabel("");
+    } catch {
+      setUploadError(t("photoUploadError"));
+    } finally {
+      setUploading(false);
+      input.value = "";
+    }
+  };
+
+  return (
+    <section className="space-y-4 border border-border bg-card p-5" data-testid="paint-usage-photos">
+      <div>
+        <h2 className="font-bold uppercase tracking-wider">{t("usagePhotos")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t("photoHint")}</p>
+      </div>
+      {canManage && (
+        <div className="grid gap-3 border border-border bg-secondary/20 p-4 sm:grid-cols-[1fr_auto]">
+          <div className="space-y-2">
+            <Input value={label} onChange={(event) => setLabel(event.target.value)} placeholder={t("photoLabel")} aria-label={t("photoLabel")} maxLength={100} />
+            <Input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadPhoto} disabled={uploading} aria-label={t("choosePhoto")} data-testid="input-paint-usage-photo" />
+          </div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            {uploading && <><Loader2 className="h-4 w-4 animate-spin" />{t("uploading")}</>}
+            {!uploading && t("choosePhoto")}
+          </div>
+          {uploadError && <p className="text-sm font-semibold text-destructive sm:col-span-2" role="alert">{uploadError}</p>}
+        </div>
+      )}
+      {isLoading ? <p className="text-sm text-muted-foreground">{t("loading")}</p> : error ? (
+        <p className="text-sm font-semibold text-destructive">{t("photoLoadError")}</p>
+      ) : photos?.length ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {photos.map((photo) => (
+            <figure className="overflow-hidden border border-border bg-background" key={photo.id}>
+              <img
+                src={`/api/storage/objects/${photo.objectPath.replace(/^\/objects\//, "")}`}
+                alt={`${photo.label} — ${photo.originalName}`}
+                className="aspect-video w-full object-cover"
+                loading="lazy"
+              />
+              <figcaption className="space-y-1 p-3">
+                <p className="font-bold">{photo.label}</p>
+                <p className="truncate text-xs text-muted-foreground">{photo.originalName}</p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      ) : <p className="text-sm text-muted-foreground">{t("noPhotos")}</p>}
+    </section>
+  );
+}
+
 function PaintUsageDetail({ id }: { id: number }) {
   const [, setLocation] = useLocation();
   const { user } = useAppAuth();
@@ -512,6 +662,8 @@ function PaintUsageDetail({ id }: { id: number }) {
         <ComponentTable title="Primer Actual vs Target" accent="blue" rows={[["Base", usage.primerBaseActualL, usage.primerTargetTotalL], ["Hardener", usage.primerHrdActualL, 0], ["Thinner", usage.primerThinnerActualL, 0]]} total={usage.primerActualTotalL} variance={usage.primerVarianceL} pct={usage.primerVariancePct} threshold={usage.thresholdPct} />
         <ComponentTable title="Topcoat Actual vs Target" accent="orange" rows={[["Base", usage.topcoatBaseActualL, usage.topcoatTargetTotalL], ["Hardener", usage.topcoatHrdActualL, 0], ["Thinner", usage.topcoatThinnerActualL, 0]]} total={usage.topcoatActualTotalL} variance={usage.topcoatVarianceL} pct={usage.topcoatVariancePct} threshold={usage.thresholdPct} />
       </section>
+      {!!usage.customPaintActuals?.length && <section className="space-y-3 border border-border bg-card p-5"><h2 className="font-bold uppercase tracking-wider">{t("paintStages")}</h2><div className="grid gap-3 sm:grid-cols-2">{usage.customPaintActuals.map((stage) => <div className="border-l-4 border-primary bg-secondary/30 p-4" key={stage.stageId}><p className="font-bold">{stage.name}<span className="ml-2 text-[10px] uppercase text-muted-foreground">{stage.coatType}</span></p><p className="mt-2 text-sm">{t("targetPerSerial")}: {stage.targetLiters.toFixed(3)} L</p><p className="text-sm">{t("actual")}: {stage.actualLiters.toFixed(3)} L</p></div>)}</div></section>}
+      <PaintUsagePhotos usageId={usage.id} canManage={user?.role === "admin"} />
       <section className="border border-border bg-card p-5"><p className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{t("operationalNotes")}</p><p className="mt-2 whitespace-pre-wrap text-sm font-medium">{usage.notes || "—"}</p></section>
     </div>
   );

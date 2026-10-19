@@ -1,4 +1,5 @@
-import { pgTable, serial, integer, text, date, timestamp, numeric, unique } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, serial, integer, text, date, timestamp, numeric, unique, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { jobItemsTable } from "./jobItems";
@@ -7,6 +8,14 @@ import { usersTable } from "./users";
 
 const liters = (name: string) =>
   numeric(name, { mode: "number", precision: 12, scale: 4 }).notNull().default(0);
+
+export type CustomPaintActual = {
+  stageId: string;
+  name: string;
+  coatType: "primer" | "topcoat";
+  targetLiters: number;
+  actualLiters: number;
+};
 
 /**
  * One completed paint application record per physical serial number.
@@ -26,6 +35,7 @@ export const paintUsageTable = pgTable(
     usageDate: date("usage_date", { mode: "date" }).notNull(),
     shift: text("shift").notNull(),
     category: text("category").notNull().default("preparation"),
+    customPaintActuals: jsonb("custom_paint_actuals").$type<CustomPaintActual[]>().notNull().default(sql`'[]'::jsonb`),
     primerBaseActualL: liters("primer_base_actual_l"),
     primerHrdActualL: liters("primer_hrd_actual_l"),
     primerThinnerActualL: liters("primer_thinner_actual_l"),

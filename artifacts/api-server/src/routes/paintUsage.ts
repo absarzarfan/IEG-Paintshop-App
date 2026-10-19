@@ -53,6 +53,30 @@ function toActuals(row: typeof paintUsageTable.$inferSelect): UsageActuals {
   };
 }
 
+function snapshotCustomPaintActuals(
+  jobItem: typeof jobItemsTable.$inferSelect,
+  requested: Array<{ stageId: string; actualLiters: number }>,
+) {
+  const stages = jobItem.customPaintStages ?? [];
+  const requestedById = new Map(requested.map((item) => [item.stageId, item.actualLiters]));
+  if (
+    requestedById.size !== requested.length ||
+    requested.some((item) => !stages.some((stage) => stage.id === item.stageId))
+  ) {
+    return null;
+  }
+  const targetMultiplier = jobItem.targetBasis === "order_total"
+    ? 1 / Math.max(jobItem.orderQuantity, 1)
+    : 1;
+  return stages.map((stage) => ({
+    stageId: stage.id,
+    name: stage.name,
+    coatType: stage.coatType,
+    targetLiters: stage.targetLitersTotal * targetMultiplier,
+    actualLiters: requestedById.get(stage.id) ?? 0,
+  }));
+}
+
 function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
   return {
     id: usage.id,
@@ -63,6 +87,7 @@ function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
     usageDate: usage.usageDate,
     shift: usage.shift,
     category: usage.category,
+    customPaintActuals: usage.customPaintActuals,
     primerBaseActualL: usage.primerBaseActualL,
     primerHrdActualL: usage.primerHrdActualL,
     primerThinnerActualL: usage.primerThinnerActualL,
@@ -163,10 +188,17 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
     return;
   }
 
+  const customPaintActuals = snapshotCustomPaintActuals(jobItem, parsed.data.customPaintActuals ?? []);
+  if (!customPaintActuals) {
+    res.status(400).json({ error: "A custom paint stage is not part of this job item" });
+    return;
+  }
+
   const [created] = await db
     .insert(paintUsageTable)
     .values({
       ...parsed.data,
+      customPaintActuals,
       createdByUserId: req.appUser?.id ?? null,
     })
     .returning();
@@ -222,13 +254,32 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
     return;
   }
 
+  const { customPaintActuals: requestedActuals, ...updateFields } = parsed.data;
+  const updateData: Partial<typeof paintUsageTable.$inferInsert> = { ...updateFields };
+  if (requestedActuals !== undefined) {
+    const [jobItem] = await db
+      .select()
+      .from(jobItemsTable)
+      .where(eq(jobItemsTable.id, before.jobItemId));
+    if (!jobItem) {
+      res.status(404).json({ error: "Job item not found" });
+      return;
+    }
+    const snapshot = snapshotCustomPaintActuals(jobItem, requestedActuals);
+    if (!snapshot) {
+      res.status(400).json({ error: "A custom paint stage is not part of this job item" });
+      return;
+    }
+    updateData.customPaintActuals = snapshot;
+  }
+
   const [updated] = await db
     .update(paintUsageTable)
-    .set(parsed.data)
+    .set(updateData)
     .where(eq(paintUsageTable.id, params.data.id))
     .returning();
 
-  const changes = diffFields(before, parsed.data);
+  const changes = diffFields(before, updateData);
   if (Object.keys(changes).length > 0) {
     await recordAudit({ req, action: "update", entityType: "paint_usage", entityId: updated.id, changes });
   }

@@ -14,4 +14,6 @@ administrator.
 
 **How to apply:** Keep authentication endpoints, user provisioning, role changes,
 and password handling server-authoritative. Do not reintroduce provider-dependent
-sign-up or treat email as a required credential.
+sign-up or treat email as a required credential. Protect private object-storage
+uploads and reads with the same internal session middleware and role checks; do not
+make user-uploaded Paint Usage photos publicly addressable.

@@ -12,6 +12,8 @@ import stockRouter from "./stock";
 import auditLogRouter from "./auditLog";
 import dashboardRouter from "./dashboard";
 import jobWorkflowRouter from "./jobWorkflow";
+import paintUsagePhotosRouter from "./paintUsagePhotos";
+import storageRouter from "./storage";
 import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -30,6 +32,8 @@ router.use(materialsRouter);
 router.use(jobItemsRouter);
 router.use(serialNumbersRouter);
 router.use(paintUsageRouter);
+router.use(paintUsagePhotosRouter);
+router.use(storageRouter);
 router.use(stockRouter);
 router.use(jobWorkflowRouter);
 router.use(auditLogRouter);

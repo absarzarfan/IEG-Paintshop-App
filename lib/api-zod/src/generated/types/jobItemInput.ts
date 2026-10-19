@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CustomPaintStage } from './customPaintStage';
 import type { JobItemInputTargetBasis } from './jobItemInputTargetBasis';
 
 export interface JobItemInput {
@@ -15,6 +16,7 @@ export interface JobItemInput {
   /** @minimum 1 */
   orderQuantity: number;
   targetBasis: JobItemInputTargetBasis;
+  customPaintStages?: CustomPaintStage[];
   /** @minLength 1 */
   description: string;
   /** @minimum 0 */

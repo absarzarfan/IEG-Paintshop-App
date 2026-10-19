@@ -8,5 +8,6 @@ export * from "./jobItems";
 export * from "./jobWorkEvents";
 export * from "./serialNumbers";
 export * from "./paintUsage";
+export * from "./paintUsagePhotos";
 export * from "./stockMovements";
 export * from "./auditLogs";

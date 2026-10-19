@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { 
   useGetJobItem, 
@@ -163,6 +163,7 @@ export function JobItemDetail() {
             {isAdmin && (
               <>
                 <EditJobItemDialog job={job} />
+                <CustomPaintStagesDialog job={job} />
                 <Button
                   variant="outline"
                   className="h-10 border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground"
@@ -583,6 +584,109 @@ function AssignMaterialsDialog({ jobId, initialValues }: { jobId: number, initia
             </div>
           </div>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CustomPaintStagesDialog({ job }: { job: any }) {
+  const { user } = useAppAuth();
+  const { t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const [stages, setStages] = useState<Array<{ id: string; name: string; coatType: "primer" | "topcoat"; targetLitersTotal: number }>>([]);
+  const [error, setError] = useState("");
+  const queryClient = useQueryClient();
+  const updateJobItem = useUpdateJobItem({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetJobItemQueryKey(job.id) });
+        queryClient.invalidateQueries({ queryKey: getListJobItemsQueryKey() });
+        setOpen(false);
+      },
+      onError: () => setError(t("stageSaveError")),
+    },
+  });
+
+  useEffect(() => {
+    if (open) {
+      setStages(job.customPaintStages ?? []);
+      setError("");
+    }
+  }, [open, job.customPaintStages]);
+
+  if (user?.role !== "admin") return null;
+
+  const save = () => {
+    if (stages.some((stage) => !stage.name.trim() || !Number.isFinite(stage.targetLitersTotal) || stage.targetLitersTotal < 0)) {
+      setError(t("stageValidationError"));
+      return;
+    }
+    updateJobItem.mutate({
+      id: job.id,
+      data: {
+        customPaintStages: stages.map((stage) => ({
+          ...stage,
+          name: stage.name.trim(),
+          targetLitersTotal: Number(stage.targetLitersTotal),
+        })),
+      },
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="font-bold uppercase tracking-wider">{t("paintStages")}</Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-extrabold uppercase">{t("paintStages")}</DialogTitle>
+          <p className="text-sm text-muted-foreground">{t("paintStagesHint")}</p>
+        </DialogHeader>
+        <div className="space-y-3">
+          {stages.length === 0 && <p className="border border-dashed border-border p-4 text-sm text-muted-foreground">{t("noStages")}</p>}
+          {stages.map((stage, index) => (
+            <div className="grid gap-3 border border-border bg-secondary/20 p-3 sm:grid-cols-[1fr_150px_140px_auto]" key={stage.id}>
+              <Input
+                value={stage.name}
+                maxLength={100}
+                placeholder={t("stageName")}
+                aria-label={t("stageName")}
+                onChange={(event) => setStages((current) => current.map((item, i) => i === index ? { ...item, name: event.target.value } : item))}
+              />
+              <select
+                className="h-10 border border-input bg-background px-3 text-sm"
+                aria-label={t("paintType")}
+                value={stage.coatType}
+                onChange={(event) => setStages((current) => current.map((item, i) => i === index ? { ...item, coatType: event.target.value as "primer" | "topcoat" } : item))}
+              >
+                <option value="primer">{t("stagePrimer")}</option>
+                <option value="topcoat">{t("stageTopcoat")}</option>
+              </select>
+              <Input
+                type="number"
+                min="0"
+                step="0.05"
+                value={stage.targetLitersTotal}
+                aria-label={`${t("targetLitersTotal")} (${job.targetBasis === "order_total" ? t("wholeOrder") : t("perUnit")})`}
+                onChange={(event) => setStages((current) => current.map((item, i) => i === index ? { ...item, targetLitersTotal: Number(event.target.value) } : item))}
+              />
+              <Button type="button" variant="ghost" size="icon" aria-label={t("delete")} onClick={() => setStages((current) => current.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setStages((current) => [...current, { id: crypto.randomUUID(), name: "", coatType: "topcoat", targetLitersTotal: 0 }])}
+          >
+            <Plus className="mr-2 h-4 w-4" /> {t("addStage")}
+          </Button>
+        </div>
+        {error && <p role="alert" className="text-sm font-semibold text-destructive">{error}</p>}
+        <div className="flex justify-end gap-2 border-t border-border pt-4">
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
+          <Button type="button" disabled={updateJobItem.isPending} onClick={save}>{updateJobItem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("saveStages")}</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

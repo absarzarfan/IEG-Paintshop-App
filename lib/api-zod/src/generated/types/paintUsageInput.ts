@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { JobWorkCategory } from './jobWorkCategory';
+import type { PaintUsageInputCustomPaintActualsItem } from './paintUsageInputCustomPaintActualsItem';
 
 export interface PaintUsageInput {
   jobItemId: number;
@@ -17,6 +18,7 @@ export interface PaintUsageInput {
      */
   shift: string;
   category?: JobWorkCategory;
+  customPaintActuals?: PaintUsageInputCustomPaintActualsItem[];
   /** @minimum 0 */
   primerBaseActualL: number;
   /** @minimum 0 */

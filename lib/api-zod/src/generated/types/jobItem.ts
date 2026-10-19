@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CustomPaintStage } from './customPaintStage';
 import type { JobItemTargetBasis } from './jobItemTargetBasis';
 
 export interface JobItem {
@@ -13,6 +14,7 @@ export interface JobItem {
   customerName: string;
   orderQuantity: number;
   targetBasis: JobItemTargetBasis;
+  customPaintStages: CustomPaintStage[];
   description: string;
   /** @nullable */
   surfaceAreaM2: number | null;

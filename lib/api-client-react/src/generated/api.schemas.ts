@@ -286,12 +286,37 @@ export const JobItemTargetBasis = {
   order_total: 'order_total',
 } as const;
 
+export type CustomPaintStageCoatType = typeof CustomPaintStageCoatType[keyof typeof CustomPaintStageCoatType];
+
+
+export const CustomPaintStageCoatType = {
+  primer: 'primer',
+  topcoat: 'topcoat',
+} as const;
+
+export interface CustomPaintStage {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  coatType: CustomPaintStageCoatType;
+  /** @minimum 0 */
+  targetLitersTotal: number;
+}
+
 export interface JobItem {
   id: number;
   jobNo: string;
   customerName: string;
   orderQuantity: number;
   targetBasis: JobItemTargetBasis;
+  customPaintStages: CustomPaintStage[];
   description: string;
   /** @nullable */
   surfaceAreaM2: number | null;
@@ -366,6 +391,7 @@ export interface JobItemInput {
   /** @minimum 1 */
   orderQuantity: number;
   targetBasis: JobItemInputTargetBasis;
+  customPaintStages?: CustomPaintStage[];
   /** @minLength 1 */
   description: string;
   /** @minimum 0 */
@@ -408,6 +434,7 @@ export interface JobItemUpdate {
   /** @minimum 1 */
   orderQuantity?: number;
   targetBasis?: JobItemUpdateTargetBasis;
+  customPaintStages?: CustomPaintStage[];
   /** @minLength 1 */
   description?: string;
   /**
@@ -482,6 +509,32 @@ export const JobWorkCategory = {
   finishing: 'finishing',
 } as const;
 
+export type CustomPaintStageSummaryCoatType = typeof CustomPaintStageSummaryCoatType[keyof typeof CustomPaintStageSummaryCoatType];
+
+
+export const CustomPaintStageSummaryCoatType = {
+  primer: 'primer',
+  topcoat: 'topcoat',
+} as const;
+
+export interface CustomPaintStageSummary {
+  id: string;
+  name: string;
+  coatType: CustomPaintStageSummaryCoatType;
+  targetLiters: number;
+  expectedLiters: number;
+  actualLiters: number;
+  litersVariance: number;
+  /** @nullable */
+  targetCost: number | null;
+  /** @nullable */
+  expectedCost: number | null;
+  /** @nullable */
+  actualCost: number | null;
+  /** @nullable */
+  costVariance: number | null;
+}
+
 export interface JobWorkflowItem {
   serialNumberId: number;
   jobItemId: number;
@@ -497,6 +550,7 @@ export interface JobWorkflowItem {
   activeShift: number;
   /** @nullable */
   handoverToShift: number | null;
+  customPaintStages: CustomPaintStageSummary[];
   targetTotalL: number;
   actualTotalL: number;
   expectedProgressLiters: number;
@@ -598,6 +652,82 @@ export interface SerialNumberBulkInput {
   values?: string[];
 }
 
+export type UploadUrlRequestContentType = typeof UploadUrlRequestContentType[keyof typeof UploadUrlRequestContentType];
+
+
+export const UploadUrlRequestContentType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface UploadUrlRequest {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 10485760
+     */
+  size: number;
+  contentType: UploadUrlRequestContentType;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
+export interface PaintUsagePhoto {
+  id: number;
+  paintUsageId: number;
+  objectPath: string;
+  label: string;
+  originalName: string;
+  contentType: string;
+  /** @nullable */
+  uploadedByUserId: number | null;
+  /** @nullable */
+  uploadedByName: string | null;
+  createdAt: string;
+}
+
+export interface PaintUsagePhotoInput {
+  /** @minLength 1 */
+  objectPath: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  label: string;
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  originalName: string;
+}
+
+export type CustomPaintActualCoatType = typeof CustomPaintActualCoatType[keyof typeof CustomPaintActualCoatType];
+
+
+export const CustomPaintActualCoatType = {
+  primer: 'primer',
+  topcoat: 'topcoat',
+} as const;
+
+export interface CustomPaintActual {
+  stageId: string;
+  name: string;
+  coatType: CustomPaintActualCoatType;
+  /** @minimum 0 */
+  targetLiters: number;
+  /** @minimum 0 */
+  actualLiters: number;
+}
+
 export interface PaintUsage {
   id: number;
   jobItemId: number;
@@ -607,6 +737,7 @@ export interface PaintUsage {
   usageDate: string;
   shift: string;
   category: JobWorkCategory;
+  customPaintActuals: CustomPaintActual[];
   primerBaseActualL: number;
   primerHrdActualL: number;
   primerThinnerActualL: number;
@@ -633,6 +764,12 @@ export interface PaintUsage {
   updatedAt: string;
 }
 
+export type PaintUsageInputCustomPaintActualsItem = {
+  stageId: string;
+  /** @minimum 0 */
+  actualLiters: number;
+};
+
 export interface PaintUsageInput {
   jobItemId: number;
   serialNumberId: number;
@@ -643,6 +780,7 @@ export interface PaintUsageInput {
      */
   shift: string;
   category?: JobWorkCategory;
+  customPaintActuals?: PaintUsageInputCustomPaintActualsItem[];
   /** @minimum 0 */
   primerBaseActualL: number;
   /** @minimum 0 */
@@ -659,6 +797,12 @@ export interface PaintUsageInput {
   notes?: string | null;
 }
 
+export type PaintUsageUpdateCustomPaintActualsItem = {
+  stageId: string;
+  /** @minimum 0 */
+  actualLiters: number;
+};
+
 export interface PaintUsageUpdate {
   usageDate?: string;
   /**
@@ -667,6 +811,7 @@ export interface PaintUsageUpdate {
      */
   shift?: string;
   category?: JobWorkCategory;
+  customPaintActuals?: PaintUsageUpdateCustomPaintActualsItem[];
   /** @minimum 0 */
   primerBaseActualL?: number;
   /** @minimum 0 */

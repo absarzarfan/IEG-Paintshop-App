@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CustomPaintActual } from './customPaintActual';
 import type { JobWorkCategory } from './jobWorkCategory';
 
 export interface PaintUsage {
@@ -16,6 +17,7 @@ export interface PaintUsage {
   usageDate: Date;
   shift: string;
   category: JobWorkCategory;
+  customPaintActuals: CustomPaintActual[];
   primerBaseActualL: number;
   primerHrdActualL: number;
   primerThinnerActualL: number;

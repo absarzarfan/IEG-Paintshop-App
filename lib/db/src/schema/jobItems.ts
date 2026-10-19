@@ -1,10 +1,18 @@
-import { pgTable, serial, integer, text, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, serial, integer, text, boolean, timestamp, numeric, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { materialsTable } from "./materials";
 
 const liters = (name: string) =>
   numeric(name, { mode: "number", precision: 12, scale: 4 }).notNull().default(0);
+
+export type CustomPaintStage = {
+  id: string;
+  name: string;
+  coatType: "primer" | "topcoat";
+  targetLitersTotal: number;
+};
 
 // Paint targets are stored per unit (per job item / per serial number), in
 // liters. Cost is always derived at read time from materialPrices -- never
@@ -16,6 +24,7 @@ export const jobItemsTable = pgTable("job_items", {
   customerName: text("customer_name").notNull().default(""),
   orderQuantity: integer("order_quantity").notNull().default(1),
   targetBasis: text("target_basis").notNull().default("per_unit"),
+  customPaintStages: jsonb("custom_paint_stages").$type<CustomPaintStage[]>().notNull().default(sql`'[]'::jsonb`),
   description: text("description").notNull(),
   surfaceAreaM2: numeric("surface_area_m2", { mode: "number", precision: 12, scale: 4 }),
   primerBaseL: liters("primer_base_l"),

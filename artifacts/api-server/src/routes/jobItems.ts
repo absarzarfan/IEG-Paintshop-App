@@ -29,6 +29,7 @@ function serializeJobItem(row: typeof jobItemsTable.$inferSelect, serialNumberCo
     customerName: row.customerName,
     orderQuantity: row.orderQuantity,
     targetBasis: row.targetBasis,
+    customPaintStages: row.customPaintStages,
     description: row.description,
     surfaceAreaM2: row.surfaceAreaM2,
     primerBaseL: row.primerBaseL,

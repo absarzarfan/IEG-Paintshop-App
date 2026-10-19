@@ -51,12 +51,16 @@ import type {
   MaterialUpdate,
   PaintUsage,
   PaintUsageInput,
+  PaintUsagePhoto,
+  PaintUsagePhotoInput,
   PaintUsageUpdate,
   SerialNumber,
   SerialNumberBulkInput,
   StockMovement,
   StockMovementInput,
   StockSummary,
+  UploadUrlRequest,
+  UploadUrlResponse,
   User,
   UserInput,
   UserUpdate
@@ -3608,6 +3612,337 @@ export const useUpdatePaintUsage = <TError = ErrorType<void>,
       > => {
       return useMutation(getUpdatePaintUsageMutationOptions(options));
     }
+
+export const getListPaintUsagePhotosUrl = (id: number,) => {
+
+
+
+
+  return `/api/paint-usage/${id}/photos`
+}
+
+/**
+ * @summary List private photos attached to a Paint Usage record
+ */
+export const listPaintUsagePhotos = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsagePhoto[]> => {
+
+  return customFetch<PaintUsagePhoto[]>(getListPaintUsagePhotosUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPaintUsagePhotosQueryKey = (id: number,) => {
+    return [
+    `/api/paint-usage/${id}/photos`
+    ] as const;
+    }
+
+
+export const getListPaintUsagePhotosQueryOptions = <TData = Awaited<ReturnType<typeof listPaintUsagePhotos>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaintUsagePhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPaintUsagePhotosQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPaintUsagePhotos>>> = ({ signal }) => listPaintUsagePhotos(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPaintUsagePhotos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPaintUsagePhotosQueryResult = NonNullable<Awaited<ReturnType<typeof listPaintUsagePhotos>>>
+export type ListPaintUsagePhotosQueryError = ErrorType<void>
+
+
+/**
+ * @summary List private photos attached to a Paint Usage record
+ */
+
+export function useListPaintUsagePhotos<TData = Awaited<ReturnType<typeof listPaintUsagePhotos>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaintUsagePhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPaintUsagePhotosQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePaintUsagePhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/paint-usage/${id}/photos`
+}
+
+/**
+ * @summary Attach an uploaded private photo (Admin only)
+ */
+export const createPaintUsagePhoto = async (id: number,
+    paintUsagePhotoInput: PaintUsagePhotoInput, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsagePhoto> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PaintUsagePhoto>(getCreatePaintUsagePhotoUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paintUsagePhotoInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePaintUsagePhotoMutationKey = () => ['createPaintUsagePhoto'] as const;
+
+export const getCreatePaintUsagePhotoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaintUsagePhoto>>, TError,CreatePaintUsagePhotoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPaintUsagePhoto>>, TError,CreatePaintUsagePhotoMutationVariables, TContext> => {
+
+const mutationKey = getCreatePaintUsagePhotoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPaintUsagePhoto>>, CreatePaintUsagePhotoMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createPaintUsagePhoto(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePaintUsagePhotoMutationResult = NonNullable<Awaited<ReturnType<typeof createPaintUsagePhoto>>>
+    export type CreatePaintUsagePhotoMutationBody = BodyType<PaintUsagePhotoInput>
+    export type CreatePaintUsagePhotoMutationError = ErrorType<void>
+    export type CreatePaintUsagePhotoMutationVariables = {id: number;data: BodyType<PaintUsagePhotoInput>}
+
+    /**
+ * @summary Attach an uploaded private photo (Admin only)
+ */
+export const useCreatePaintUsagePhoto = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaintUsagePhoto>>, TError,CreatePaintUsagePhotoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPaintUsagePhoto>>,
+        TError,
+        CreatePaintUsagePhotoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePaintUsagePhotoMutationOptions(options));
+    }
+
+export const getRequestPaintUsagePhotoUploadUrlUrl = () => {
+
+
+
+
+  return `/api/storage/uploads/request-url`
+}
+
+/**
+ * @summary Request a private upload URL for a Paint Usage photo (Admin only)
+ */
+export const requestPaintUsagePhotoUploadUrl = async (uploadUrlRequest: UploadUrlRequest, options?: Parameters<typeof customFetch>[1]): Promise<UploadUrlResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<UploadUrlResponse>(getRequestPaintUsagePhotoUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(uploadUrlRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestPaintUsagePhotoUploadUrlMutationKey = () => ['requestPaintUsagePhotoUploadUrl'] as const;
+
+export const getRequestPaintUsagePhotoUploadUrlMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPaintUsagePhotoUploadUrl>>, TError,RequestPaintUsagePhotoUploadUrlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestPaintUsagePhotoUploadUrl>>, TError,RequestPaintUsagePhotoUploadUrlMutationVariables, TContext> => {
+
+const mutationKey = getRequestPaintUsagePhotoUploadUrlMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestPaintUsagePhotoUploadUrl>>, RequestPaintUsagePhotoUploadUrlMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestPaintUsagePhotoUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestPaintUsagePhotoUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestPaintUsagePhotoUploadUrl>>>
+    export type RequestPaintUsagePhotoUploadUrlMutationBody = BodyType<UploadUrlRequest>
+    export type RequestPaintUsagePhotoUploadUrlMutationError = ErrorType<void>
+    export type RequestPaintUsagePhotoUploadUrlMutationVariables = {data: BodyType<UploadUrlRequest>}
+
+    /**
+ * @summary Request a private upload URL for a Paint Usage photo (Admin only)
+ */
+export const useRequestPaintUsagePhotoUploadUrl = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPaintUsagePhotoUploadUrl>>, TError,RequestPaintUsagePhotoUploadUrlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestPaintUsagePhotoUploadUrl>>,
+        TError,
+        RequestPaintUsagePhotoUploadUrlMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestPaintUsagePhotoUploadUrlMutationOptions(options));
+    }
+
+export const getGetPrivateStorageObjectUrl = (objectPath: string,) => {
+
+
+
+
+  return `/api/storage/objects/${objectPath}`
+}
+
+/**
+ * @summary Stream a private uploaded photo to an authenticated user
+ */
+export const getPrivateStorageObject = async (objectPath: string, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetPrivateStorageObjectUrl(objectPath),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrivateStorageObjectQueryKey = (objectPath: string,) => {
+    return [
+    `/api/storage/objects/${objectPath}`
+    ] as const;
+    }
+
+
+export const getGetPrivateStorageObjectQueryOptions = <TData = Awaited<ReturnType<typeof getPrivateStorageObject>>, TError = ErrorType<void>>(objectPath: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivateStorageObject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrivateStorageObjectQueryKey(objectPath);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivateStorageObject>>> = ({ signal }) => getPrivateStorageObject(objectPath, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: objectPath !== null && objectPath !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrivateStorageObject>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPrivateStorageObjectQueryResult = NonNullable<Awaited<ReturnType<typeof getPrivateStorageObject>>>
+export type GetPrivateStorageObjectQueryError = ErrorType<void>
+
+
+/**
+ * @summary Stream a private uploaded photo to an authenticated user
+ */
+
+export function useGetPrivateStorageObject<TData = Awaited<ReturnType<typeof getPrivateStorageObject>>, TError = ErrorType<void>>(
+ objectPath: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivateStorageObject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPrivateStorageObjectQueryOptions(objectPath,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListAuditLogUrl = (params?: ListAuditLogParams,) => {
   const normalizedParams = new URLSearchParams();

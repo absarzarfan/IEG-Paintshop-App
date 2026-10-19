@@ -28,6 +28,8 @@ tags:
     description: Serial numbers belonging to a job item
   - name: paint-usage
     description: Actual paint usage and server-calculated variance
+  - name: storage
+    description: Private Paint Usage photo uploads and delivery
   - name: audit-log
     description: Append-only audit trail
   - name: dashboard
@@ -880,6 +882,102 @@ paths:
         "404":
           description: Not found
 
+  /paint-usage/{id}/photos:
+    get:
+      operationId: listPaintUsagePhotos
+      tags: [paint-usage]
+      summary: List private photos attached to a Paint Usage record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Photos attached to the Paint Usage record
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaintUsagePhoto"
+        "404":
+          description: Paint Usage record not found
+    post:
+      operationId: createPaintUsagePhoto
+      tags: [paint-usage]
+      summary: Attach an uploaded private photo (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaintUsagePhotoInput"
+      responses:
+        "201":
+          description: Photo attached to the Paint Usage record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaintUsagePhoto"
+        "400":
+          description: Invalid photo metadata or uploaded object
+        "403":
+          description: Admin role required
+        "404":
+          description: Paint Usage record not found
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestPaintUsagePhotoUploadUrl
+      tags: [storage]
+      summary: Request a private upload URL for a Paint Usage photo (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Presigned upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Unsupported image type or file size
+        "403":
+          description: Admin role required
+
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getPrivateStorageObject
+      tags: [storage]
+      summary: Stream a private uploaded photo to an authenticated user
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Private object content
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Authentication required
+        "404":
+          description: Object not found or not attached to a Paint Usage record
+
   /audit-log:
     get:
       operationId: listAuditLog
@@ -1188,6 +1286,10 @@ components:
         targetBasis:
           type: string
           enum: [per_unit, order_total]
+        customPaintStages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomPaintStage"
         description: { type: string }
         surfaceAreaM2: { type: ["number", "null"] }
         primerBaseL: { type: number }
@@ -1215,6 +1317,7 @@ components:
           customerName,
           orderQuantity,
           targetBasis,
+          customPaintStages,
           description,
           surfaceAreaM2,
           primerBaseL,
@@ -1281,6 +1384,10 @@ components:
         targetBasis:
           type: string
           enum: [per_unit, order_total]
+        customPaintStages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomPaintStage"
         description: { type: string, minLength: 1 }
         surfaceAreaM2: { type: number, minimum: 0 }
         primerBaseL: { type: number, minimum: 0 }
@@ -1320,6 +1427,10 @@ components:
         targetBasis:
           type: string
           enum: [per_unit, order_total]
+        customPaintStages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomPaintStage"
         description: { type: string, minLength: 1 }
         surfaceAreaM2: { type: ["number", "null"], minimum: 0 }
         primerBaseL: { type: number, minimum: 0 }
@@ -1376,6 +1487,10 @@ components:
         currentCategory: { type: ["string", "null"] }
         activeShift: { type: integer }
         handoverToShift: { type: ["integer", "null"] }
+        customPaintStages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomPaintStageSummary"
         targetTotalL: { type: number }
         actualTotalL: { type: number }
         expectedProgressLiters: { type: number }
@@ -1390,10 +1505,26 @@ components:
         [
           serialNumberId, jobItemId, jobNo, customerName, description, serialNo,
           orderQuantity, workStatus, progressPct, currentCategory, activeShift,
-          handoverToShift, targetTotalL, actualTotalL, expectedProgressLiters,
+          handoverToShift, customPaintStages, targetTotalL, actualTotalL, expectedProgressLiters,
           literVariance, materialCostCurrency, expectedMaterialCost,
           actualMaterialCost, materialCostVariance, materialCostVariancePct, createdAt
         ]
+
+    CustomPaintStageSummary:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        coatType: { type: string, enum: [primer, topcoat] }
+        targetLiters: { type: number }
+        expectedLiters: { type: number }
+        actualLiters: { type: number }
+        litersVariance: { type: number }
+        targetCost: { type: ["number", "null"] }
+        expectedCost: { type: ["number", "null"] }
+        actualCost: { type: ["number", "null"] }
+        costVariance: { type: ["number", "null"] }
+      required: [id, name, coatType, targetLiters, expectedLiters, actualLiters, litersVariance, targetCost, expectedCost, actualCost, costVariance]
 
     JobWorkflowActionInput:
       type: object
@@ -1440,6 +1571,64 @@ components:
           items: { type: string }
       required: [mode]
 
+    UploadUrlRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        size: { type: integer, minimum: 1, maximum: 10485760 }
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+      required: [name, size, contentType]
+
+    UploadUrlResponse:
+      type: object
+      properties:
+        uploadURL: { type: string, format: uri }
+        objectPath: { type: string }
+        metadata:
+          $ref: "#/components/schemas/UploadUrlRequest"
+      required: [uploadURL, objectPath]
+
+    PaintUsagePhoto:
+      type: object
+      properties:
+        id: { type: integer }
+        paintUsageId: { type: integer }
+        objectPath: { type: string }
+        label: { type: string }
+        originalName: { type: string }
+        contentType: { type: string }
+        uploadedByUserId: { type: ["integer", "null"] }
+        uploadedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, paintUsageId, objectPath, label, originalName, contentType, uploadedByUserId, uploadedByName, createdAt]
+
+    PaintUsagePhotoInput:
+      type: object
+      properties:
+        objectPath: { type: string, minLength: 1 }
+        label: { type: string, minLength: 1, maxLength: 100 }
+        originalName: { type: string, minLength: 1, maxLength: 255 }
+      required: [objectPath, label, originalName]
+
+    CustomPaintStage:
+      type: object
+      properties:
+        id: { type: string, minLength: 1, maxLength: 64 }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        coatType: { type: string, enum: [primer, topcoat] }
+        targetLitersTotal: { type: number, minimum: 0 }
+      required: [id, name, coatType, targetLitersTotal]
+
+    CustomPaintActual:
+      type: object
+      properties:
+        stageId: { type: string }
+        name: { type: string }
+        coatType: { type: string, enum: [primer, topcoat] }
+        targetLiters: { type: number, minimum: 0 }
+        actualLiters: { type: number, minimum: 0 }
+      required: [stageId, name, coatType, targetLiters, actualLiters]
+
     PaintUsage:
       type: object
       properties:
@@ -1452,6 +1641,10 @@ components:
         shift: { type: string }
         category:
           $ref: "#/components/schemas/JobWorkCategory"
+        customPaintActuals:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomPaintActual"
         primerBaseActualL: { type: number }
         primerHrdActualL: { type: number }
         primerThinnerActualL: { type: number }
@@ -1476,6 +1669,7 @@ components:
       required:
         [
           id, jobItemId, jobNo, serialNumberId, serialNo, usageDate, shift, category,
+          customPaintActuals,
           primerBaseActualL, primerHrdActualL, primerThinnerActualL,
           primerActualTotalL, topcoatBaseActualL, topcoatHrdActualL,
           topcoatThinnerActualL, topcoatActualTotalL, primerTargetTotalL,
@@ -1494,6 +1688,14 @@ components:
         shift: { type: string, minLength: 1, maxLength: 50 }
         category:
           $ref: "#/components/schemas/JobWorkCategory"
+        customPaintActuals:
+          type: array
+          items:
+            type: object
+            properties:
+              stageId: { type: string }
+              actualLiters: { type: number, minimum: 0 }
+            required: [stageId, actualLiters]
         primerBaseActualL: { type: number, minimum: 0 }
         primerHrdActualL: { type: number, minimum: 0 }
         primerThinnerActualL: { type: number, minimum: 0 }
@@ -1515,6 +1717,14 @@ components:
         shift: { type: string, minLength: 1, maxLength: 50 }
         category:
           $ref: "#/components/schemas/JobWorkCategory"
+        customPaintActuals:
+          type: array
+          items:
+            type: object
+            properties:
+              stageId: { type: string }
+              actualLiters: { type: number, minimum: 0 }
+            required: [stageId, actualLiters]
         primerBaseActualL: { type: number, minimum: 0 }
         primerHrdActualL: { type: number, minimum: 0 }
         primerThinnerActualL: { type: number, minimum: 0 }
