@@ -371,11 +371,11 @@ export function JobItemDetail() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                               <Label className="font-bold">{t("start")}</Label>
-                            <Input value={rangeStart} onChange={e => setRangeStart(e.target.value)} placeholder="e.g. 100" className="font-mono" />
+                            <Input value={rangeStart} onChange={e => setRangeStart(e.target.value)} placeholder={`${t("example")}: 100`} className="font-mono" />
                           </div>
                           <div className="space-y-2">
                               <Label className="font-bold">{t("end")}</Label>
-                            <Input value={rangeEnd} onChange={e => setRangeEnd(e.target.value)} placeholder="e.g. 150" className="font-mono" />
+                            <Input value={rangeEnd} onChange={e => setRangeEnd(e.target.value)} placeholder={`${t("example")}: 150`} className="font-mono" />
                           </div>
                         </div>
                       ) : (

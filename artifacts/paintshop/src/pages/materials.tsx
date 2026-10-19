@@ -331,7 +331,7 @@ export function Materials() {
                   <FormField control={form.control} name="description" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-bold">{t("descriptionLabel")}</FormLabel>
-                      <FormControl><Input {...field} placeholder="e.g. Penguard Clear Sealer" /></FormControl>
+                      <FormControl><Input {...field} placeholder={`${t("example")}: Penguard Clear Sealer`} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />

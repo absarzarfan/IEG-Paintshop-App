@@ -9,7 +9,7 @@ export function Landing() {
       <header className="h-20 bg-sidebar flex items-center justify-between px-6 lg:px-12">
         <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "") || ""}/logo-ieg-white.png`} alt="Integrated Engineering Group" className="h-9 w-auto max-w-[190px] object-contain" />
         <div className="flex items-center gap-4">
-          <div className="inline-flex border border-sidebar-border" aria-label="Language">
+          <div className="inline-flex border border-sidebar-border" aria-label={t("language")}>
             <button type="button" onClick={() => setLanguage("id")} aria-pressed={language === "id"} className={`px-2 py-1 text-xs font-bold ${language === "id" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/75"}`} data-testid="button-language-id-landing">ID</button>
             <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`px-2 py-1 text-xs font-bold ${language === "en" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/75"}`} data-testid="button-language-en-landing">EN</button>
           </div>

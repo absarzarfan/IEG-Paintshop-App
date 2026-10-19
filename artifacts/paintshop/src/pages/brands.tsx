@@ -130,7 +130,7 @@ export function Brands() {
                   <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-bold">{t("brandName")}</FormLabel>
-                      <FormControl><Input {...field} placeholder="e.g. Jotun" /></FormControl>
+                      <FormControl><Input {...field} placeholder={`${t("example")}: Jotun`} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />

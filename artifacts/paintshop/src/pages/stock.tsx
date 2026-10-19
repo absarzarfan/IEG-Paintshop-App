@@ -169,7 +169,7 @@ export function Stock() {
           </div>
           <div className="space-y-2">
              <Label htmlFor="stock-quantity">{t("quantityL")}</Label>
-            <Input id="stock-quantity" type="number" min="0.001" step="0.001" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder="Contoh: 25" />
+            <Input id="stock-quantity" type="number" min="0.001" step="0.001" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder={t("stockQuantityPlaceholder")} />
           </div>
           <div className="space-y-2">
              <Label htmlFor="stock-lot">{t("lot")} <span className="font-normal text-muted-foreground">({t("optional")})</span></Label>

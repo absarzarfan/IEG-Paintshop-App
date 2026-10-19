@@ -84,7 +84,7 @@ export function Layout({ children }: LayoutProps) {
       {isMobileSidebarOpen && (
         <button
           type="button"
-          aria-label="Close navigation"
+          aria-label={t("closeNavigation")}
           className="fixed inset-0 z-40 bg-black/55 backdrop-blur-[1px] md:hidden"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
@@ -113,7 +113,7 @@ export function Layout({ children }: LayoutProps) {
           </button>
           <button
             type="button"
-            aria-label="Close navigation"
+            aria-label={t("closeNavigation")}
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:hidden"
             onClick={() => setIsMobileSidebarOpen(false)}
           >
@@ -186,7 +186,7 @@ export function Layout({ children }: LayoutProps) {
             onClick={handleLogout}
           >
             <LogOut size={18} />
-            <span className={isSidebarCollapsed ? "md:hidden" : ""}>Sign Out</span>
+            <span className={isSidebarCollapsed ? "md:hidden" : ""}>{t("logout")}</span>
           </button>
         </div>
       </aside>
@@ -199,7 +199,7 @@ export function Layout({ children }: LayoutProps) {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Open navigation"
+            aria-label={t("openNavigation")}
             aria-expanded={isMobileSidebarOpen}
             className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
             onClick={() => setIsMobileSidebarOpen(true)}
@@ -217,7 +217,7 @@ export function Layout({ children }: LayoutProps) {
               <span>{t("control")}</span>
             </div>
             <div className="flex items-center gap-3 text-xs">
-              <div className="inline-flex border border-sidebar-border" aria-label="Language">
+              <div className="inline-flex border border-sidebar-border" aria-label={t("language")}>
                 <button type="button" onClick={() => setLanguage("id")} aria-pressed={language === "id"} className={`px-2 py-1 font-bold ${language === "id" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} data-testid="button-language-id">ID</button>
                 <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`px-2 py-1 font-bold ${language === "en" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} data-testid="button-language-en">EN</button>
               </div>
@@ -228,7 +228,7 @@ export function Layout({ children }: LayoutProps) {
             </div>
           </div>
           <div className="flex justify-end bg-sidebar px-3 py-2 md:hidden">
-            <div className="inline-flex border border-sidebar-border" aria-label="Language">
+            <div className="inline-flex border border-sidebar-border" aria-label={t("language")}>
               <button type="button" onClick={() => setLanguage("id")} aria-pressed={language === "id"} className={`px-3 py-1 text-xs font-bold ${language === "id" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} data-testid="button-language-id-mobile">ID</button>
               <button type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"} className={`px-3 py-1 text-xs font-bold ${language === "en" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} data-testid="button-language-en-mobile">EN</button>
             </div>

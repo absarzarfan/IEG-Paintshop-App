@@ -128,7 +128,7 @@ export function Colors() {
                   <FormField control={form.control} name="name" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-bold">{t("colorName")}</FormLabel>
-                      <FormControl><Input {...field} placeholder="e.g. Traffic Yellow" /></FormControl>
+                      <FormControl><Input {...field} placeholder={`${t("example")}: Traffic Yellow`} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
