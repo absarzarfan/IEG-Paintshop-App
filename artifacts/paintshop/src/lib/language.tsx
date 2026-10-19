@@ -97,6 +97,19 @@ Object.assign(messages.en, {
   usageRecorded: "Paint usage recorded",
 });
 
+Object.assign(messages.id, {
+  customers: "Pelanggan", customersTitle: "Daftar Pelanggan", customersIntro: "Kelola pelanggan untuk digunakan pada Job Number.", addCustomer: "Tambah Pelanggan", editCustomer: "Ubah Pelanggan",
+  customerNameLabel: "Nama Pelanggan", selectCustomer: "Pilih pelanggan", selectCustomerRequired: "Pilih pelanggan aktif sebelum membuat job.", manageCustomers: "Kelola daftar pelanggan",
+  linkedJobs: "Job terkait", noCustomers: "Belum ada pelanggan. Tambahkan pelanggan terlebih dahulu.", customerUsed: "Nama pelanggan yang sudah dipakai Job tidak dapat diubah. Nonaktifkan jika tidak digunakan lagi.",
+  activate: "Aktifkan", deactivate: "Nonaktifkan", customerExists: "Nama pelanggan sudah terdaftar.",
+});
+Object.assign(messages.en, {
+  customers: "Customers", customersTitle: "Customers", customersIntro: "Manage customers available for Job Numbers.", addCustomer: "Add Customer", editCustomer: "Edit Customer",
+  customerNameLabel: "Customer Name", selectCustomer: "Select a customer", selectCustomerRequired: "Select an active customer before creating a job.", manageCustomers: "Manage customers",
+  linkedJobs: "Linked Jobs", noCustomers: "No customers yet. Add a customer first.", customerUsed: "Customer names linked to jobs cannot be changed. Deactivate the customer if it is no longer used.",
+  activate: "Activate", deactivate: "Deactivate", customerExists: "A customer with this name already exists.",
+});
+
 const LanguageContext = createContext<{ language: Language; setLanguage: (language: Language) => void; t: (key: string) => string }>({
   language: "id", setLanguage: () => undefined, t: (key) => key,
 });

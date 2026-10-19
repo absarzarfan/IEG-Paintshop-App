@@ -64,6 +64,7 @@ export function Layout({ children }: LayoutProps) {
   const navLinks = [
     { name: t("dashboard"), href: "/dashboard", icon: LayoutDashboard },
     { name: t("jobs"), href: "/job-items", icon: PaintBucket },
+    { name: t("customers"), href: "/customers", icon: Users },
     { name: t("ongoing"), href: "/ongoing", icon: ClipboardPenLine },
     { name: t("shipment"), href: "/shipment", icon: Boxes },
     { name: t("usage"), href: "/paint-usage", icon: ClipboardPenLine },

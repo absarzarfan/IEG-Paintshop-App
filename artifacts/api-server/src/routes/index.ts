@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import authRouter from "./auth";
 import usersRouter from "./users";
 import brandsRouter from "./brands";
+import customersRouter from "./customers";
 import colorsRouter from "./colors";
 import materialsRouter from "./materials";
 import jobItemsRouter from "./jobItems";
@@ -27,6 +28,7 @@ router.use(requireAuth);
 
 router.use(usersRouter);
 router.use(brandsRouter);
+router.use(customersRouter);
 router.use(colorsRouter);
 router.use(materialsRouter);
 router.use(jobItemsRouter);

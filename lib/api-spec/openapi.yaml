@@ -239,6 +239,69 @@ paths:
               schema:
                 $ref: "#/components/schemas/Brand"
 
+  /customers:
+    get:
+      operationId: listCustomers
+      tags: [customers]
+      summary: List customers
+      responses:
+        "200":
+          description: List of customers with linked job counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Customer"
+    post:
+      operationId: createCustomer
+      tags: [customers]
+      summary: Create a customer (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerInput"
+      responses:
+        "201":
+          description: Created customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "409":
+          description: Customer name already exists
+
+  /customers/{id}:
+    patch:
+      operationId: updateCustomer
+      tags: [customers]
+      summary: Update or deactivate a customer (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpdate"
+      responses:
+        "200":
+          description: Updated customer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer"
+        "404":
+          description: Not found
+        "409":
+          description: Customer is already referenced by jobs or name is in use
+
   /brands/{id}:
     patch:
       operationId: updateBrand
@@ -1120,6 +1183,28 @@ components:
       type: object
       properties:
         name: { type: string, minLength: 1 }
+        isActive: { type: boolean }
+
+    Customer:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        jobCount: { type: integer }
+      required: [id, name, isActive, createdAt, jobCount]
+
+    CustomerInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+      required: [name]
+
+    CustomerUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
         isActive: { type: boolean }
 
     Color:

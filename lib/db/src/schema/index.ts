@@ -1,6 +1,7 @@
 export * from "./users";
 export * from "./authSessions";
 export * from "./brands";
+export * from "./customers";
 export * from "./colors";
 export * from "./materials";
 export * from "./materialPrices";

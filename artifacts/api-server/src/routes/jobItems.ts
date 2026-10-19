@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, ilike, or, asc, count } from "drizzle-orm";
-import { db, jobItemsTable, materialsTable, serialNumbersTable, paintUsageTable } from "@workspace/db";
+import { db, jobItemsTable, materialsTable, serialNumbersTable, paintUsageTable, customersTable } from "@workspace/db";
 import {
   ListJobItemsQueryParams,
   ListJobItemsResponse,
@@ -108,6 +108,13 @@ router.post("/job-items", requireAdmin, async (req, res): Promise<void> => {
     res.status(400).json({ error: stageError });
     return;
   }
+  const customerName = parsed.data.customerName.trim();
+  const normalizedCustomerName = customerName.toLowerCase();
+  const [customer] = await db.select().from(customersTable).where(eq(customersTable.normalizedName, normalizedCustomerName));
+  if (!customer || !customer.isActive) {
+    res.status(400).json({ error: "Select an active customer from the Customers list before creating this job." });
+    return;
+  }
 
   const materialError = await assertMaterialIdsValid([
     parsed.data.primerBaseMaterialId,
@@ -124,7 +131,7 @@ router.post("/job-items", requireAdmin, async (req, res): Promise<void> => {
 
   let created: typeof jobItemsTable.$inferSelect;
   try {
-    [created] = await db.insert(jobItemsTable).values(parsed.data).returning();
+    [created] = await db.insert(jobItemsTable).values({ ...parsed.data, customerName: customer.name }).returning();
   } catch (error) {
     if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
       res.status(409).json({ error: "This Job Number already exists. Search Jobs before adding it again." });
@@ -174,6 +181,15 @@ router.patch("/job-items/:id", requireAdmin, async (req, res): Promise<void> => 
   if (!before) {
     res.status(404).json({ error: "Job item not found" });
     return;
+  }
+  if (parsed.data.customerName !== undefined) {
+    const customerName = parsed.data.customerName.trim();
+    const [customer] = await db.select().from(customersTable).where(eq(customersTable.normalizedName, customerName.toLowerCase()));
+    if (!customer || !customer.isActive) {
+      res.status(400).json({ error: "Select an active customer from the Customers list." });
+      return;
+    }
+    parsed.data.customerName = customer.name;
   }
   const stageError = validateStages(parsed.data.customPaintStages);
   if (stageError) {

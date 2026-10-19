@@ -122,6 +122,31 @@ export interface BrandUpdate {
   isActive?: boolean;
 }
 
+export interface Customer {
+  id: number;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
+  jobCount: number;
+}
+
+export interface CustomerInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+}
+
+export interface CustomerUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name?: string;
+  isActive?: boolean;
+}
+
 export interface Color {
   id: number;
   name: string;

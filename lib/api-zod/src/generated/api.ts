@@ -231,6 +231,64 @@ export const CreateBrandResponse = zod.object({
 
 
 /**
+ * @summary List customers
+ */
+export const ListCustomersResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "jobCount": zod.number().int()
+})
+export const ListCustomersResponse = zod.array(ListCustomersResponseItem)
+
+
+/**
+ * @summary Create a customer (admin only)
+ */
+export const createCustomerBodyNameMax = 160;
+
+
+
+export const CreateCustomerBody = zod.object({
+  "name": zod.string().min(1).max(createCustomerBodyNameMax)
+})
+
+export const CreateCustomerResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "jobCount": zod.number().int()
+})
+
+
+/**
+ * @summary Update or deactivate a customer (admin only)
+ */
+export const UpdateCustomerParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateCustomerBodyNameMax = 160;
+
+
+
+export const UpdateCustomerBody = zod.object({
+  "name": zod.string().min(1).max(updateCustomerBodyNameMax).optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateCustomerResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "jobCount": zod.number().int()
+})
+
+
+/**
  * @summary Update a paint brand (admin only)
  */
 export const UpdateBrandParams = zod.object({

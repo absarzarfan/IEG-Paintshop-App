@@ -26,6 +26,7 @@ import { JobItemDetail } from "./pages/job-items/detail";
 import { Materials } from "./pages/materials";
 import { Colors } from "./pages/colors";
 import { Brands } from "./pages/brands";
+import { Customers } from "./pages/customers";
 import { Users } from "./pages/users";
 import { AuditLog } from "./pages/audit-log";
 import { PaintUsage } from "./pages/paint-usage";
@@ -208,6 +209,7 @@ function AppRoutes() {
           <ProtectedRoute path="/ongoing" component={Ongoing} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/shipment" component={Shipment} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/job-items" component={JobItems} allowedRoles={["admin", "painter", "warehouse"]} />
+          <ProtectedRoute path="/customers" component={Customers} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/job-items/:id" component={JobItemDetail} allowedRoles={["admin", "painter", "warehouse"]} />
           <ProtectedRoute path="/paint-usage" component={PaintUsage} />
           <ProtectedRoute path="/paint-usage/:id" component={PaintUsage} />
