@@ -14,3 +14,9 @@ Shipment verification is restricted to a Paint Mixer designated as leader by an 
 **Why:** The user explicitly selected the nominated-leader rule, rather than allowing all Paint Mixers to verify.
 
 **How to apply:** Enforce the role and leader flag on the server, not only by hiding the verification button.
+
+Paint Usage is recorded separately for each shift on an SN; shipment totals sum the actuals from all shifts.
+
+**Why:** The user explicitly chose per-shift records so each handover preserves its own usage and history.
+
+**How to apply:** Prevent duplicate records for the same SN and shift, keep stock movements attached to each shift record, and aggregate all shift records for shipment variance and cost.

@@ -109,7 +109,14 @@ function formatDate(value: string, language: "id" | "en") {
   }).format(date);
 }
 
-function apiMessage(_error: unknown, t: (key: string) => string) {
+function apiMessage(error: unknown, t: (key: string) => string) {
+  if (typeof error === "object" && error !== null && "data" in error) {
+    const responseData = error.data;
+    if (typeof responseData === "object" && responseData !== null && "error" in responseData &&
+      typeof responseData.error === "string") {
+      return responseData.error;
+    }
+  }
   return t("usageSaveError");
 }
 
@@ -217,7 +224,14 @@ function UsageForm({
   const { data: existingUsage } = useListPaintUsage(usedParams, {
     query: { enabled: !isEdit && selectedJobId > 0, queryKey: getListPaintUsageQueryKey(usedParams) },
   });
-  const usedSerialIds = useMemo(() => new Set((existingUsage ?? []).map((record) => record.serialNumberId)), [existingUsage]);
+  const usedSerialIds = useMemo(() => new Set(
+    (serials ?? [])
+      .filter((serial) => (existingUsage ?? []).some((record) =>
+        record.serialNumberId === serial.id &&
+        Number(record.shift.match(/[123]/)?.[0] ?? 0) === serial.activeShift
+      ))
+      .map((serial) => serial.id),
+  ), [serials, existingUsage]);
 
   const createMutation = useCreatePaintUsage();
   const updateMutation = useUpdatePaintUsage();
@@ -321,7 +335,13 @@ function UsageForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-bold">{t("serial")}</FormLabel>
-                    <Select value={field.value ? String(field.value) : ""} onValueChange={(value) => field.onChange(Number(value))} disabled={!selectedJobId || serialsLoading}>
+                    <Select value={field.value ? String(field.value) : ""} onValueChange={(value) => {
+                      field.onChange(Number(value));
+                      const selectedSerial = serials?.find((serial) => serial.id === Number(value));
+                      if (selectedSerial) {
+                        form.setValue("shift", `Shift ${selectedSerial.activeShift}`, { shouldValidate: true });
+                      }
+                    }} disabled={!selectedJobId || serialsLoading}>
                       <FormControl><SelectTrigger data-testid="select-serial-number"><SelectValue placeholder={serialsLoading ? t("loadingSerialNumbers") : t("selectSerialNumber")} /></SelectTrigger></FormControl>
                       <SelectContent>
                         {serials?.map((serial) => <SelectItem value={String(serial.id)} key={serial.id} disabled={usedSerialIds.has(serial.id)}>{serial.serialNo}{usedSerialIds.has(serial.id) ? ` — ${t("serialAlreadyRecorded")}` : ""}</SelectItem>)}

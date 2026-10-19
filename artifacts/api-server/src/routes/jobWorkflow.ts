@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import {
   db,
   jobItemsTable,
@@ -48,12 +48,39 @@ function totalActuals(actuals: UsageActuals | null) {
 
 export async function serializeWorkflow(serialNumberId: number) {
   const [row] = await db
-    .select({ serial: serialNumbersTable, job: jobItemsTable, usage: paintUsageTable })
+    .select({ serial: serialNumbersTable, job: jobItemsTable })
     .from(serialNumbersTable)
     .innerJoin(jobItemsTable, eq(serialNumbersTable.jobItemId, jobItemsTable.id))
-    .leftJoin(paintUsageTable, eq(paintUsageTable.serialNumberId, serialNumbersTable.id))
     .where(eq(serialNumbersTable.id, serialNumberId));
   if (!row) return null;
+
+  const usageRows = await db.select().from(paintUsageTable)
+    .where(eq(paintUsageTable.serialNumberId, serialNumberId))
+    .orderBy(asc(paintUsageTable.createdAt), asc(paintUsageTable.id));
+  const actuals: UsageActuals = usageRows.reduce((sum, usage) => ({
+    primerBaseActualL: sum.primerBaseActualL + usage.primerBaseActualL,
+    primerHrdActualL: sum.primerHrdActualL + usage.primerHrdActualL,
+    primerThinnerActualL: sum.primerThinnerActualL + usage.primerThinnerActualL,
+    topcoatBaseActualL: sum.topcoatBaseActualL + usage.topcoatBaseActualL,
+    topcoatHrdActualL: sum.topcoatHrdActualL + usage.topcoatHrdActualL,
+    topcoatThinnerActualL: sum.topcoatThinnerActualL + usage.topcoatThinnerActualL,
+  }), {
+    primerBaseActualL: 0,
+    primerHrdActualL: 0,
+    primerThinnerActualL: 0,
+    topcoatBaseActualL: 0,
+    topcoatHrdActualL: 0,
+    topcoatThinnerActualL: 0,
+  });
+  const customActualsByStage = new Map<string, typeof usageRows[number]["customPaintActuals"]>();
+  for (const usage of usageRows) {
+    for (const actual of usage.customPaintActuals ?? []) {
+      customActualsByStage.set(actual.stageId, [
+        ...(customActualsByStage.get(actual.stageId) ?? []),
+        actual,
+      ]);
+    }
+  }
 
   const perUnitJob = targetsPerUnit(row.job);
   const plannedCost = await computeJobItemCosts(perUnitJob);
@@ -64,23 +91,29 @@ export async function serializeWorkflow(serialNumberId: number) {
       ? 1 / Math.max(row.job.orderQuantity, 1)
       : 1;
     const targetLiters = stage.targetLitersTotal * targetMultiplier;
-    const actualSnapshot = row.usage?.customPaintActuals?.find((actual) => actual.stageId === stage.id);
-    const actualLiters = actualSnapshot?.actualLiters ?? 0;
+    const actualSnapshots = customActualsByStage.get(stage.id) ?? [];
+    const actualLiters = actualSnapshots.reduce((total, actual) => total + actual.actualLiters, 0);
     const targetPrice = await getCurrentMaterialPrice(stage.materialId ?? null);
-    const actualPrice = actualSnapshot
-      ? await getCurrentMaterialPrice(actualSnapshot.materialId ?? stage.materialId ?? null)
-      : targetPrice;
+    const actualPrices = await Promise.all(actualSnapshots
+      .filter((actual) => actual.actualLiters > 0)
+      .map((actual) => getCurrentMaterialPrice(actual.materialId ?? stage.materialId ?? null)));
     const targetCostKnown = targetLiters === 0
       || (targetPrice !== null && targetPrice.currency === plannedCost.currency);
-    const actualCostKnown = actualLiters === 0
-      || (actualPrice !== null && actualPrice.currency === plannedCost.currency);
+    const actualCostKnown = actualLiters === 0 || (
+      plannedCost.currency !== null &&
+      actualPrices.length > 0 &&
+      actualPrices.every((price) => price !== null && price.currency === plannedCost.currency)
+    );
     const targetCost = targetLiters === 0
       ? 0
       : targetCostKnown && targetPrice ? targetPrice.unitPrice * targetLiters : null;
     const expectedCost = targetCost === null ? null : targetCost * row.serial.progressPct / 100;
     const actualCost = actualLiters === 0
       ? 0
-      : actualCostKnown && actualPrice ? actualPrice.unitPrice * actualLiters : null;
+      : actualCostKnown
+        ? actualSnapshots.filter((actual) => actual.actualLiters > 0).reduce((total, actual, index) =>
+          total + actual.actualLiters * actualPrices[index]!.unitPrice, 0)
+        : null;
     return {
       id: stage.id,
       name: stage.name,
@@ -103,7 +136,7 @@ export async function serializeWorkflow(serialNumberId: number) {
   const customStageTargetCost = customPaintStages.reduce((total, stage) => total + (stage.targetCost ?? 0), 0);
   const customStageActualCost = customPaintStages.reduce((total, stage) => total + (stage.actualCost ?? 0), 0);
   const targetTotalL = totalTargets(perUnitJob) + customPaintStages.reduce((total, stage) => total + stage.targetLiters, 0);
-  const actualTotalL = totalActuals(row.usage) + customPaintStages.reduce((total, stage) => total + stage.actualLiters, 0);
+  const actualTotalL = totalActuals(actuals) + customPaintStages.reduce((total, stage) => total + stage.actualLiters, 0);
   const expectedProgressLiters = targetTotalL * row.serial.progressPct / 100;
   const baseTargetCostPerUnit = plannedCost.primerCostTotal !== null && plannedCost.topcoatCostTotal !== null
     ? plannedCost.primerCostTotal + plannedCost.topcoatCostTotal
@@ -111,14 +144,14 @@ export async function serializeWorkflow(serialNumberId: number) {
   const targetCostPerUnit = baseTargetCostPerUnit !== null && customStageCostsKnown
     ? baseTargetCostPerUnit + customStageTargetCost
     : null;
-  const actualCost = row.usage
+  const actualCost = usageRows.length > 0
     ? await computePaintUsageCost(perUnitJob, {
-        primerBaseL: row.usage.primerBaseActualL,
-        primerHrdL: row.usage.primerHrdActualL,
-        primerThinnerL: row.usage.primerThinnerActualL,
-        topcoatBaseL: row.usage.topcoatBaseActualL,
-        topcoatHrdL: row.usage.topcoatHrdActualL,
-        topcoatThinnerL: row.usage.topcoatThinnerActualL,
+        primerBaseL: actuals.primerBaseActualL,
+        primerHrdL: actuals.primerHrdActualL,
+        primerThinnerL: actuals.primerThinnerActualL,
+        topcoatBaseL: actuals.topcoatBaseActualL,
+        topcoatHrdL: actuals.topcoatHrdActualL,
+        topcoatThinnerL: actuals.topcoatThinnerActualL,
       })
     : { currency: plannedCost.currency, total: 0 };
   const currency = targetCostPerUnit !== null && actualCost.currency === plannedCost.currency
@@ -290,9 +323,12 @@ router.post(
             return;
           }
           const [usage] = await db.select({ id: paintUsageTable.id }).from(paintUsageTable)
-            .where(eq(paintUsageTable.serialNumberId, serial.id));
+            .where(and(
+              eq(paintUsageTable.serialNumberId, serial.id),
+              eq(paintUsageTable.shift, `Shift ${serial.activeShift}`),
+            ));
           if (!usage) {
-            res.status(409).json({ error: "Record Paint Usage before completing this job." });
+            res.status(409).json({ error: "Record Paint Usage for the active shift before completing this job." });
             return;
           }
           next.workStatus = "shipment";

@@ -852,7 +852,7 @@ paths:
     get:
       operationId: listPaintUsage
       tags: [paint-usage]
-      summary: List paint usage records with calculated variance
+      summary: List per-shift paint usage records with calculated variance
       parameters:
         - name: jobItemId
           in: query
@@ -882,7 +882,7 @@ paths:
     post:
       operationId: createPaintUsage
       tags: [paint-usage]
-      summary: Record actual paint usage for a serial number (admin or painter)
+      summary: Record actual paint usage for one shift on a serial number (admin or painter)
       requestBody:
         required: true
         content:
@@ -899,7 +899,7 @@ paths:
         "400":
           description: Invalid input or serial number does not belong to the job item
         "409":
-          description: A usage record already exists for this serial number
+          description: A usage record already exists for this serial number and shift
 
   /paint-usage/{id}:
     get:
@@ -923,7 +923,7 @@ paths:
     patch:
       operationId: updatePaintUsage
       tags: [paint-usage]
-      summary: Update actual paint usage (admin or painter)
+      summary: Update one shift's actual paint usage (admin or painter)
       parameters:
         - name: id
           in: path
@@ -1718,6 +1718,7 @@ components:
 
     PaintUsage:
       type: object
+      description: One shift's paint actuals; workflow totals aggregate all shift records for the serial number.
       properties:
         id: { type: integer }
         jobItemId: { type: integer }

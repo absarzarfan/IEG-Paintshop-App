@@ -59,6 +59,17 @@ function usageShiftError(serial: typeof serialNumbersTable.$inferSelect, shift: 
   return null;
 }
 
+function canonicalShift(shift: string) {
+  const match = shift.trim().match(/^(?:shift\s*)?([123])$/i);
+  return match ? `Shift ${match[1]}` : shift.trim();
+}
+
+function isUsageShiftConflict(error: unknown) {
+  return typeof error === "object" && error !== null &&
+    "code" in error && error.code === "23505" &&
+    "constraint" in error && error.constraint === "paint_usage_serial_shift_unique";
+}
+
 const actualFields = [
   "primerBaseActualL",
   "primerHrdActualL",
@@ -447,13 +458,17 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
     res.status(409).json({ error: shiftError });
     return;
   }
+  const shift = canonicalShift(parsed.data.shift);
 
   const [existing] = await db
     .select({ id: paintUsageTable.id })
     .from(paintUsageTable)
-    .where(eq(paintUsageTable.serialNumberId, parsed.data.serialNumberId));
+    .where(and(
+      eq(paintUsageTable.serialNumberId, parsed.data.serialNumberId),
+      eq(paintUsageTable.shift, shift),
+    ));
   if (existing) {
-    res.status(409).json({ error: "A paint usage record already exists for this serial number" });
+    res.status(409).json({ error: `A paint usage record already exists for ${shift} on this serial number` });
     return;
   }
 
@@ -468,6 +483,7 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
     created = await db.transaction(async (tx) => {
       const [record] = await tx.insert(paintUsageTable).values({
         ...parsed.data,
+        shift,
         customPaintActuals,
         createdByUserId: req.appUser?.id ?? null,
       }).returning();
@@ -476,6 +492,10 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
       return record;
     });
   } catch (error) {
+    if (isUsageShiftConflict(error)) {
+      res.status(409).json({ error: `A paint usage record already exists for ${shift} on this serial number` });
+      return;
+    }
     if (error instanceof StockAllocationError) {
       res.status(409).json({ error: error.message });
       return;
@@ -550,6 +570,17 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
   }
 
   const { customPaintActuals: requestedActuals, ...updateFields } = parsed.data;
+  if (updateFields.shift !== undefined) updateFields.shift = canonicalShift(updateFields.shift);
+  const nextShift = updateFields.shift ?? before.shift;
+  const [shiftConflict] = await db.select({ id: paintUsageTable.id }).from(paintUsageTable)
+    .where(and(
+      eq(paintUsageTable.serialNumberId, before.serialNumberId),
+      eq(paintUsageTable.shift, nextShift),
+    ));
+  if (shiftConflict && shiftConflict.id !== before.id) {
+    res.status(409).json({ error: `A paint usage record already exists for ${nextShift} on this serial number` });
+    return;
+  }
   const updateData: Partial<typeof paintUsageTable.$inferInsert> = { ...updateFields };
   if (requestedActuals !== undefined) {
     const snapshot = snapshotCustomPaintActuals(jobItem, requestedActuals);
@@ -580,6 +611,10 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
       return record;
     });
   } catch (error) {
+    if (isUsageShiftConflict(error)) {
+      res.status(409).json({ error: `A paint usage record already exists for ${nextShift} on this serial number` });
+      return;
+    }
     if (error instanceof StockAllocationError) {
       res.status(409).json({ error: error.message });
       return;

@@ -8,6 +8,9 @@
 import type { CustomPaintActual } from './customPaintActual';
 import type { JobWorkCategory } from './jobWorkCategory';
 
+/**
+ * One shift's paint actuals; workflow totals aggregate all shift records for the serial number.
+ */
 export interface PaintUsage {
   id: number;
   jobItemId: number;

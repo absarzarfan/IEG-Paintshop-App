@@ -19,9 +19,9 @@ export type CustomPaintActual = {
 };
 
 /**
- * One completed paint application record per physical serial number.
- * Actuals are stored per component so the variance engine can compare each
- * component against the job item's per-unit target without losing detail.
+ * One paint application record per physical serial number and shift.
+ * Actuals remain per component so workflow totals can aggregate shifts without
+ * losing material detail.
  */
 export const paintUsageTable = pgTable(
   "paint_usage",
@@ -51,7 +51,7 @@ export const paintUsageTable = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date()),
   },
-  (table) => [unique("paint_usage_serial_number_unique").on(table.serialNumberId)],
+  (table) => [unique("paint_usage_serial_shift_unique").on(table.serialNumberId, table.shift)],
 );
 
 export const insertPaintUsageSchema = createInsertSchema(paintUsageTable).omit({

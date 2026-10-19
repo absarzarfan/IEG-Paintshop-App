@@ -3548,7 +3548,7 @@ export const getListPaintUsageUrl = (params?: ListPaintUsageParams,) => {
 }
 
 /**
- * @summary List paint usage records with calculated variance
+ * @summary List per-shift paint usage records with calculated variance
  */
 export const listPaintUsage = async (params?: ListPaintUsageParams, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsage[]> => {
 
@@ -3595,7 +3595,7 @@ export type ListPaintUsageQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List paint usage records with calculated variance
+ * @summary List per-shift paint usage records with calculated variance
  */
 
 export function useListPaintUsage<TData = Awaited<ReturnType<typeof listPaintUsage>>, TError = ErrorType<unknown>>(
@@ -3625,7 +3625,7 @@ export const getCreatePaintUsageUrl = () => {
 }
 
 /**
- * @summary Record actual paint usage for a serial number (admin or painter)
+ * @summary Record actual paint usage for one shift on a serial number (admin or painter)
  */
 export const createPaintUsage = async (paintUsageInput: PaintUsageInput, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsage> => {
 
@@ -3691,7 +3691,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CreatePaintUsageMutationVariables = {data: BodyType<PaintUsageInput>}
 
     /**
- * @summary Record actual paint usage for a serial number (admin or painter)
+ * @summary Record actual paint usage for one shift on a serial number (admin or painter)
  */
 export const useCreatePaintUsage = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPaintUsage>>, TError,CreatePaintUsageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -3790,7 +3790,7 @@ export const getUpdatePaintUsageUrl = (id: number,) => {
 }
 
 /**
- * @summary Update actual paint usage (admin or painter)
+ * @summary Update one shift's actual paint usage (admin or painter)
  */
 export const updatePaintUsage = async (id: number,
     paintUsageUpdate: PaintUsageUpdate, options?: Parameters<typeof customFetch>[1]): Promise<PaintUsage> => {
@@ -3857,7 +3857,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdatePaintUsageMutationVariables = {id: number;data: BodyType<PaintUsageUpdate>}
 
     /**
- * @summary Update actual paint usage (admin or painter)
+ * @summary Update one shift's actual paint usage (admin or painter)
  */
 export const useUpdatePaintUsage = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePaintUsage>>, TError,UpdatePaintUsageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

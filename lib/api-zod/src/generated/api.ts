@@ -1172,7 +1172,7 @@ export const ListJobWorkflowHistoryResponse = zod.array(ListJobWorkflowHistoryRe
 
 
 /**
- * @summary List paint usage records with calculated variance
+ * @summary List per-shift paint usage records with calculated variance
  */
 export const ListPaintUsageQueryParams = zod.object({
   "jobItemId": zod.coerce.number().int().optional(),
@@ -1225,12 +1225,12 @@ export const ListPaintUsageResponseItem = zod.object({
   "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-})
+}).describe('One shift\'s paint actuals; workflow totals aggregate all shift records for the serial number.')
 export const ListPaintUsageResponse = zod.array(ListPaintUsageResponseItem)
 
 
 /**
- * @summary Record actual paint usage for a serial number (admin or painter)
+ * @summary Record actual paint usage for one shift on a serial number (admin or painter)
  */
 export const createPaintUsageBodyShiftMax = 50;
 
@@ -1313,7 +1313,7 @@ export const CreatePaintUsageResponse = zod.object({
   "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-})
+}).describe('One shift\'s paint actuals; workflow totals aggregate all shift records for the serial number.')
 
 
 /**
@@ -1367,11 +1367,11 @@ export const GetPaintUsageResponse = zod.object({
   "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-})
+}).describe('One shift\'s paint actuals; workflow totals aggregate all shift records for the serial number.')
 
 
 /**
- * @summary Update actual paint usage (admin or painter)
+ * @summary Update one shift's actual paint usage (admin or painter)
  */
 export const UpdatePaintUsageParams = zod.object({
   "id": zod.coerce.number().int()
@@ -1456,7 +1456,7 @@ export const UpdatePaintUsageResponse = zod.object({
   "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
-})
+}).describe('One shift\'s paint actuals; workflow totals aggregate all shift records for the serial number.')
 
 
 /**
