@@ -15,4 +15,5 @@ export const JobWorkEventEventType = {
   handed_over: 'handed_over',
   completed: 'completed',
   shipment_verified: 'shipment_verified',
+  paint_usage_recorded: 'paint_usage_recorded',
 } as const;

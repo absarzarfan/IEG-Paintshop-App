@@ -18,6 +18,15 @@ import { computeJobItemCosts } from "../lib/costs";
 
 const router: IRouter = Router();
 
+function validateStages(stages: Array<{ id: string; name: string }> | undefined) {
+  if (!stages) return null;
+  const ids = new Set(stages.map((stage) => stage.id.trim()));
+  const names = new Set(stages.map((stage) => stage.name.trim().toLowerCase()));
+  return ids.has("") || names.has("") || ids.size !== stages.length || names.size !== stages.length
+    ? "Paint stage IDs and names must be non-empty and unique."
+    : null;
+}
+
 function round4(n: number): number {
   return Math.round(n * 10000) / 10000;
 }
@@ -94,6 +103,11 @@ router.post("/job-items", requireAdmin, async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const stageError = validateStages(parsed.data.customPaintStages);
+  if (stageError) {
+    res.status(400).json({ error: stageError });
+    return;
+  }
 
   const materialError = await assertMaterialIdsValid([
     parsed.data.primerBaseMaterialId,
@@ -160,6 +174,21 @@ router.patch("/job-items/:id", requireAdmin, async (req, res): Promise<void> => 
   if (!before) {
     res.status(404).json({ error: "Job item not found" });
     return;
+  }
+  const stageError = validateStages(parsed.data.customPaintStages);
+  if (stageError) {
+    res.status(400).json({ error: stageError });
+    return;
+  }
+  if (parsed.data.customPaintStages) {
+    const usages = await db.select({ actuals: paintUsageTable.customPaintActuals })
+      .from(paintUsageTable).where(eq(paintUsageTable.jobItemId, before.id));
+    const usedStages = usages.flatMap((usage) => usage.actuals).filter((actual) => actual.actualLiters > 0);
+    if (usedStages.some((used) => !parsed.data.customPaintStages!.some((stage) =>
+      stage.id === used.stageId && stage.coatType === used.coatType))) {
+      res.status(409).json({ error: "A stage with recorded paint usage cannot be removed or have its paint type changed." });
+      return;
+    }
   }
 
   const materialError = await assertMaterialIdsValid([

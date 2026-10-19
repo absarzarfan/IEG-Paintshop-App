@@ -5,3 +5,4 @@
 - [Paintshop role compatibility](paintshop-role-compatibility.md) — Paint Mixer uses the existing `painter` database identifier until a deliberate migration.
 - [Paintshop CRUD safety](paintshop-crud-safety.md) — delete only unreferenced records; deactivate historical records and protect the last Admin.
 - [Legacy database constraints](legacy-database-constraints.md) — preserve historical unique-constraint names or schema push can propose destructive table replacement.
+- [Order and shipment rules](paintshop-order-rules.md) — whole-order targets, progress-adjusted material savings/overruns, and Admin-designated leader verification.

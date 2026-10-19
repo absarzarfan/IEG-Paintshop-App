@@ -8,6 +8,7 @@ export const jobWorkEventTypeEnum = pgEnum("job_work_event_type", [
   "handed_over",
   "completed",
   "shipment_verified",
+  "paint_usage_recorded",
 ]);
 
 export const jobWorkEventsTable = pgTable("job_work_events", {

@@ -21,6 +21,7 @@ import {
 import { requireAnyRole, requireRole } from "../middlewares/auth";
 import { computeJobItemCosts, computePaintUsageCost, targetsPerUnit } from "../lib/costs";
 import { recordAudit } from "../lib/audit";
+import { progressVariance } from "../lib/orderPerformance";
 
 const router: IRouter = Router();
 
@@ -45,7 +46,7 @@ function totalActuals(actuals: UsageActuals | null) {
     actuals.topcoatBaseActualL + actuals.topcoatHrdActualL + actuals.topcoatThinnerActualL;
 }
 
-async function serializeWorkflow(serialNumberId: number) {
+export async function serializeWorkflow(serialNumberId: number) {
   const [row] = await db
     .select({ serial: serialNumbersTable, job: jobItemsTable, usage: paintUsageTable })
     .from(serialNumbersTable)
@@ -120,12 +121,11 @@ async function serializeWorkflow(serialNumberId: number) {
   const actualMaterialCost = currency && actualCost.total !== null && customStageCostsKnown
     ? actualCost.total + customStageActualCost
     : null;
-  const materialCostVariance = expectedMaterialCost !== null && actualMaterialCost !== null
-    ? Math.round((expectedMaterialCost - actualMaterialCost) * 100) / 100
+  const costVariance = expectedMaterialCost !== null && actualMaterialCost !== null
+    ? progressVariance(expectedMaterialCost, actualMaterialCost)
     : null;
-  const materialCostVariancePct = expectedMaterialCost && materialCostVariance !== null
-    ? Math.round((materialCostVariance / expectedMaterialCost) * 10000) / 100
-    : null;
+  const materialCostVariance = costVariance ? Math.round(costVariance.variance * 100) / 100 : null;
+  const materialCostVariancePct = costVariance?.variancePct ?? null;
 
   return {
     serialNumberId: row.serial.id,

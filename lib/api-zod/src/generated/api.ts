@@ -1097,7 +1097,7 @@ export const ListJobWorkflowHistoryResponseItem = zod.object({
   "serialNumberId": zod.number().int(),
   "actorUserId": zod.number().int().nullable(),
   "actorName": zod.string().nullable(),
-  "eventType": zod.enum(['started', 'progress_updated', 'handed_over', 'completed', 'shipment_verified']),
+  "eventType": zod.enum(['started', 'progress_updated', 'handed_over', 'completed', 'shipment_verified', 'paint_usage_recorded']),
   "shift": zod.number().int().nullable(),
   "progressPct": zod.number().int().nullable(),
   "category": zod.string().nullable(),
@@ -1526,6 +1526,42 @@ export const GetDashboardSummaryResponse = zod.object({
   "materialCount": zod.number().int(),
   "colorCount": zod.number().int(),
   "brandCount": zod.number().int(),
+  "customers": zod.array(zod.object({
+  "quantity": zod.number().int(),
+  "progressPct": zod.number(),
+  "targetTotalL": zod.number(),
+  "expectedProgressLiters": zod.number(),
+  "actualTotalL": zod.number(),
+  "remainingLiters": zod.number(),
+  "literVariance": zod.number(),
+  "literVariancePct": zod.number().nullable(),
+  "materialCostCurrency": zod.string().nullable(),
+  "expectedMaterialCost": zod.number().nullable(),
+  "actualMaterialCost": zod.number().nullable(),
+  "materialCostVariance": zod.number().nullable(),
+  "materialCostVariancePct": zod.number().nullable()
+}).and(zod.object({
+  "customerName": zod.string(),
+  "orders": zod.array(zod.object({
+  "quantity": zod.number().int(),
+  "progressPct": zod.number(),
+  "targetTotalL": zod.number(),
+  "expectedProgressLiters": zod.number(),
+  "actualTotalL": zod.number(),
+  "remainingLiters": zod.number(),
+  "literVariance": zod.number(),
+  "literVariancePct": zod.number().nullable(),
+  "materialCostCurrency": zod.string().nullable(),
+  "expectedMaterialCost": zod.number().nullable(),
+  "actualMaterialCost": zod.number().nullable(),
+  "materialCostVariance": zod.number().nullable(),
+  "materialCostVariancePct": zod.number().nullable()
+}).and(zod.object({
+  "jobItemId": zod.number().int(),
+  "jobNo": zod.string(),
+  "customerName": zod.string()
+})))
+}))),
   "recentAuditEntries": zod.array(zod.object({
   "id": zod.number().int(),
   "actorUserId": zod.number().int().nullable(),

@@ -59,7 +59,7 @@ export function Ongoing() {
   const { t } = useLanguage();
   const { user } = useAppAuth();
   const qc = useQueryClient();
-  const query = useListJobWorkflow(undefined, { query: { queryKey: getListJobWorkflowQueryKey() } });
+  const query = useListJobWorkflow(undefined, { query: { queryKey: getListJobWorkflowQueryKey(), refetchInterval: 30000 } });
   const mutation = useUpdateJobWorkflow();
   const [shift, setShift] = useState("1");
   const [serverError, setError] = useState("");

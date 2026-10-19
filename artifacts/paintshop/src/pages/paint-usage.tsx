@@ -3,6 +3,8 @@ import { Link, useLocation, useParams } from "wouter";
 import {
   getGetJobItemQueryKey,
   getGetPaintUsageQueryKey,
+  getGetDashboardSummaryQueryKey,
+  getListJobWorkflowQueryKey,
   getListPaintUsagePhotosQueryKey,
   getListJobItemSerialNumbersQueryKey,
   getListJobItemsQueryKey,
@@ -240,6 +242,9 @@ function UsageForm({
         const saved = await updateMutation.mutateAsync({ id: usage.id, data });
         queryClient.setQueryData(getGetPaintUsageQueryKey(usage.id), saved);
         queryClient.invalidateQueries({ queryKey: getListPaintUsageQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetPaintUsageQueryKey(usage!.id) });
+        queryClient.invalidateQueries({ queryKey: getListJobWorkflowQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
         onComplete(saved);
       } else {
         const createValues = values as UsageFormValues;
@@ -264,6 +269,8 @@ function UsageForm({
         const saved = await createMutation.mutateAsync({ data });
         queryClient.invalidateQueries({ queryKey: getListPaintUsageQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetJobItemQueryKey(data.jobItemId) });
+        queryClient.invalidateQueries({ queryKey: getListJobWorkflowQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
         onComplete(saved);
       }
     } catch (error) {
@@ -338,7 +345,7 @@ function UsageForm({
               <FormItem><FormLabel className="font-bold">{t("usageDate")}</FormLabel><FormControl><Input type="date" {...field} data-testid="input-usage-date" /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="shift" render={({ field }) => (
-              <FormItem><FormLabel className="font-bold">Shift</FormLabel><FormControl><Input {...field} placeholder="Shift 1 / Shift 2 / Shift 3" data-testid="input-shift" /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormLabel className="font-bold">Shift</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger data-testid="input-shift"><SelectValue /></SelectTrigger></FormControl><SelectContent>{[1, 2, 3].map((shift) => <SelectItem key={shift} value={`Shift ${shift}`}>Shift {shift}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem><FormLabel className="font-bold">{t("category")}</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger data-testid="select-usage-category"><SelectValue /></SelectTrigger></FormControl><SelectContent>
@@ -362,7 +369,7 @@ function UsageForm({
         {!!selectedJob?.customPaintStages?.length && (
           <section className="space-y-3 border border-border bg-card p-5" data-testid="custom-paint-stages">
             <h2 className="text-xs font-bold uppercase tracking-[0.16em]">{t("paintStages")}</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               {selectedJob.customPaintStages.map((stage) => (
                 <div className="border-l-4 border-primary bg-secondary/30 p-4" key={stage.id}>
                   <div className="flex items-start justify-between gap-3">
@@ -388,24 +395,23 @@ function UsageForm({
           </section>
         )}
 
-        <section className="border border-border bg-card">
-          <div className="grid border-b border-border bg-secondary/40 md:grid-cols-2">
-            <div className="flex items-center justify-between border-b border-border px-5 py-3 md:border-b-0 md:border-r"><p className="text-xs font-bold uppercase tracking-[0.16em] text-foreground">{t("actualPrimer")} ({volumeUnit})</p><div className="flex gap-1" aria-label={t("volumeUnit")}><Button type="button" size="sm" variant={volumeUnit === "L" ? "default" : "outline"} onClick={() => setVolumeUnit("L")}>L</Button><Button type="button" size="sm" variant={volumeUnit === "mL" ? "default" : "outline"} onClick={() => setVolumeUnit("mL")}>mL</Button></div></div>
-            <div className="px-5 py-3"><p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{t("actualTopcoat")} ({volumeUnit})</p></div>
-          </div>
-          <div className="grid gap-5 p-5 md:grid-cols-2">
-            <div className="grid gap-4 sm:grid-cols-3">
-              {actualFields.slice(0, 3).map((fieldConfig) => (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">{language === "id" ? "Isi total kumulatif per SN, termasuk pemakaian shift sebelumnya. Setiap perubahan dicatat dalam riwayat." : "Enter cumulative totals per SN, including previous shifts. Each change is recorded in history."}</p>
+          <div className="flex gap-1" aria-label={t("volumeUnit")}><Button type="button" size="sm" variant={volumeUnit === "L" ? "default" : "outline"} onClick={() => setVolumeUnit("L")}>L</Button><Button type="button" size="sm" variant={volumeUnit === "mL" ? "default" : "outline"} onClick={() => setVolumeUnit("mL")}>mL</Button></div>
+        </div>
+        {(["primer", "topcoat"] as const).map((coat, index) => (
+          <section key={coat} className="border border-border bg-card">
+            <div className="flex flex-wrap justify-between gap-2 border-b border-border bg-secondary/40 px-5 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.16em]">{t(coat === "primer" ? "actualPrimer" : "actualTopcoat")} ({volumeUnit})</p>
+              <p className="text-xs font-bold">{t("targetPerSerial")}: {selectedJob ? ((coat === "primer" ? selectedJob.primerTotalL : selectedJob.topcoatTotalL) * targetPerSerial).toFixed(3) : "—"} L</p>
+            </div>
+            <div className="grid gap-4 p-5 sm:grid-cols-3">
+              {actualFields.slice(index * 3, index * 3 + 3).map((fieldConfig) => (
                 <ActualField key={fieldConfig.name} control={form.control} config={{ ...fieldConfig, label: t(fieldConfig.label) }} volumeUnit={volumeUnit} data-testid={`input-${fieldConfig.name}`} />
               ))}
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {actualFields.slice(3).map((fieldConfig) => (
-                <ActualField key={fieldConfig.name} control={form.control} config={{ ...fieldConfig, label: t(fieldConfig.label) }} volumeUnit={volumeUnit} data-testid={`input-${fieldConfig.name}`} />
-              ))}
-            </div>
-          </div>
-        </section>
+          </section>
+        ))}
 
         <FormField control={form.control} name="notes" render={({ field }) => (
           <FormItem className="border border-border bg-card p-5">

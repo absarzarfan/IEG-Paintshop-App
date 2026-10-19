@@ -613,6 +613,7 @@ export const JobWorkEventEventType = {
   handed_over: 'handed_over',
   completed: 'completed',
   shipment_verified: 'shipment_verified',
+  paint_usage_recorded: 'paint_usage_recorded',
 } as const;
 
 export interface JobWorkEvent {
@@ -852,6 +853,39 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+export interface PaintPerformanceTotals {
+  quantity: number;
+  progressPct: number;
+  targetTotalL: number;
+  expectedProgressLiters: number;
+  actualTotalL: number;
+  remainingLiters: number;
+  literVariance: number;
+  /** @nullable */
+  literVariancePct: number | null;
+  /** @nullable */
+  materialCostCurrency: string | null;
+  /** @nullable */
+  expectedMaterialCost: number | null;
+  /** @nullable */
+  actualMaterialCost: number | null;
+  /** @nullable */
+  materialCostVariance: number | null;
+  /** @nullable */
+  materialCostVariancePct: number | null;
+}
+
+export type OrderPerformance = PaintPerformanceTotals & {
+  jobItemId: number;
+  jobNo: string;
+  customerName: string;
+};
+
+export type CustomerPerformance = PaintPerformanceTotals & {
+  customerName: string;
+  orders: OrderPerformance[];
+};
+
 export interface DashboardSummary {
   jobItemCount: number;
   queuedCount: number;
@@ -866,6 +900,7 @@ export interface DashboardSummary {
   materialCount: number;
   colorCount: number;
   brandCount: number;
+  customers: CustomerPerformance[];
   recentAuditEntries: AuditLogEntry[];
 }
 

@@ -14,6 +14,8 @@ import {
 } from "@workspace/db";
 import { GetDashboardSummaryResponse } from "@workspace/api-zod";
 import { requireAnyRole } from "../middlewares/auth";
+import { serializeWorkflow } from "./jobWorkflow";
+import { aggregateOrderPerformance } from "../lib/orderPerformance";
 
 const router: IRouter = Router();
 
@@ -72,6 +74,10 @@ router.get("/dashboard/summary", requireAnyRole, async (_req, res): Promise<void
   );
   const online = onlineIds.size;
   const working = workingIds.size;
+  const jobs = await db.select().from(jobItemsTable);
+  const serials = await db.select({ id: serialNumbersTable.id }).from(serialNumbersTable);
+  const workflow = await Promise.all(serials.map((serial) => serializeWorkflow(serial.id)));
+  const customers = aggregateOrderPerformance(jobs, workflow.filter((row) => row !== null));
 
   res.json(GetDashboardSummaryResponse.parse({
     jobItemCount: Number(jobItemCount.value),
@@ -87,6 +93,7 @@ router.get("/dashboard/summary", requireAnyRole, async (_req, res): Promise<void
     materialCount: Number(materialCount.value),
     colorCount: Number(colorCount.value),
     brandCount: Number(brandCount.value),
+    customers,
     recentAuditEntries,
   }));
 });

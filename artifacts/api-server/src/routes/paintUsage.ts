@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import {
   db,
   jobItemsTable,
+  jobWorkEventsTable,
   paintUsageTable,
   serialNumbersTable,
   usersTable,
@@ -25,6 +26,36 @@ import { targetsPerUnit } from "../lib/costs";
 
 const router: IRouter = Router();
 const canRecordUsage = requireRole("admin", "painter");
+
+function usageWorkEvent(
+  usage: typeof paintUsageTable.$inferSelect,
+  actorUserId: number | null,
+  serial: typeof serialNumbersTable.$inferSelect,
+): typeof jobWorkEventsTable.$inferInsert {
+  const primer = usage.primerBaseActualL + usage.primerHrdActualL + usage.primerThinnerActualL;
+  const topcoat = usage.topcoatBaseActualL + usage.topcoatHrdActualL + usage.topcoatThinnerActualL;
+  const stages = usage.customPaintActuals.map((stage) => `${stage.name}: ${stage.actualLiters.toFixed(3)} L`);
+  return {
+    serialNumberId: serial.id,
+    actorUserId,
+    eventType: "paint_usage_recorded",
+    shift: Number(usage.shift.match(/[123]/)?.[0] ?? serial.activeShift),
+    progressPct: serial.progressPct,
+    category: usage.category,
+    note: [`Cumulative paint usage — Primer: ${primer.toFixed(3)} L`, `Topcoat: ${topcoat.toFixed(3)} L`, ...stages].join("; "),
+  };
+}
+
+function usageShiftError(serial: typeof serialNumbersTable.$inferSelect, shift: string, role: string | undefined) {
+  if (serial.workStatus === "shipped") return "Verified shipment paint usage is locked.";
+  const selectedShift = shift.trim().match(/^(?:shift\s*)?([123])$/i);
+  if (!selectedShift) return "Select Shift 1, Shift 2, or Shift 3.";
+  if (role === "painter" && (serial.workStatus !== "ongoing"
+    || serial.activeShift !== Number(selectedShift[1]) || serial.handoverToShift !== null)) {
+    return "Start or resume this job in Ongoing Jobs first. Shifts 2 and 3 require a handover from the previous shift.";
+  }
+  return null;
+}
 
 const actualFields = [
   "primerBaseActualL",
@@ -78,6 +109,10 @@ function snapshotCustomPaintActuals(
 }
 
 function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
+  const variance = calculateUsageVariance(targetsPerUnit(jobItem), toActuals(usage));
+  const customOverconsumption = usage.customPaintActuals.some((actual) =>
+    actual.actualLiters > actual.targetLiters * (1 + variance.thresholdPct / 100)
+  );
   return {
     id: usage.id,
     jobItemId: usage.jobItemId,
@@ -94,7 +129,8 @@ function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
     topcoatBaseActualL: usage.topcoatBaseActualL,
     topcoatHrdActualL: usage.topcoatHrdActualL,
     topcoatThinnerActualL: usage.topcoatThinnerActualL,
-    ...calculateUsageVariance(targetsPerUnit(jobItem), toActuals(usage)),
+    ...variance,
+    isOverconsumption: variance.isOverconsumption || customOverconsumption,
     notes: usage.notes,
     createdByUserId: usage.createdByUserId,
     createdByName: actor?.name ?? actor?.email ?? null,
@@ -178,6 +214,11 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
     res.status(400).json({ error: "Serial number does not belong to the selected job item" });
     return;
   }
+  const shiftError = usageShiftError(serial, parsed.data.shift, req.appUser?.role);
+  if (shiftError) {
+    res.status(409).json({ error: shiftError });
+    return;
+  }
 
   const [existing] = await db
     .select({ id: paintUsageTable.id })
@@ -194,14 +235,15 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
     return;
   }
 
-  const [created] = await db
-    .insert(paintUsageTable)
-    .values({
+  const created = await db.transaction(async (tx) => {
+    const [record] = await tx.insert(paintUsageTable).values({
       ...parsed.data,
       customPaintActuals,
       createdByUserId: req.appUser?.id ?? null,
-    })
-    .returning();
+    }).returning();
+    await tx.insert(jobWorkEventsTable).values(usageWorkEvent(record, req.appUser?.id ?? null, serial));
+    return record;
+  });
 
   await recordAudit({
     req,
@@ -253,6 +295,16 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
     res.status(404).json({ error: "Paint usage record not found" });
     return;
   }
+  const [serial] = await db.select().from(serialNumbersTable).where(eq(serialNumbersTable.id, before.serialNumberId));
+  if (!serial) {
+    res.status(404).json({ error: "Serial number not found" });
+    return;
+  }
+  const shiftError = usageShiftError(serial, parsed.data.shift ?? before.shift, req.appUser?.role);
+  if (shiftError) {
+    res.status(409).json({ error: shiftError });
+    return;
+  }
 
   const { customPaintActuals: requestedActuals, ...updateFields } = parsed.data;
   const updateData: Partial<typeof paintUsageTable.$inferInsert> = { ...updateFields };
@@ -273,11 +325,14 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
     updateData.customPaintActuals = snapshot;
   }
 
-  const [updated] = await db
-    .update(paintUsageTable)
-    .set(updateData)
-    .where(eq(paintUsageTable.id, params.data.id))
-    .returning();
+  const updated = await db.transaction(async (tx) => {
+    const [record] = await tx.update(paintUsageTable).set({ ...updateData, updatedAt: new Date() })
+      .where(eq(paintUsageTable.id, params.data.id)).returning();
+    if (Object.keys(diffFields(before, updateData)).length > 0) {
+      await tx.insert(jobWorkEventsTable).values(usageWorkEvent(record, req.appUser?.id ?? null, serial));
+    }
+    return record;
+  });
 
   const changes = diffFields(before, updateData);
   if (Object.keys(changes).length > 0) {

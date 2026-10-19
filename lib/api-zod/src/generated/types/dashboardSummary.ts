@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AuditLogEntry } from './auditLogEntry';
+import type { CustomerPerformance } from './customerPerformance';
 
 export interface DashboardSummary {
   jobItemCount: number;
@@ -21,5 +22,6 @@ export interface DashboardSummary {
   materialCount: number;
   colorCount: number;
   brandCount: number;
+  customers: CustomerPerformance[];
   recentAuditEntries: AuditLogEntry[];
 }

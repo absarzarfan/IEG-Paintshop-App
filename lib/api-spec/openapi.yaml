@@ -1549,7 +1549,7 @@ components:
         actorName: { type: ["string", "null"] }
         eventType:
           type: string
-          enum: [started, progress_updated, handed_over, completed, shipment_verified]
+          enum: [started, progress_updated, handed_over, completed, shipment_verified, paint_usage_recorded]
         shift: { type: ["integer", "null"] }
         progressPct: { type: ["integer", "null"] }
         category: { type: ["string", "null"] }
@@ -1763,6 +1763,46 @@ components:
           createdAt,
         ]
 
+    PaintPerformanceTotals:
+      type: object
+      properties:
+        quantity: { type: integer }
+        progressPct: { type: number }
+        targetTotalL: { type: number }
+        expectedProgressLiters: { type: number }
+        actualTotalL: { type: number }
+        remainingLiters: { type: number }
+        literVariance: { type: number }
+        literVariancePct: { type: ["number", "null"] }
+        materialCostCurrency: { type: ["string", "null"] }
+        expectedMaterialCost: { type: ["number", "null"] }
+        actualMaterialCost: { type: ["number", "null"] }
+        materialCostVariance: { type: ["number", "null"] }
+        materialCostVariancePct: { type: ["number", "null"] }
+      required: [quantity, progressPct, targetTotalL, expectedProgressLiters, actualTotalL, remainingLiters, literVariance, literVariancePct, materialCostCurrency, expectedMaterialCost, actualMaterialCost, materialCostVariance, materialCostVariancePct]
+
+    OrderPerformance:
+      allOf:
+        - $ref: "#/components/schemas/PaintPerformanceTotals"
+        - type: object
+          properties:
+            jobItemId: { type: integer }
+            jobNo: { type: string }
+            customerName: { type: string }
+          required: [jobItemId, jobNo, customerName]
+
+    CustomerPerformance:
+      allOf:
+        - $ref: "#/components/schemas/PaintPerformanceTotals"
+        - type: object
+          properties:
+            customerName: { type: string }
+            orders:
+              type: array
+              items:
+                $ref: "#/components/schemas/OrderPerformance"
+          required: [customerName, orders]
+
     DashboardSummary:
       type: object
       properties:
@@ -1779,6 +1819,10 @@ components:
         materialCount: { type: integer }
         colorCount: { type: integer }
         brandCount: { type: integer }
+        customers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerPerformance"
         recentAuditEntries:
           type: array
           items:
@@ -1799,4 +1843,5 @@ components:
           colorCount,
            brandCount,
           recentAuditEntries,
+          customers,
         ]

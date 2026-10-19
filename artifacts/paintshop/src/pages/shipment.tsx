@@ -29,7 +29,7 @@ export function Shipment() {
   const { user } = useAppAuth();
   const { t } = useLanguage();
   const qc = useQueryClient();
-  const query = useListJobWorkflow(undefined, { query: { queryKey: getListJobWorkflowQueryKey() } });
+  const query = useListJobWorkflow(undefined, { query: { queryKey: getListJobWorkflowQueryKey(), refetchInterval: 30000 } });
   const mutation = useUpdateJobWorkflow();
   const [error, setError] = useState("");
   const [pending, setPending] = useState<number | null>(null);

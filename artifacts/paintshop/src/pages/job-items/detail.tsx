@@ -11,6 +11,8 @@ import {
   useUpdateJobItem,
   useDeleteJobItem,
   getListJobItemsQueryKey,
+  getListJobWorkflowQueryKey,
+  getGetDashboardSummaryQueryKey,
   getListMaterialsQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -601,9 +603,11 @@ function CustomPaintStagesDialog({ job }: { job: any }) {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetJobItemQueryKey(job.id) });
         queryClient.invalidateQueries({ queryKey: getListJobItemsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListJobWorkflowQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
         setOpen(false);
       },
-      onError: () => setError(t("stageSaveError")),
+      onError: (error) => setError(error instanceof Error ? error.message : t("stageSaveError")),
     },
   });
 
@@ -642,6 +646,7 @@ function CustomPaintStagesDialog({ job }: { job: any }) {
         <DialogHeader>
           <DialogTitle className="font-extrabold uppercase">{t("paintStages")}</DialogTitle>
           <p className="text-sm text-muted-foreground">{t("paintStagesHint")}</p>
+          <p className="text-xs font-bold">{t("targetLitersTotal")} (L / {job.targetBasis === "order_total" ? t("wholeOrder") : t("perUnit")})</p>
         </DialogHeader>
         <div className="space-y-3">
           {stages.length === 0 && <p className="border border-dashed border-border p-4 text-sm text-muted-foreground">{t("noStages")}</p>}
