@@ -24,8 +24,8 @@ function WorkflowRow({ item, canWork, canComplete, shift, onAction, pendingId }:
   const { t, language } = useLanguage();
   const [progressPct, setProgress] = useState(String(item.progressPct));
   const [category, setCategory] = useState(item.currentCategory ?? "preparation");
-  const [handoverToShift, setHandover] = useState(String(Math.min(3, shift + 1)));
   const [note, setNote] = useState("");
+  const nextShift = shift < 3 ? shift + 1 : null;
   const isQueued = item.workStatus === "queued";
   const canResume = item.workStatus === "ongoing" && item.handoverToShift === shift;
   return <article className="grid gap-4 border-b border-border p-4 lg:grid-cols-[1.1fr_.7fr_1fr] lg:p-5" data-testid={`row-workflow-${item.serialNumberId}`}>
@@ -38,8 +38,8 @@ function WorkflowRow({ item, canWork, canComplete, shift, onAction, pendingId }:
       {canWork && item.workStatus === "ongoing" && item.handoverToShift === null && <>
         <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-bold uppercase text-muted-foreground">{t("progress")} %<Input type="number" min="0" max="100" value={progressPct} onChange={e => setProgress(e.target.value)} data-testid={`input-progress-${item.serialNumberId}`}/></label>
           <label className="text-[10px] font-bold uppercase text-muted-foreground">{t("category")}<Select value={category} onValueChange={setCategory}><SelectTrigger data-testid={`select-category-${item.serialNumberId}`}><SelectValue/></SelectTrigger><SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></label></div>
-        <div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={pendingId === item.serialNumberId} onClick={() => onAction(item, "update_progress", { shift, progressPct: Number(progressPct), category, note: note || null })} data-testid={`button-update-${item.serialNumberId}`}><RefreshCw size={13} className="mr-1"/>{t("update")}</Button>
-          <Select value={handoverToShift} onValueChange={setHandover}><SelectTrigger className="h-9 w-28" aria-label={t("handoverTo")}><SelectValue/></SelectTrigger><SelectContent>{[2,3].filter(s => s > shift).map(s => <SelectItem value={String(s)} key={s}>Shift {s}</SelectItem>)}</SelectContent></Select><Button size="sm" variant="outline" disabled={pendingId === item.serialNumberId || Number(handoverToShift) <= shift} onClick={() => onAction(item, "handover", { shift, handoverToShift: Number(handoverToShift), progressPct: Number(progressPct), category, note: note || null })} data-testid={`button-handover-${item.serialNumberId}`}><Send size={13} className="mr-1"/>{t("handover")}</Button>
+         <div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={pendingId === item.serialNumberId} onClick={() => onAction(item, "update_progress", { shift, progressPct: Number(progressPct), category, note: note || null })} data-testid={`button-update-${item.serialNumberId}`}><RefreshCw size={13} className="mr-1"/>{t("update")}</Button>
+           {nextShift !== null && <Button size="sm" variant="outline" disabled={pendingId === item.serialNumberId} onClick={() => onAction(item, "handover", { shift, handoverToShift: nextShift, progressPct: Number(progressPct), category, note: note || null })} data-testid={`button-handover-${item.serialNumberId}`}><Send size={13} className="mr-1"/>{t("handover")} · Shift {nextShift}</Button>}
           {canComplete && <Button size="sm" onClick={() => onAction(item, "complete", { shift, progressPct: 100, category, note: note || null })} disabled={pendingId === item.serialNumberId} data-testid={`button-complete-${item.serialNumberId}`}><Check size={13} className="mr-1"/>{t("complete")}</Button>}</div>
         <Input value={note} onChange={e => setNote(e.target.value)} placeholder={t("note")} data-testid={`input-note-${item.serialNumberId}`}/>
       </>}

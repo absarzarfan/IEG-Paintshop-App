@@ -247,6 +247,7 @@ router.post(
         } else if (
           serial.workStatus === "ongoing" &&
           serial.handoverToShift === selectedShift &&
+          serial.activeShift + 1 === selectedShift &&
           selectedShift > 1
         ) {
           next.activeShift = selectedShift;
@@ -275,8 +276,8 @@ router.post(
           next.currentCategory = category ?? serial.currentCategory;
           eventType = "progress_updated";
         } else if (action === "handover") {
-          if (handoverToShift === undefined || handoverToShift <= selectedShift) {
-            res.status(400).json({ error: "Handover must be to a later shift (2 or 3)" });
+          if (selectedShift >= 3 || handoverToShift !== selectedShift + 1) {
+            res.status(400).json({ error: "Handover must be to the next shift only." });
             return;
           }
           next.progressPct = progressPct ?? serial.progressPct;
