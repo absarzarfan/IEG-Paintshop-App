@@ -62,6 +62,10 @@ Object.assign(messages.id, {
   stageSaveError: "Tahap cat tidak dapat disimpan.",
   stageValidationError: "Isi nama dan target liter yang valid untuk setiap tahap.",
   customActual: "Pemakaian aktual",
+  primerActualVsTarget: "Primer Aktual vs Target",
+  topcoatActualVsTarget: "Topcoat Aktual vs Target",
+  stockNotesPlaceholder: "Dokumen penerimaan, alasan pengembalian, atau referensi transaksi...",
+  usageRecorded: "Pemakaian cat dicatat",
 });
 Object.assign(messages.en, {
   usagePhotos: "Paint Usage Photos",
@@ -87,6 +91,10 @@ Object.assign(messages.en, {
   stageSaveError: "Paint stages could not be saved.",
   stageValidationError: "Enter a valid stage name and liter target for every stage.",
   customActual: "Actual usage",
+  primerActualVsTarget: "Primer Actual vs Target",
+  topcoatActualVsTarget: "Topcoat Actual vs Target",
+  stockNotesPlaceholder: "Receipt document, return reason, or transaction reference...",
+  usageRecorded: "Paint usage recorded",
 });
 
 const LanguageContext = createContext<{ language: Language; setLanguage: (language: Language) => void; t: (key: string) => string }>({

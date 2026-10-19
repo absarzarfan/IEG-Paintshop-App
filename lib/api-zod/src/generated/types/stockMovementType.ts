@@ -12,5 +12,5 @@ export type StockMovementType = typeof StockMovementType[keyof typeof StockMovem
 export const StockMovementType = {
   in: 'in',
   out: 'out',
-  adjustment: 'adjustment',
+  return_to_stock: 'return_to_stock',
 } as const;

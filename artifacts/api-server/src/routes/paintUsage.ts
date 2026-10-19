@@ -42,7 +42,7 @@ function usageWorkEvent(
     shift: Number(usage.shift.match(/[123]/)?.[0] ?? serial.activeShift),
     progressPct: serial.progressPct,
     category: usage.category,
-    note: [`Cumulative paint usage — Primer: ${primer.toFixed(3)} L`, `Topcoat: ${topcoat.toFixed(3)} L`, ...stages].join("; "),
+    note: [`Primer: ${primer.toFixed(3)} L`, `Topcoat: ${topcoat.toFixed(3)} L`, ...stages].join("; "),
   };
 }
 

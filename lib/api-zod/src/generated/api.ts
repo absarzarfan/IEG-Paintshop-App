@@ -532,7 +532,7 @@ export const ListStockMovementsResponseItem = zod.object({
   "materialId": zod.number().int(),
   "materialDescription": zod.string(),
   "brandName": zod.string(),
-  "movementType": zod.enum(['in', 'out', 'adjustment']),
+  "movementType": zod.enum(['in', 'out', 'return_to_stock']),
   "quantityL": zod.number(),
   "lotNo": zod.string().nullable(),
   "expiryDate": zod.coerce.date().nullable(),
@@ -555,7 +555,7 @@ export const createStockMovementBodyNotesMax = 500;
 
 export const CreateStockMovementBody = zod.object({
   "materialId": zod.number().int(),
-  "movementType": zod.enum(['in', 'out', 'adjustment']),
+  "movementType": zod.enum(['in', 'out', 'return_to_stock']),
   "quantityL": zod.number(),
   "lotNo": zod.string().max(createStockMovementBodyLotNoMax).nullish(),
   "expiryDate": zod.coerce.date().nullish(),
@@ -567,7 +567,7 @@ export const CreateStockMovementResponse = zod.object({
   "materialId": zod.number().int(),
   "materialDescription": zod.string(),
   "brandName": zod.string(),
-  "movementType": zod.enum(['in', 'out', 'adjustment']),
+  "movementType": zod.enum(['in', 'out', 'return_to_stock']),
   "quantityL": zod.number(),
   "lotNo": zod.string().nullable(),
   "expiryDate": zod.coerce.date().nullable(),

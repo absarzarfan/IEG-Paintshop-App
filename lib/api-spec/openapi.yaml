@@ -1230,7 +1230,7 @@ components:
 
     StockMovementType:
       type: string
-      enum: [in, out, adjustment]
+      enum: [in, out, return_to_stock]
 
     StockSummary:
       type: object

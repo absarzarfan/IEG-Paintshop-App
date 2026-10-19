@@ -20,7 +20,7 @@ import { recordAudit } from "../lib/audit";
 const router: IRouter = Router();
 const canManageStock = requireRole("admin", "warehouse", "painter");
 
-function signedQuantity(movementType: "in" | "out" | "adjustment", quantityL: number): number {
+function signedQuantity(movementType: "in" | "out" | "adjustment" | "return_to_stock", quantityL: number): number {
   return movementType === "out" ? -quantityL : quantityL;
 }
 
@@ -54,7 +54,7 @@ async function serializeMovement(id: number) {
     materialId: row.movement.materialId,
     materialDescription: row.material.description,
     brandName: row.brandName,
-    movementType: row.movement.movementType,
+    movementType: row.movement.movementType === "adjustment" ? "return_to_stock" : row.movement.movementType,
     quantityL: signedQuantity(row.movement.movementType, row.movement.quantityL),
     lotNo: row.movement.lotNo,
     expiryDate: row.movement.expiryDate,

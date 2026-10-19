@@ -4,7 +4,8 @@ import { z } from "zod/v4";
 import { materialsTable } from "./materials";
 import { usersTable } from "./users";
 
-export const stockMovementTypeEnum = pgEnum("stock_movement_type", ["in", "out", "adjustment"]);
+// Keep "adjustment" for legacy rows; all newly recorded returns use the explicit return type.
+export const stockMovementTypeEnum = pgEnum("stock_movement_type", ["in", "out", "adjustment", "return_to_stock"]);
 
 export const stockMovementsTable = pgTable("stock_movements", {
   id: serial("id").primaryKey(),
@@ -12,7 +13,7 @@ export const stockMovementsTable = pgTable("stock_movements", {
     .notNull()
     .references(() => materialsTable.id),
   movementType: stockMovementTypeEnum("movement_type").notNull(),
-  // Positive values are used for receipts/issues; adjustments may be positive or negative.
+  // Incoming and return quantities are positive; issues are stored positive and signed on read.
   quantityL: numeric("quantity_l", { mode: "number", precision: 12, scale: 4 }).notNull(),
   lotNo: text("lot_no"),
   expiryDate: date("expiry_date", { mode: "date" }),

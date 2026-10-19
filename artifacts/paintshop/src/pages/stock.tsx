@@ -24,12 +24,6 @@ import {
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/language";
 
-const movementLabels: Record<StockMovementType, string> = {
-  in: "Receipt",
-  out: "Issue",
-  adjustment: "Return to Stock",
-};
-
 function formatLiters(value: number) {
   return `${value.toFixed(3)} L`;
 }
@@ -167,8 +161,8 @@ export function Stock() {
             <Select value={movementType} onValueChange={(value) => setMovementType(value as StockMovementType)}>
               <SelectTrigger id="stock-movement-type"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(Object.keys(movementLabels) as StockMovementType[]).map((type) => (
-                  <SelectItem value={type} key={type}>{type === "adjustment" ? t("stockReturn") : movementLabels[type]}</SelectItem>
+                {(["in", "out", "return_to_stock"] as StockMovementType[]).map((type) => (
+                  <SelectItem value={type} key={type}>{type === "return_to_stock" ? t("stockReturn") : t(type === "in" ? "receipt" : "issue")}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -187,7 +181,7 @@ export function Stock() {
           </div>
           <div className="space-y-2 md:col-span-2 lg:col-span-3">
              <Label htmlFor="stock-notes">{t("notes")} <span className="font-normal text-muted-foreground">({t("optional")})</span></Label>
-             <Textarea id="stock-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={500} placeholder="Receipt document, adjustment reason, or transaction reference..." />
+             <Textarea id="stock-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={500} placeholder={t("stockNotesPlaceholder")} />
           </div>
           {formError && <div className="flex items-start gap-2 text-sm font-semibold text-destructive md:col-span-2 lg:col-span-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />{formError}</div>}
           <div className="md:col-span-2 lg:col-span-3">
@@ -240,7 +234,7 @@ export function Stock() {
                   <tr key={movement.id}>
                     <td className="font-mono text-xs text-muted-foreground">{formatDateTime(movement.createdAt)}</td>
                     <td className="font-bold">{movement.materialDescription}<p className="text-xs font-normal text-muted-foreground">{movement.brandName}</p></td>
-                     <td><span className="text-xs font-bold uppercase tracking-wider">{movement.movementType === "adjustment" ? t("stockReturn") : movementLabels[movement.movementType]}</span></td>
+                     <td><span className="text-xs font-bold uppercase tracking-wider">{movement.movementType === "return_to_stock" ? t("stockReturn") : t(movement.movementType === "in" ? "receipt" : "issue")}</span></td>
                     <td className={`text-right font-mono font-bold ${movement.quantityL < 0 ? "text-destructive" : "text-emerald-700"}`}>{movement.quantityL > 0 ? "+" : ""}{formatLiters(movement.quantityL)}</td>
                     <td><p className="font-mono text-xs">{movement.lotNo || "—"}</p><p className="text-xs text-muted-foreground">{formatDate(movement.expiryDate)}</p></td>
                     <td className="text-sm">{movement.createdByName || "System"}</td>
