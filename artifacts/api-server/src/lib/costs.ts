@@ -41,6 +41,10 @@ async function getCurrentPrice(materialId: number | null): Promise<MaterialPrice
   return latest ?? null;
 }
 
+export async function getCurrentMaterialPrice(materialId: number | null): Promise<MaterialPriceInfo | null> {
+  return getCurrentPrice(materialId);
+}
+
 function round4(n: number): number {
   return Math.round(n * 10000) / 10000;
 }

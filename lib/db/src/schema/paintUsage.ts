@@ -15,6 +15,7 @@ export type CustomPaintActual = {
   coatType: "primer" | "topcoat";
   targetLiters: number;
   actualLiters: number;
+  materialId?: number | null;
 };
 
 /**

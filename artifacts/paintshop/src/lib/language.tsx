@@ -117,6 +117,8 @@ Object.assign(messages.id, {
   input: "Input", usageReadOnly: "Akun ini hanya dapat melihat data. Untuk mencatat Pemakaian Cat, gunakan peran Paint Mixer atau Admin.",
   closeNavigation: "Tutup navigasi", openNavigation: "Buka navigasi", language: "Bahasa", stockQuantityPlaceholder: "Contoh: 25",
   productionRegister: "Daftar Produksi", dashboardLoadError: "Ringkasan dashboard tidak dapat dimuat.", example: "Contoh",
+  stageMaterial: "Material untuk Tahap Ini", selectStageMaterial: "Pilih material cat", stageMaterialRequired: "Pilih material untuk setiap tahap cat tambahan.",
+  topcoatColor: "Warna topcoat",
 });
 Object.assign(messages.en, {
   customers: "Customers", customersTitle: "Customers", customersIntro: "Manage customers available for Job Numbers.", addCustomer: "Add Customer", editCustomer: "Edit Customer",
@@ -138,6 +140,8 @@ Object.assign(messages.en, {
   input: "Input", usageReadOnly: "This account is read-only. The Paint Mixer or Admin role is required to record Paint Usage.",
   closeNavigation: "Close navigation", openNavigation: "Open navigation", language: "Language", stockQuantityPlaceholder: "Example: 25",
   productionRegister: "Production Register", dashboardLoadError: "Dashboard summary is unavailable.", example: "e.g.",
+  stageMaterial: "Material for This Stage", selectStageMaterial: "Select a paint material", stageMaterialRequired: "Select a material for every additional paint stage.",
+  topcoatColor: "Topcoat color",
 });
 
 const LanguageContext = createContext<{ language: Language; setLanguage: (language: Language) => void; t: (key: string) => string }>({

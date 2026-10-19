@@ -12,6 +12,7 @@ export type CustomPaintStage = {
   name: string;
   coatType: "primer" | "topcoat";
   targetLitersTotal: number;
+  materialId?: number | null;
 };
 
 // Paint targets are stored per unit (per job item / per serial number), in

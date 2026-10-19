@@ -595,7 +595,8 @@ function CustomPaintStagesDialog({ job }: { job: any }) {
   const { user } = useAppAuth();
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [stages, setStages] = useState<Array<{ id: string; name: string; coatType: "primer" | "topcoat"; targetLitersTotal: number }>>([]);
+  const { data: materials } = useListMaterials({ query: { enabled: open, queryKey: getListMaterialsQueryKey() } });
+  const [stages, setStages] = useState<Array<{ id: string; name: string; coatType: "primer" | "topcoat"; targetLitersTotal: number; materialId: number | null }>>([]);
   const [error, setError] = useState("");
   const queryClient = useQueryClient();
   const updateJobItem = useUpdateJobItem({
@@ -613,7 +614,7 @@ function CustomPaintStagesDialog({ job }: { job: any }) {
 
   useEffect(() => {
     if (open) {
-      setStages(job.customPaintStages ?? []);
+      setStages((job.customPaintStages ?? []).map((stage: { materialId?: number | null }) => ({ ...stage, materialId: stage.materialId ?? null })));
       setError("");
     }
   }, [open, job.customPaintStages]);
@@ -621,6 +622,10 @@ function CustomPaintStagesDialog({ job }: { job: any }) {
   if (user?.role !== "admin") return null;
 
   const save = () => {
+    if (stages.some((stage) => stage.materialId === null)) {
+      setError(t("stageMaterialRequired"));
+      return;
+    }
     if (stages.some((stage) => !stage.name.trim() || !Number.isFinite(stage.targetLitersTotal) || stage.targetLitersTotal < 0)) {
       setError(t("stageValidationError"));
       return;
@@ -651,7 +656,7 @@ function CustomPaintStagesDialog({ job }: { job: any }) {
         <div className="space-y-3">
           {stages.length === 0 && <p className="border border-dashed border-border p-4 text-sm text-muted-foreground">{t("noStages")}</p>}
           {stages.map((stage, index) => (
-            <div className="grid gap-3 border border-border bg-secondary/20 p-3 sm:grid-cols-[1fr_150px_140px_auto]" key={stage.id}>
+            <div className="grid gap-3 border border-border bg-secondary/20 p-3 sm:grid-cols-[1fr_130px_200px_140px_auto]" key={stage.id}>
               <Input
                 value={stage.name}
                 maxLength={100}
@@ -663,10 +668,27 @@ function CustomPaintStagesDialog({ job }: { job: any }) {
                 className="h-10 border border-input bg-background px-3 text-sm"
                 aria-label={t("paintType")}
                 value={stage.coatType}
-                onChange={(event) => setStages((current) => current.map((item, i) => i === index ? { ...item, coatType: event.target.value as "primer" | "topcoat" } : item))}
+                onChange={(event) => setStages((current) => current.map((item, i) => {
+                  if (i !== index) return item;
+                  const coatType = event.target.value as "primer" | "topcoat";
+                  const selectedMaterial = materials?.find((material) => material.id === item.materialId);
+                  const expectedType = coatType === "primer" ? "Primer" : "Topcoat";
+                  return { ...item, coatType, materialId: selectedMaterial?.type === expectedType ? item.materialId : null };
+                }))}
               >
                 <option value="primer">{t("stagePrimer")}</option>
                 <option value="topcoat">{t("stageTopcoat")}</option>
+              </select>
+              <select
+                className="h-10 min-w-0 border border-input bg-background px-3 text-sm"
+                aria-label={t("stageMaterial")}
+                value={stage.materialId ?? ""}
+                onChange={(event) => setStages((current) => current.map((item, i) => i === index ? { ...item, materialId: Number(event.target.value) || null } : item))}
+              >
+                <option value="">{t("selectStageMaterial")}</option>
+                {(materials ?? []).filter((material) => material.isActive && material.type === (stage.coatType === "primer" ? "Primer" : "Topcoat")).map((material) => (
+                  <option value={material.id} key={material.id}>{material.description}{material.color ? ` — ${material.color}` : ""}</option>
+                ))}
               </select>
               <Input
                 type="number"
@@ -682,7 +704,7 @@ function CustomPaintStagesDialog({ job }: { job: any }) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setStages((current) => [...current, { id: crypto.randomUUID(), name: "", coatType: "topcoat", targetLitersTotal: 0 }])}
+            onClick={() => setStages((current) => [...current, { id: crypto.randomUUID(), name: "", coatType: "topcoat", targetLitersTotal: 0, materialId: null }])}
           >
             <Plus className="mr-2 h-4 w-4" /> {t("addStage")}
           </Button>

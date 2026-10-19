@@ -1,7 +1,8 @@
-import { pgEnum, pgTable, serial, integer, text, date, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, serial, integer, text, date, timestamp, numeric, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { materialsTable } from "./materials";
+import { paintUsageTable } from "./paintUsage";
 import { usersTable } from "./users";
 
 // Keep "adjustment" for legacy rows; all newly recorded returns use the explicit return type.
@@ -18,9 +19,11 @@ export const stockMovementsTable = pgTable("stock_movements", {
   lotNo: text("lot_no"),
   expiryDate: date("expiry_date", { mode: "date" }),
   notes: text("notes"),
+  sourcePaintUsageId: integer("source_paint_usage_id").references(() => paintUsageTable.id),
+  usageComponent: text("usage_component"),
   createdByUserId: integer("created_by_user_id").references(() => usersTable.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("stock_movements_usage_source_idx").on(table.sourcePaintUsageId, table.usageComponent)]);
 
 export const insertStockMovementSchema = createInsertSchema(stockMovementsTable).omit({
   id: true,

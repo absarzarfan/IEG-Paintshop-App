@@ -1702,6 +1702,7 @@ components:
         name: { type: string, minLength: 1, maxLength: 100 }
         coatType: { type: string, enum: [primer, topcoat] }
         targetLitersTotal: { type: number, minimum: 0 }
+        materialId: { type: ["integer", "null"] }
       required: [id, name, coatType, targetLitersTotal]
 
     CustomPaintActual:
@@ -1712,6 +1713,7 @@ components:
         coatType: { type: string, enum: [primer, topcoat] }
         targetLiters: { type: number, minimum: 0 }
         actualLiters: { type: number, minimum: 0 }
+        materialId: { type: ["integer", "null"] }
       required: [stageId, name, coatType, targetLiters, actualLiters]
 
     PaintUsage:

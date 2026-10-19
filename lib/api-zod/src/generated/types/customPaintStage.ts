@@ -21,4 +21,6 @@ export interface CustomPaintStage {
   coatType: CustomPaintStageCoatType;
   /** @minimum 0 */
   targetLitersTotal: number;
+  /** @nullable */
+  materialId?: number | null;
 }

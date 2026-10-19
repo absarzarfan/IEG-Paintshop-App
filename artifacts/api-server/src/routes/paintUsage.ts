@@ -1,11 +1,13 @@
 import { Router, type IRouter } from "express";
-import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
   db,
   jobItemsTable,
   jobWorkEventsTable,
+  materialsTable,
   paintUsageTable,
   serialNumbersTable,
+  stockMovementsTable,
   usersTable,
 } from "@workspace/db";
 import {
@@ -105,7 +107,233 @@ function snapshotCustomPaintActuals(
     coatType: stage.coatType,
     targetLiters: stage.targetLitersTotal * targetMultiplier,
     actualLiters: requestedById.get(stage.id) ?? 0,
+    materialId: stage.materialId ?? null,
   }));
+}
+
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+class StockAllocationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StockAllocationError";
+  }
+}
+
+function round4(value: number) {
+  return Math.round(value * 10000) / 10000;
+}
+
+function usageStockLines(
+  usage: typeof paintUsageTable.$inferSelect,
+  jobItem: typeof jobItemsTable.$inferSelect,
+) {
+  const fixedComponents = [
+    { key: "primerBase", actual: "primerBaseActualL", material: "primerBaseMaterialId" },
+    { key: "primerHardener", actual: "primerHrdActualL", material: "primerHrdMaterialId" },
+    { key: "primerThinner", actual: "primerThinnerActualL", material: "primerThinnerMaterialId" },
+    { key: "topcoatBase", actual: "topcoatBaseActualL", material: "topcoatBaseMaterialId" },
+    { key: "topcoatHardener", actual: "topcoatHrdActualL", material: "topcoatHrdMaterialId" },
+    { key: "topcoatThinner", actual: "topcoatThinnerActualL", material: "topcoatThinnerMaterialId" },
+  ] as const;
+  const lines: Array<{ component: string; label: string; materialId: number; quantityL: number }> = [];
+
+  for (const component of fixedComponents) {
+    const quantityL = round4(usage[component.actual]);
+    if (quantityL <= 0) continue;
+    const materialId = jobItem[component.material];
+    if (materialId == null) {
+      throw new StockAllocationError(`No material is assigned to ${component.key} on Job ${jobItem.jobNo}; assign it before recording paint usage.`);
+    }
+    lines.push({ component: component.key, label: component.key, materialId, quantityL });
+  }
+
+  for (const actual of usage.customPaintActuals ?? []) {
+    const quantityL = round4(actual.actualLiters);
+    if (quantityL <= 0) continue;
+    if (actual.materialId == null) {
+      throw new StockAllocationError(`No material is assigned to additional paint stage "${actual.name}" on Job ${jobItem.jobNo}.`);
+    }
+    lines.push({
+      component: `custom:${actual.stageId}`,
+      label: actual.name,
+      materialId: actual.materialId,
+      quantityL,
+    });
+  }
+  return lines;
+}
+
+type StockLotBalance = {
+  materialId: number;
+  lotNo: string | null;
+  expiryDate: Date | null;
+  expiryKey: string | null;
+  firstReceivedAt: number;
+  balanceL: number;
+};
+
+function expiryKeyForDate(value: Date | null) {
+  return value ? value.toISOString().slice(0, 10) : null;
+}
+
+async function restoreUsageStock(tx: DbTransaction, usageId: number, actorUserId: number | null) {
+  const rows = await tx.select().from(stockMovementsTable)
+    .where(eq(stockMovementsTable.sourcePaintUsageId, usageId));
+  const outstanding = new Map<string, StockLotBalance & { component: string; netL: number }>();
+  for (const row of rows) {
+    if (!row.usageComponent || (row.movementType !== "out" && row.movementType !== "return_to_stock")) continue;
+    const expiryKey = expiryKeyForDate(row.expiryDate);
+    const key = JSON.stringify([row.usageComponent, row.materialId, row.lotNo, expiryKey]);
+    const current = outstanding.get(key) ?? {
+      component: row.usageComponent,
+      materialId: row.materialId,
+      lotNo: row.lotNo,
+      expiryDate: row.expiryDate,
+      expiryKey,
+      firstReceivedAt: row.createdAt.getTime(),
+      balanceL: 0,
+      netL: 0,
+    };
+    current.netL += row.movementType === "out" ? row.quantityL : -row.quantityL;
+    outstanding.set(key, current);
+  }
+
+  for (const line of outstanding.values()) {
+    const quantityL = round4(line.netL);
+    if (quantityL <= 0) continue;
+    await tx.insert(stockMovementsTable).values({
+      materialId: line.materialId,
+      movementType: "return_to_stock",
+      quantityL,
+      lotNo: line.lotNo,
+      expiryDate: line.expiryDate,
+      notes: `Automatic stock reversal for edited Paint Usage #${usageId}`,
+      sourcePaintUsageId: usageId,
+      usageComponent: line.component,
+      createdByUserId: actorUserId,
+    });
+  }
+}
+
+async function issueUsageStock(
+  tx: DbTransaction,
+  usage: typeof paintUsageTable.$inferSelect,
+  jobItem: typeof jobItemsTable.$inferSelect,
+  actorUserId: number | null,
+) {
+  const lines = usageStockLines(usage, jobItem);
+  if (lines.length === 0) return;
+
+  const materialIds = [...new Set(lines.map((line) => line.materialId))].sort((a, b) => a - b);
+  for (const materialId of materialIds) {
+    await tx.execute(sql`select pg_advisory_xact_lock(914, ${materialId})`);
+  }
+  const materials = await tx.select({
+    id: materialsTable.id,
+    description: materialsTable.description,
+    isActive: materialsTable.isActive,
+  }).from(materialsTable).where(inArray(materialsTable.id, materialIds));
+  const materialById = new Map(materials.map((material) => [material.id, material]));
+  for (const id of materialIds) {
+    const material = materialById.get(id);
+    if (!material || !material.isActive) {
+      throw new StockAllocationError(`Material #${id} is inactive or unavailable; update the Job material mapping before recording paint usage.`);
+    }
+  }
+
+  const movements = await tx.select({
+    materialId: stockMovementsTable.materialId,
+    movementType: stockMovementsTable.movementType,
+    quantityL: stockMovementsTable.quantityL,
+    lotNo: stockMovementsTable.lotNo,
+    expiryDate: stockMovementsTable.expiryDate,
+    createdAt: stockMovementsTable.createdAt,
+  }).from(stockMovementsTable)
+    .where(inArray(stockMovementsTable.materialId, materialIds))
+    .orderBy(asc(stockMovementsTable.createdAt), asc(stockMovementsTable.id));
+
+  const lots = new Map<string, StockLotBalance>();
+  for (const movement of movements) {
+    const expiryKey = expiryKeyForDate(movement.expiryDate);
+    const key = JSON.stringify([movement.materialId, movement.lotNo, expiryKey]);
+    const lot = lots.get(key) ?? {
+      materialId: movement.materialId,
+      lotNo: movement.lotNo,
+      expiryDate: movement.expiryDate,
+      expiryKey,
+      firstReceivedAt: movement.createdAt.getTime(),
+      balanceL: 0,
+    };
+    lot.balanceL += movement.movementType === "out" ? -movement.quantityL : movement.quantityL;
+    if (movement.movementType !== "out") {
+      lot.firstReceivedAt = Math.min(lot.firstReceivedAt, movement.createdAt.getTime());
+    }
+    lots.set(key, lot);
+  }
+
+  const byMaterial = new Map<number, StockLotBalance[]>();
+  for (const lot of lots.values()) {
+    byMaterial.set(lot.materialId, [...(byMaterial.get(lot.materialId) ?? []), lot]);
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const plans = new Map<number, Array<{ line: typeof lines[number]; lot: StockLotBalance; quantityL: number }>>();
+  for (const materialId of materialIds) {
+    const materialLines = lines.filter((line) => line.materialId === materialId);
+    const requiredL = round4(materialLines.reduce((total, line) => total + line.quantityL, 0));
+    const eligibleLots = (byMaterial.get(materialId) ?? [])
+      .filter((lot) => lot.balanceL > 0 && (!lot.expiryKey || lot.expiryKey >= today))
+      .sort((a, b) => {
+        if (a.expiryKey && b.expiryKey && a.expiryKey !== b.expiryKey) return a.expiryKey.localeCompare(b.expiryKey);
+        if (a.expiryKey && !b.expiryKey) return -1;
+        if (!a.expiryKey && b.expiryKey) return 1;
+        return a.firstReceivedAt - b.firstReceivedAt;
+      });
+    const availableL = round4(eligibleLots.reduce((total, lot) => total + lot.balanceL, 0));
+    if (availableL + 0.00005 < requiredL) {
+      const material = materialById.get(materialId)!;
+      throw new StockAllocationError(
+        `Insufficient usable stock for ${material.description}: required ${requiredL.toFixed(4)} L, available ${availableL.toFixed(4)} L. Receive stock or correct the Job material mapping.`,
+      );
+    }
+
+    const allocations: Array<{ line: typeof lines[number]; lot: StockLotBalance; quantityL: number }> = [];
+    let lotIndex = 0;
+    let lotRemainingL = eligibleLots[0]?.balanceL ?? 0;
+    for (const line of materialLines) {
+      let remainingL = line.quantityL;
+      while (remainingL > 0.00005) {
+        const lot = eligibleLots[lotIndex];
+        if (!lot) throw new StockAllocationError(`Unable to allocate FIFO stock for ${materialById.get(materialId)!.description}.`);
+        if (lotRemainingL <= 0.00005) {
+          lotIndex += 1;
+          lotRemainingL = eligibleLots[lotIndex]?.balanceL ?? 0;
+          continue;
+        }
+        const quantityL = round4(Math.min(remainingL, lotRemainingL));
+        allocations.push({ line, lot, quantityL });
+        remainingL = round4(remainingL - quantityL);
+        lotRemainingL = round4(lotRemainingL - quantityL);
+      }
+    }
+    plans.set(materialId, allocations);
+  }
+
+  for (const allocations of plans.values()) {
+    for (const allocation of allocations) {
+      await tx.insert(stockMovementsTable).values({
+        materialId: allocation.line.materialId,
+        movementType: "out",
+        quantityL: allocation.quantityL,
+        lotNo: allocation.lot.lotNo,
+        expiryDate: allocation.lot.expiryDate,
+        notes: `Automatic FIFO issue for Paint Usage #${usage.id} (${allocation.line.label})`,
+        sourcePaintUsageId: usage.id,
+        usageComponent: allocation.line.component,
+        createdByUserId: actorUserId,
+      });
+    }
+  }
 }
 
 function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
@@ -235,15 +463,25 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
     return;
   }
 
-  const created = await db.transaction(async (tx) => {
-    const [record] = await tx.insert(paintUsageTable).values({
-      ...parsed.data,
-      customPaintActuals,
-      createdByUserId: req.appUser?.id ?? null,
-    }).returning();
-    await tx.insert(jobWorkEventsTable).values(usageWorkEvent(record, req.appUser?.id ?? null, serial));
-    return record;
-  });
+  let created: typeof paintUsageTable.$inferSelect;
+  try {
+    created = await db.transaction(async (tx) => {
+      const [record] = await tx.insert(paintUsageTable).values({
+        ...parsed.data,
+        customPaintActuals,
+        createdByUserId: req.appUser?.id ?? null,
+      }).returning();
+      await issueUsageStock(tx, record, jobItem, req.appUser?.id ?? null);
+      await tx.insert(jobWorkEventsTable).values(usageWorkEvent(record, req.appUser?.id ?? null, serial));
+      return record;
+    });
+  } catch (error) {
+    if (error instanceof StockAllocationError) {
+      res.status(409).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 
   await recordAudit({
     req,
@@ -300,6 +538,11 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
     res.status(404).json({ error: "Serial number not found" });
     return;
   }
+  const [jobItem] = await db.select().from(jobItemsTable).where(eq(jobItemsTable.id, before.jobItemId));
+  if (!jobItem) {
+    res.status(404).json({ error: "Job item not found" });
+    return;
+  }
   const shiftError = usageShiftError(serial, parsed.data.shift ?? before.shift, req.appUser?.role);
   if (shiftError) {
     res.status(409).json({ error: shiftError });
@@ -309,14 +552,6 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
   const { customPaintActuals: requestedActuals, ...updateFields } = parsed.data;
   const updateData: Partial<typeof paintUsageTable.$inferInsert> = { ...updateFields };
   if (requestedActuals !== undefined) {
-    const [jobItem] = await db
-      .select()
-      .from(jobItemsTable)
-      .where(eq(jobItemsTable.id, before.jobItemId));
-    if (!jobItem) {
-      res.status(404).json({ error: "Job item not found" });
-      return;
-    }
     const snapshot = snapshotCustomPaintActuals(jobItem, requestedActuals);
     if (!snapshot) {
       res.status(400).json({ error: "A custom paint stage is not part of this job item" });
@@ -325,16 +560,33 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
     updateData.customPaintActuals = snapshot;
   }
 
-  const updated = await db.transaction(async (tx) => {
-    const [record] = await tx.update(paintUsageTable).set({ ...updateData, updatedAt: new Date() })
-      .where(eq(paintUsageTable.id, params.data.id)).returning();
-    if (Object.keys(diffFields(before, updateData)).length > 0) {
-      await tx.insert(jobWorkEventsTable).values(usageWorkEvent(record, req.appUser?.id ?? null, serial));
-    }
-    return record;
-  });
-
   const changes = diffFields(before, updateData);
+  const stockRelevantChange = actualFields.some((field) =>
+    field in updateData && updateData[field] !== before[field]
+  ) || (updateData.customPaintActuals !== undefined
+    && JSON.stringify(updateData.customPaintActuals) !== JSON.stringify(before.customPaintActuals));
+  let updated: typeof paintUsageTable.$inferSelect;
+  try {
+    updated = await db.transaction(async (tx) => {
+      const [record] = await tx.update(paintUsageTable).set({ ...updateData, updatedAt: new Date() })
+        .where(eq(paintUsageTable.id, params.data.id)).returning();
+      if (stockRelevantChange) {
+        await restoreUsageStock(tx, before.id, req.appUser?.id ?? null);
+        await issueUsageStock(tx, record, jobItem, req.appUser?.id ?? null);
+      }
+      if (Object.keys(changes).length > 0) {
+        await tx.insert(jobWorkEventsTable).values(usageWorkEvent(record, req.appUser?.id ?? null, serial));
+      }
+      return record;
+    });
+  } catch (error) {
+    if (error instanceof StockAllocationError) {
+      res.status(409).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
+
   if (Object.keys(changes).length > 0) {
     await recordAudit({ req, action: "update", entityType: "paint_usage", entityId: updated.id, changes });
   }

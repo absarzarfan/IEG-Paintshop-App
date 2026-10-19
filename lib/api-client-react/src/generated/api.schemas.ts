@@ -333,6 +333,8 @@ export interface CustomPaintStage {
   coatType: CustomPaintStageCoatType;
   /** @minimum 0 */
   targetLitersTotal: number;
+  /** @nullable */
+  materialId?: number | null;
 }
 
 export interface JobItem {
@@ -752,6 +754,8 @@ export interface CustomPaintActual {
   targetLiters: number;
   /** @minimum 0 */
   actualLiters: number;
+  /** @nullable */
+  materialId?: number | null;
 }
 
 export interface PaintUsage {

@@ -661,7 +661,8 @@ export const ListJobItemsResponseItem = zod.object({
   "id": zod.string().min(1).max(listJobItemsResponseCustomPaintStagesItemIdMax),
   "name": zod.string().min(1).max(listJobItemsResponseCustomPaintStagesItemNameMax),
   "coatType": zod.enum(['primer', 'topcoat']),
-  "targetLitersTotal": zod.number().min(listJobItemsResponseCustomPaintStagesItemTargetLitersTotalMin)
+  "targetLitersTotal": zod.number().min(listJobItemsResponseCustomPaintStagesItemTargetLitersTotalMin),
+  "materialId": zod.number().int().nullish()
 })),
   "description": zod.string(),
   "surfaceAreaM2": zod.number().nullable(),
@@ -728,7 +729,8 @@ export const CreateJobItemBody = zod.object({
   "id": zod.string().min(1).max(createJobItemBodyCustomPaintStagesItemIdMax),
   "name": zod.string().min(1).max(createJobItemBodyCustomPaintStagesItemNameMax),
   "coatType": zod.enum(['primer', 'topcoat']),
-  "targetLitersTotal": zod.number().min(createJobItemBodyCustomPaintStagesItemTargetLitersTotalMin)
+  "targetLitersTotal": zod.number().min(createJobItemBodyCustomPaintStagesItemTargetLitersTotalMin),
+  "materialId": zod.number().int().nullish()
 })).optional(),
   "description": zod.string().min(1),
   "surfaceAreaM2": zod.number().min(createJobItemBodySurfaceAreaM2Min).optional(),
@@ -765,7 +767,8 @@ export const CreateJobItemResponse = zod.object({
   "id": zod.string().min(1).max(createJobItemResponseCustomPaintStagesItemIdMax),
   "name": zod.string().min(1).max(createJobItemResponseCustomPaintStagesItemNameMax),
   "coatType": zod.enum(['primer', 'topcoat']),
-  "targetLitersTotal": zod.number().min(createJobItemResponseCustomPaintStagesItemTargetLitersTotalMin)
+  "targetLitersTotal": zod.number().min(createJobItemResponseCustomPaintStagesItemTargetLitersTotalMin),
+  "materialId": zod.number().int().nullish()
 })),
   "description": zod.string(),
   "surfaceAreaM2": zod.number().nullable(),
@@ -815,7 +818,8 @@ export const GetJobItemResponse = zod.object({
   "id": zod.string().min(1).max(getJobItemResponseOneCustomPaintStagesItemIdMax),
   "name": zod.string().min(1).max(getJobItemResponseOneCustomPaintStagesItemNameMax),
   "coatType": zod.enum(['primer', 'topcoat']),
-  "targetLitersTotal": zod.number().min(getJobItemResponseOneCustomPaintStagesItemTargetLitersTotalMin)
+  "targetLitersTotal": zod.number().min(getJobItemResponseOneCustomPaintStagesItemTargetLitersTotalMin),
+  "materialId": zod.number().int().nullish()
 })),
   "description": zod.string(),
   "surfaceAreaM2": zod.number().nullable(),
@@ -897,7 +901,8 @@ export const UpdateJobItemBody = zod.object({
   "id": zod.string().min(1).max(updateJobItemBodyCustomPaintStagesItemIdMax),
   "name": zod.string().min(1).max(updateJobItemBodyCustomPaintStagesItemNameMax),
   "coatType": zod.enum(['primer', 'topcoat']),
-  "targetLitersTotal": zod.number().min(updateJobItemBodyCustomPaintStagesItemTargetLitersTotalMin)
+  "targetLitersTotal": zod.number().min(updateJobItemBodyCustomPaintStagesItemTargetLitersTotalMin),
+  "materialId": zod.number().int().nullish()
 })).optional(),
   "description": zod.string().min(1).optional(),
   "surfaceAreaM2": zod.number().min(updateJobItemBodySurfaceAreaM2Min).nullish(),
@@ -935,7 +940,8 @@ export const UpdateJobItemResponse = zod.object({
   "id": zod.string().min(1).max(updateJobItemResponseCustomPaintStagesItemIdMax),
   "name": zod.string().min(1).max(updateJobItemResponseCustomPaintStagesItemNameMax),
   "coatType": zod.enum(['primer', 'topcoat']),
-  "targetLitersTotal": zod.number().min(updateJobItemResponseCustomPaintStagesItemTargetLitersTotalMin)
+  "targetLitersTotal": zod.number().min(updateJobItemResponseCustomPaintStagesItemTargetLitersTotalMin),
+  "materialId": zod.number().int().nullish()
 })),
   "description": zod.string(),
   "surfaceAreaM2": zod.number().nullable(),
@@ -1195,7 +1201,8 @@ export const ListPaintUsageResponseItem = zod.object({
   "name": zod.string(),
   "coatType": zod.enum(['primer', 'topcoat']),
   "targetLiters": zod.number().min(listPaintUsageResponseCustomPaintActualsItemTargetLitersMin),
-  "actualLiters": zod.number().min(listPaintUsageResponseCustomPaintActualsItemActualLitersMin)
+  "actualLiters": zod.number().min(listPaintUsageResponseCustomPaintActualsItemActualLitersMin),
+  "materialId": zod.number().int().nullish()
 })),
   "primerBaseActualL": zod.number(),
   "primerHrdActualL": zod.number(),
@@ -1282,7 +1289,8 @@ export const CreatePaintUsageResponse = zod.object({
   "name": zod.string(),
   "coatType": zod.enum(['primer', 'topcoat']),
   "targetLiters": zod.number().min(createPaintUsageResponseCustomPaintActualsItemTargetLitersMin),
-  "actualLiters": zod.number().min(createPaintUsageResponseCustomPaintActualsItemActualLitersMin)
+  "actualLiters": zod.number().min(createPaintUsageResponseCustomPaintActualsItemActualLitersMin),
+  "materialId": zod.number().int().nullish()
 })),
   "primerBaseActualL": zod.number(),
   "primerHrdActualL": zod.number(),
@@ -1335,7 +1343,8 @@ export const GetPaintUsageResponse = zod.object({
   "name": zod.string(),
   "coatType": zod.enum(['primer', 'topcoat']),
   "targetLiters": zod.number().min(getPaintUsageResponseCustomPaintActualsItemTargetLitersMin),
-  "actualLiters": zod.number().min(getPaintUsageResponseCustomPaintActualsItemActualLitersMin)
+  "actualLiters": zod.number().min(getPaintUsageResponseCustomPaintActualsItemActualLitersMin),
+  "materialId": zod.number().int().nullish()
 })),
   "primerBaseActualL": zod.number(),
   "primerHrdActualL": zod.number(),
@@ -1423,7 +1432,8 @@ export const UpdatePaintUsageResponse = zod.object({
   "name": zod.string(),
   "coatType": zod.enum(['primer', 'topcoat']),
   "targetLiters": zod.number().min(updatePaintUsageResponseCustomPaintActualsItemTargetLitersMin),
-  "actualLiters": zod.number().min(updatePaintUsageResponseCustomPaintActualsItemActualLitersMin)
+  "actualLiters": zod.number().min(updatePaintUsageResponseCustomPaintActualsItemActualLitersMin),
+  "materialId": zod.number().int().nullish()
 })),
   "primerBaseActualL": zod.number(),
   "primerHrdActualL": zod.number(),

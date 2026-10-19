@@ -19,7 +19,7 @@ import {
   ListJobWorkflowHistoryResponse,
 } from "@workspace/api-zod";
 import { requireAnyRole, requireRole } from "../middlewares/auth";
-import { computeJobItemCosts, computePaintUsageCost, targetsPerUnit } from "../lib/costs";
+import { computeJobItemCosts, computePaintUsageCost, getCurrentMaterialPrice, targetsPerUnit } from "../lib/costs";
 import { recordAudit } from "../lib/audit";
 import { progressVariance } from "../lib/orderPerformance";
 
@@ -59,22 +59,28 @@ export async function serializeWorkflow(serialNumberId: number) {
   const plannedCost = await computeJobItemCosts(perUnitJob);
   const primerTargetL = perUnitJob.primerBaseL + perUnitJob.primerHrdL + perUnitJob.primerThinnerL;
   const topcoatTargetL = perUnitJob.topcoatBaseL + perUnitJob.topcoatHrdL + perUnitJob.topcoatThinnerL;
-  const primerCostPerL = primerTargetL > 0 && plannedCost.primerCostTotal !== null
-    ? plannedCost.primerCostTotal / primerTargetL
-    : null;
-  const topcoatCostPerL = topcoatTargetL > 0 && plannedCost.topcoatCostTotal !== null
-    ? plannedCost.topcoatCostTotal / topcoatTargetL
-    : null;
-  const customPaintStages = (row.job.customPaintStages ?? []).map((stage) => {
+  const customPaintStages = await Promise.all((row.job.customPaintStages ?? []).map(async (stage) => {
     const targetMultiplier = row.job.targetBasis === "order_total"
       ? 1 / Math.max(row.job.orderQuantity, 1)
       : 1;
     const targetLiters = stage.targetLitersTotal * targetMultiplier;
-    const actualLiters = row.usage?.customPaintActuals?.find((actual) => actual.stageId === stage.id)?.actualLiters ?? 0;
-    const rate = stage.coatType === "primer" ? primerCostPerL : topcoatCostPerL;
-    const targetCost = rate === null ? null : rate * targetLiters;
+    const actualSnapshot = row.usage?.customPaintActuals?.find((actual) => actual.stageId === stage.id);
+    const actualLiters = actualSnapshot?.actualLiters ?? 0;
+    const targetPrice = await getCurrentMaterialPrice(stage.materialId ?? null);
+    const actualPrice = actualSnapshot
+      ? await getCurrentMaterialPrice(actualSnapshot.materialId ?? stage.materialId ?? null)
+      : targetPrice;
+    const targetCostKnown = targetLiters === 0
+      || (targetPrice !== null && targetPrice.currency === plannedCost.currency);
+    const actualCostKnown = actualLiters === 0
+      || (actualPrice !== null && actualPrice.currency === plannedCost.currency);
+    const targetCost = targetLiters === 0
+      ? 0
+      : targetCostKnown && targetPrice ? targetPrice.unitPrice * targetLiters : null;
     const expectedCost = targetCost === null ? null : targetCost * row.serial.progressPct / 100;
-    const actualCost = rate === null ? null : rate * actualLiters;
+    const actualCost = actualLiters === 0
+      ? 0
+      : actualCostKnown && actualPrice ? actualPrice.unitPrice * actualLiters : null;
     return {
       id: stage.id,
       name: stage.name,
@@ -87,11 +93,12 @@ export async function serializeWorkflow(serialNumberId: number) {
       expectedCost,
       actualCost,
       costVariance: expectedCost === null || actualCost === null ? null : expectedCost - actualCost,
-      costRate: rate,
+      costRate: targetPrice?.currency === plannedCost.currency ? targetPrice.unitPrice : null,
+      costKnown: targetCostKnown && actualCostKnown,
     };
-  });
+  }));
   const customStageCostsKnown = customPaintStages.every((stage) =>
-    stage.costRate !== null || (stage.targetLiters === 0 && stage.actualLiters === 0)
+    stage.costKnown
   );
   const customStageTargetCost = customPaintStages.reduce((total, stage) => total + (stage.targetCost ?? 0), 0);
   const customStageActualCost = customPaintStages.reduce((total, stage) => total + (stage.actualCost ?? 0), 0);
@@ -140,7 +147,7 @@ export async function serializeWorkflow(serialNumberId: number) {
     currentCategory: row.serial.currentCategory,
     activeShift: row.serial.activeShift,
     handoverToShift: row.serial.handoverToShift,
-    customPaintStages: customPaintStages.map(({ costRate: _costRate, ...stage }) => stage),
+    customPaintStages: customPaintStages.map(({ costRate: _costRate, costKnown: _costKnown, ...stage }) => stage),
     targetTotalL: Math.round(targetTotalL * 10000) / 10000,
     actualTotalL: Math.round(actualTotalL * 10000) / 10000,
     expectedProgressLiters: Math.round(expectedProgressLiters * 10000) / 10000,

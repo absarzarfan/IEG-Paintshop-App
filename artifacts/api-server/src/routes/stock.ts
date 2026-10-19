@@ -24,15 +24,7 @@ function signedQuantity(movementType: "in" | "out" | "adjustment" | "return_to_s
   return movementType === "out" ? -quantityL : quantityL;
 }
 
-async function currentStock(materialId: number): Promise<number> {
-  const [row] = await db
-    .select({
-      value: sql<number>`coalesce(sum(case when ${stockMovementsTable.movementType} = 'out' then -${stockMovementsTable.quantityL} else ${stockMovementsTable.quantityL} end), 0)`,
-    })
-    .from(stockMovementsTable)
-    .where(eq(stockMovementsTable.materialId, materialId));
-  return Number(row?.value ?? 0);
-}
+class StockMovementError extends Error {}
 
 async function serializeMovement(id: number) {
   const [row] = await db
@@ -141,21 +133,33 @@ router.post("/stock/movements", canManageStock, async (req, res): Promise<void> 
     return;
   }
 
-  if (parsed.data.movementType === "out") {
-    const available = await currentStock(parsed.data.materialId);
-    if (parsed.data.quantityL > available) {
-      res.status(400).json({ error: `Insufficient stock. Available: ${available.toFixed(4)} L` });
+  let created: { id: number };
+  try {
+    created = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(914, ${parsed.data.materialId})`);
+      if (parsed.data.movementType === "out") {
+        const movements = await tx.select({
+          movementType: stockMovementsTable.movementType,
+          quantityL: stockMovementsTable.quantityL,
+        }).from(stockMovementsTable).where(eq(stockMovementsTable.materialId, parsed.data.materialId));
+        const available = movements.reduce((total, movement) =>
+          total + signedQuantity(movement.movementType, movement.quantityL), 0);
+        if (parsed.data.quantityL > available + 0.00005) {
+          throw new StockMovementError(`Insufficient stock. Available: ${Math.max(available, 0).toFixed(4)} L`);
+        }
+      }
+      const [movement] = await tx.insert(stockMovementsTable)
+        .values({ ...parsed.data, createdByUserId: req.appUser?.id ?? null })
+        .returning({ id: stockMovementsTable.id });
+      return movement;
+    });
+  } catch (error) {
+    if (error instanceof StockMovementError) {
+      res.status(400).json({ error: error.message });
       return;
     }
+    throw error;
   }
-
-  const [created] = await db
-    .insert(stockMovementsTable)
-    .values({
-      ...parsed.data,
-      createdByUserId: req.appUser?.id ?? null,
-    })
-    .returning({ id: stockMovementsTable.id });
 
   await recordAudit({
     req,

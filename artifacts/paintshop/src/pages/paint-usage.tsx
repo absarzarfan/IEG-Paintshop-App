@@ -8,6 +8,9 @@ import {
   getListPaintUsagePhotosQueryKey,
   getListJobItemSerialNumbersQueryKey,
   getListJobItemsQueryKey,
+  getListMaterialsQueryKey,
+  getListStockMovementsQueryKey,
+  getListStockSummaryQueryKey,
   getListPaintUsageQueryKey,
   PaintUsageInput,
   PaintUsageUpdate,
@@ -16,6 +19,7 @@ import {
   useGetPaintUsage,
   useListJobItemSerialNumbers,
   useListJobItems,
+  useListMaterials,
   useListPaintUsage,
   useListPaintUsagePhotos,
   useRequestPaintUsagePhotoUploadUrl,
@@ -161,6 +165,7 @@ function UsageForm({
     { search: undefined },
     { query: { queryKey: getListJobItemsQueryKey() } },
   );
+  const { data: materials } = useListMaterials({ query: { queryKey: getListMaterialsQueryKey() } });
   const defaultJobId = usage?.jobItemId ?? initialJobId;
   const form = useForm<UsageFormValues | EditFormValues>({
     resolver: zodResolver(isEdit ? editSchema(t) : usageSchema(t)),
@@ -194,6 +199,7 @@ function UsageForm({
   });
   const selectedJobId = Number(form.watch("jobItemId") || initialJobId || usage?.jobItemId || 0);
   const selectedJob = jobs?.find((job) => job.id === selectedJobId);
+  const selectedTopcoatMaterial = materials?.find((material) => material.id === selectedJob?.topcoatBaseMaterialId);
   const targetPerSerial = selectedJob
     ? selectedJob.targetBasis === "order_total" ? 1 / Math.max(selectedJob.orderQuantity, 1) : 1
     : 0;
@@ -244,6 +250,8 @@ function UsageForm({
         queryClient.invalidateQueries({ queryKey: getGetPaintUsageQueryKey(usage!.id) });
         queryClient.invalidateQueries({ queryKey: getListJobWorkflowQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListStockSummaryQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListStockMovementsQueryKey() });
         onComplete(saved);
       } else {
         const createValues = values as UsageFormValues;
@@ -270,6 +278,8 @@ function UsageForm({
         queryClient.invalidateQueries({ queryKey: getGetJobItemQueryKey(data.jobItemId) });
         queryClient.invalidateQueries({ queryKey: getListJobWorkflowQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListStockSummaryQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListStockMovementsQueryKey() });
         onComplete(saved);
       }
     } catch (error) {
@@ -360,7 +370,10 @@ function UsageForm({
             <p className="font-mono text-2xl font-extrabold">{selectedJob ? (selectedJob.primerTotalL * targetPerSerial).toFixed(3) : "—"} L</p>
           </div>
           <div className="flex items-center justify-between gap-3 border-l-4 border-primary bg-secondary/30 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("topcoat")} · {t("targetPerSerial")}</p>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("topcoat")} · {t("targetPerSerial")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("topcoatColor")}: {selectedTopcoatMaterial?.color || selectedTopcoatMaterial?.description || "—"}</p>
+            </div>
             <p className="font-mono text-2xl font-extrabold text-primary">{selectedJob ? (selectedJob.topcoatTotalL * targetPerSerial).toFixed(3) : "—"} L</p>
           </div>
         </section>

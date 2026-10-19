@@ -15,4 +15,6 @@ export interface CustomPaintActual {
   targetLiters: number;
   /** @minimum 0 */
   actualLiters: number;
+  /** @nullable */
+  materialId?: number | null;
 }

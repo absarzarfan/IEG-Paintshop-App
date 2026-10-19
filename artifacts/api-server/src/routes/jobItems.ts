@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ilike, or, asc, count } from "drizzle-orm";
+import { eq, ilike, or, asc, count, inArray } from "drizzle-orm";
 import { db, jobItemsTable, materialsTable, serialNumbersTable, paintUsageTable, customersTable } from "@workspace/db";
 import {
   ListJobItemsQueryParams,
@@ -18,13 +18,32 @@ import { computeJobItemCosts } from "../lib/costs";
 
 const router: IRouter = Router();
 
-function validateStages(stages: Array<{ id: string; name: string }> | undefined) {
+function validateStages(stages: Array<{ id: string; name: string; materialId?: number | null }> | undefined) {
   if (!stages) return null;
   const ids = new Set(stages.map((stage) => stage.id.trim()));
   const names = new Set(stages.map((stage) => stage.name.trim().toLowerCase()));
-  return ids.has("") || names.has("") || ids.size !== stages.length || names.size !== stages.length
-    ? "Paint stage IDs and names must be non-empty and unique."
-    : null;
+  if (ids.has("") || names.has("") || ids.size !== stages.length || names.size !== stages.length) {
+    return "Paint stage IDs and names must be non-empty and unique.";
+  }
+  if (stages.some((stage) => stage.materialId == null)) {
+    return "Every additional paint stage must be linked to a material.";
+  }
+  return null;
+}
+
+async function validateStageMaterials(stages: Array<{ name: string; coatType: "primer" | "topcoat"; materialId?: number | null }> | undefined) {
+  if (!stages?.length) return null;
+  const materialIds = [...new Set(stages.map((stage) => stage.materialId).filter((id): id is number => typeof id === "number"))];
+  const rows = await db.select({ id: materialsTable.id, type: materialsTable.type, isActive: materialsTable.isActive })
+    .from(materialsTable).where(inArray(materialsTable.id, materialIds));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  for (const stage of stages) {
+    const material = stage.materialId == null ? undefined : byId.get(stage.materialId);
+    if (!material || !material.isActive) return `Select an active material for the "${stage.name}" paint stage.`;
+    const expectedType = stage.coatType === "primer" ? "Primer" : "Topcoat";
+    if (material.type !== expectedType) return `The "${stage.name}" stage must use a ${expectedType} material.`;
+  }
+  return null;
 }
 
 function round4(n: number): number {
@@ -106,6 +125,11 @@ router.post("/job-items", requireAdmin, async (req, res): Promise<void> => {
   const stageError = validateStages(parsed.data.customPaintStages);
   if (stageError) {
     res.status(400).json({ error: stageError });
+    return;
+  }
+  const stageMaterialError = await validateStageMaterials(parsed.data.customPaintStages);
+  if (stageMaterialError) {
+    res.status(400).json({ error: stageMaterialError });
     return;
   }
   const customerName = parsed.data.customerName.trim();
@@ -194,6 +218,11 @@ router.patch("/job-items/:id", requireAdmin, async (req, res): Promise<void> => 
   const stageError = validateStages(parsed.data.customPaintStages);
   if (stageError) {
     res.status(400).json({ error: stageError });
+    return;
+  }
+  const stageMaterialError = await validateStageMaterials(parsed.data.customPaintStages);
+  if (stageMaterialError) {
+    res.status(400).json({ error: stageMaterialError });
     return;
   }
   if (parsed.data.customPaintStages) {
