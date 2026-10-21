@@ -971,8 +971,28 @@ export type CustomerPerformance = PaintPerformanceTotals & {
   orders: OrderPerformance[];
 };
 
+export type PaintMixerStatusState = typeof PaintMixerStatusState[keyof typeof PaintMixerStatusState];
+
+
+export const PaintMixerStatusState = {
+  working: 'working',
+  idling: 'idling',
+} as const;
+
+export interface PaintMixerStatus {
+  userId: number;
+  name: string;
+  state: PaintMixerStatusState;
+  lastSeenAt: string;
+  /** @nullable */
+  currentJobNo: string | null;
+  /** @nullable */
+  currentSerialNo: string | null;
+  /** @nullable */
+  customerName: string | null;
+}
+
 export interface DashboardSummary {
-  jobItemCount: number;
   queuedCount: number;
   ongoingCount: number;
   completedTodayCount: number;
@@ -982,11 +1002,11 @@ export interface DashboardSummary {
   paintMixersIdlingCount: number;
   newJobsTodayCount: number;
   delayedCount: number;
-  materialCount: number;
-  colorCount: number;
-  brandCount: number;
   customers: CustomerPerformance[];
-  recentAuditEntries: AuditLogEntry[];
+  delayedJobs: JobWorkflowItem[];
+  waitingJobs: JobWorkflowItem[];
+  shipmentJobs: JobWorkflowItem[];
+  paintMixerStatuses: PaintMixerStatus[];
 }
 
 export type ListJobItemsParams = {

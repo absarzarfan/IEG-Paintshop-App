@@ -2,13 +2,9 @@ import { Router, type IRouter } from "express";
 import { and, count, desc, eq, gt, lt } from "drizzle-orm";
 import {
   db,
-  auditLogsTable,
   authSessionsTable,
-  brandsTable,
-  colorsTable,
   jobItemsTable,
   jobWorkEventsTable,
-  materialsTable,
   serialNumbersTable,
   usersTable,
 } from "@workspace/db";
@@ -27,74 +23,115 @@ router.get("/dashboard/summary", requireAnyRole, async (_req, res): Promise<void
   const workingSince = new Date(now.getTime() - 2 * 60 * 60 * 1000);
 
   const [
-    [jobItemCount],
-    [materialCount],
-    [colorCount],
-    [brandCount],
-    recentAuditEntries,
-    [queuedCount],
-    [ongoingCount],
-    [shipmentPendingCount],
     [completedTodayCount],
     [newJobsTodayCount],
-    [delayedCount],
-    onlineUsers,
-    workingEvents,
   ] = await Promise.all([
-    db.select({ value: count() }).from(jobItemsTable),
-    db.select({ value: count() }).from(materialsTable),
-    db.select({ value: count() }).from(colorsTable),
-    db.select({ value: count() }).from(brandsTable),
-    db.select().from(auditLogsTable).orderBy(desc(auditLogsTable.createdAt)).limit(5),
-    db.select({ value: count() }).from(serialNumbersTable).where(eq(serialNumbersTable.workStatus, "queued")),
-    db.select({ value: count() }).from(serialNumbersTable).where(eq(serialNumbersTable.workStatus, "ongoing")),
-    db.select({ value: count() }).from(serialNumbersTable).where(eq(serialNumbersTable.workStatus, "shipment")),
     db.select({ value: count() }).from(jobWorkEventsTable).where(and(
       eq(jobWorkEventsTable.eventType, "completed"),
       gt(jobWorkEventsTable.createdAt, dayStart),
     )),
     db.select({ value: count() }).from(jobItemsTable).where(gt(jobItemsTable.createdAt, dayStart)),
-    db.select({ value: count() }).from(serialNumbersTable).where(and(
-      eq(serialNumbersTable.workStatus, "queued"),
-      lt(serialNumbersTable.createdAt, new Date(now.getTime() - 4 * 60 * 60 * 1000)),
-    )),
-    db.selectDistinct({ id: usersTable.id }).from(authSessionsTable)
-      .innerJoin(usersTable, eq(authSessionsTable.userId, usersTable.id))
-      .where(and(eq(usersTable.role, "painter"), eq(usersTable.isActive, true), gt(authSessionsTable.lastSeenAt, onlineSince))),
-    db.selectDistinct({ id: jobWorkEventsTable.actorUserId }).from(jobWorkEventsTable)
-      .innerJoin(serialNumbersTable, eq(jobWorkEventsTable.serialNumberId, serialNumbersTable.id))
-      .where(and(eq(serialNumbersTable.workStatus, "ongoing"), gt(jobWorkEventsTable.createdAt, workingSince))),
   ]);
 
-  const onlineIds = new Set(onlineUsers.map((row) => row.id));
-  const workingIds = new Set(
-    workingEvents
-      .map((row) => row.id)
-      .filter((id): id is number => id !== null && onlineIds.has(id)),
-  );
-  const online = onlineIds.size;
-  const working = workingIds.size;
-  const jobs = await db.select().from(jobItemsTable);
-  const serials = await db.select({ id: serialNumbersTable.id }).from(serialNumbersTable);
+  const [jobs, serials, onlineSessions, workingEvents] = await Promise.all([
+    db.select().from(jobItemsTable),
+    db.select({ id: serialNumbersTable.id }).from(serialNumbersTable),
+    db.select({
+      id: usersTable.id,
+      username: usersTable.username,
+      name: usersTable.name,
+      lastSeenAt: authSessionsTable.lastSeenAt,
+    }).from(authSessionsTable)
+      .innerJoin(usersTable, eq(authSessionsTable.userId, usersTable.id))
+      .where(and(eq(usersTable.role, "painter"), eq(usersTable.isActive, true), gt(authSessionsTable.lastSeenAt, onlineSince)))
+      .orderBy(desc(authSessionsTable.lastSeenAt)),
+    db.select({
+      userId: jobWorkEventsTable.actorUserId,
+      jobNo: jobItemsTable.jobNo,
+      serialNo: serialNumbersTable.serialNo,
+      customerName: jobItemsTable.customerName,
+      createdAt: jobWorkEventsTable.createdAt,
+    }).from(jobWorkEventsTable)
+      .innerJoin(serialNumbersTable, eq(jobWorkEventsTable.serialNumberId, serialNumbersTable.id))
+      .innerJoin(jobItemsTable, eq(serialNumbersTable.jobItemId, jobItemsTable.id))
+      .where(and(
+        eq(serialNumbersTable.workStatus, "ongoing"),
+        gt(jobWorkEventsTable.createdAt, workingSince),
+      ))
+      .orderBy(desc(jobWorkEventsTable.createdAt)),
+  ]);
+
+  const onlineUsers = new Map<number, { username: string; name: string | null; lastSeenAt: Date }>();
+  for (const session of onlineSessions) {
+    if (!onlineUsers.has(session.id)) {
+      onlineUsers.set(session.id, {
+        username: session.username,
+        name: session.name,
+        lastSeenAt: session.lastSeenAt,
+      });
+    }
+  }
+
+  const currentWorkByUser = new Map<number, {
+    jobNo: string;
+    serialNo: string;
+    customerName: string;
+  }>();
+  for (const event of workingEvents) {
+    if (event.userId !== null && onlineUsers.has(event.userId) && !currentWorkByUser.has(event.userId)) {
+      currentWorkByUser.set(event.userId, {
+        jobNo: event.jobNo,
+        serialNo: event.serialNo,
+        customerName: event.customerName,
+      });
+    }
+  }
+
+  const paintMixerStatuses = [...onlineUsers.entries()]
+    .map(([userId, user]) => {
+      const currentWork = currentWorkByUser.get(userId);
+      return {
+        userId,
+        name: user.name?.trim() || user.username,
+        state: currentWork ? "working" as const : "idling" as const,
+        lastSeenAt: user.lastSeenAt,
+        currentJobNo: currentWork?.jobNo ?? null,
+        currentSerialNo: currentWork?.serialNo ?? null,
+        customerName: currentWork?.customerName ?? null,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const online = paintMixerStatuses.length;
+  const working = paintMixerStatuses.filter((mixer) => mixer.state === "working").length;
+
   const workflow = await Promise.all(serials.map((serial) => serializeWorkflow(serial.id)));
-  const customers = aggregateOrderPerformance(jobs, workflow.filter((row) => row !== null));
+  const workflowItems = workflow.filter((row) => row !== null);
+  const queuedItems = workflowItems
+    .filter((row) => row.workStatus === "queued")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const delayedCutoff = now.getTime() - 4 * 60 * 60 * 1000;
+  const delayedJobs = queuedItems.filter((row) => new Date(row.createdAt).getTime() <= delayedCutoff);
+  const waitingJobs = queuedItems.filter((row) => new Date(row.createdAt).getTime() > delayedCutoff);
+  const shipmentJobs = workflowItems
+    .filter((row) => row.workStatus === "shipment")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const customers = aggregateOrderPerformance(jobs, workflowItems);
 
   res.json(GetDashboardSummaryResponse.parse({
-    jobItemCount: Number(jobItemCount.value),
-    queuedCount: Number(queuedCount.value),
-    ongoingCount: Number(ongoingCount.value),
+    queuedCount: queuedItems.length,
+    ongoingCount: workflowItems.filter((row) => row.workStatus === "ongoing").length,
     completedTodayCount: Number(completedTodayCount.value),
-    shipmentPendingCount: Number(shipmentPendingCount.value),
+    shipmentPendingCount: shipmentJobs.length,
     paintMixersOnlineCount: online,
     paintMixersWorkingCount: working,
     paintMixersIdlingCount: Math.max(0, online - working),
     newJobsTodayCount: Number(newJobsTodayCount.value),
-    delayedCount: Number(delayedCount.value),
-    materialCount: Number(materialCount.value),
-    colorCount: Number(colorCount.value),
-    brandCount: Number(brandCount.value),
+    delayedCount: delayedJobs.length,
     customers,
-    recentAuditEntries,
+    delayedJobs: delayedJobs.slice(0, 8),
+    waitingJobs: waitingJobs.slice(0, 8),
+    shipmentJobs: shipmentJobs.slice(0, 8),
+    paintMixerStatuses,
   }));
 });
 

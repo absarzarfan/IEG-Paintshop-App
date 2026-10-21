@@ -5,11 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { AuditLogEntry } from './auditLogEntry';
 import type { CustomerPerformance } from './customerPerformance';
+import type { JobWorkflowItem } from './jobWorkflowItem';
+import type { PaintMixerStatus } from './paintMixerStatus';
 
 export interface DashboardSummary {
-  jobItemCount: number;
   queuedCount: number;
   ongoingCount: number;
   completedTodayCount: number;
@@ -19,9 +19,9 @@ export interface DashboardSummary {
   paintMixersIdlingCount: number;
   newJobsTodayCount: number;
   delayedCount: number;
-  materialCount: number;
-  colorCount: number;
-  brandCount: number;
   customers: CustomerPerformance[];
-  recentAuditEntries: AuditLogEntry[];
+  delayedJobs: JobWorkflowItem[];
+  waitingJobs: JobWorkflowItem[];
+  shipmentJobs: JobWorkflowItem[];
+  paintMixerStatuses: PaintMixerStatus[];
 }

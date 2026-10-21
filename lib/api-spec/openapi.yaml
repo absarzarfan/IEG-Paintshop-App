@@ -1992,7 +1992,6 @@ components:
     DashboardSummary:
       type: object
       properties:
-        jobItemCount: { type: integer }
         queuedCount: { type: integer }
         ongoingCount: { type: integer }
         completedTodayCount: { type: integer }
@@ -2002,20 +2001,28 @@ components:
         paintMixersIdlingCount: { type: integer }
         newJobsTodayCount: { type: integer }
         delayedCount: { type: integer }
-        materialCount: { type: integer }
-        colorCount: { type: integer }
-        brandCount: { type: integer }
         customers:
           type: array
           items:
             $ref: "#/components/schemas/CustomerPerformance"
-        recentAuditEntries:
+        delayedJobs:
           type: array
           items:
-            $ref: "#/components/schemas/AuditLogEntry"
+            $ref: "#/components/schemas/JobWorkflowItem"
+        waitingJobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobWorkflowItem"
+        shipmentJobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/JobWorkflowItem"
+        paintMixerStatuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaintMixerStatus"
       required:
         [
-          jobItemCount,
           queuedCount,
           ongoingCount,
           completedTodayCount,
@@ -2025,9 +2032,21 @@ components:
           paintMixersIdlingCount,
           newJobsTodayCount,
           delayedCount,
-          materialCount,
-          colorCount,
-           brandCount,
-          recentAuditEntries,
           customers,
+          delayedJobs,
+          waitingJobs,
+          shipmentJobs,
+          paintMixerStatuses,
         ]
+
+    PaintMixerStatus:
+      type: object
+      properties:
+        userId: { type: integer }
+        name: { type: string }
+        state: { type: string, enum: [working, idling] }
+        lastSeenAt: { type: string, format: date-time }
+        currentJobNo: { type: ["string", "null"] }
+        currentSerialNo: { type: ["string", "null"] }
+        customerName: { type: ["string", "null"] }
+      required: [userId, name, state, lastSeenAt, currentJobNo, currentSerialNo, customerName]
