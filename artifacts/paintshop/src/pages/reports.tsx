@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import {
   getListJobWorkflowHistoryQueryKey,
+  getListJobWorkflowHistoryQueryOptions,
   getListJobWorkflowQueryKey,
   getListPaintUsageQueryKey,
   useListJobWorkflow,
@@ -10,6 +12,8 @@ import {
 import { Download, FileSpreadsheet, Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/language";
+import { buildPicPerformance } from "./reports/pic-performance";
+import { PicPerformanceView } from "./reports/pic-performance-view";
 
 type ReportMode = "usage" | "qc";
 type Period = "week" | "month";
@@ -126,6 +130,27 @@ export function Reports() {
     [workflowItems],
   );
   const periodRecords = periodUsageQuery.data ?? [];
+  const historySerialIds = useMemo(
+    () => [...new Set(periodRecords.map((record) => record.serialNumberId))],
+    [periodRecords],
+  );
+  const picHistoryQueries = useQueries({
+    queries: mode === "usage"
+      ? historySerialIds.map((id) => getListJobWorkflowHistoryQueryOptions(id, {
+        query: { queryKey: getListJobWorkflowHistoryQueryKey(id), staleTime: 5 * 60_000, retry: 1 },
+      }))
+      : [],
+  });
+  const progressHistoryBySerial = useMemo(
+    () => new Map(historySerialIds.map((id, index) => [id, picHistoryQueries[index]?.data ?? []])),
+    [historySerialIds, picHistoryQueries],
+  );
+  const picPerformance = useMemo(
+    () => buildPicPerformance(periodRecords, progressHistoryBySerial, workflowBySerial, t("reportUnassignedOperator")),
+    [periodRecords, progressHistoryBySerial, workflowBySerial, t],
+  );
+  const picHistoryLoading = mode === "usage" && picHistoryQueries.some((query) => query.isLoading);
+  const picHistoryError = mode === "usage" && picHistoryQueries.some((query) => query.isError);
   const serialSummaries = useMemo(() => {
     const groups = new Map<number, {
       serialNumberId: number;
@@ -355,6 +380,7 @@ export function Reports() {
         [t("reportCurrentSnapshotNote")],
         [t("reportTargetNote")],
       ];
+      if (picHistoryError) summary.push([t("reportPicHistoryError")]);
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(summary), "Summary");
 
       const jobRows = jobSummaries.map((group) => ({
@@ -417,13 +443,31 @@ export function Reports() {
         };
       });
       XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(detailRows), "Usage Details");
+      const picRows = picPerformance.map((row) => ({
+        [t("reportOperator")]: row.operatorName,
+        [t("reportJobs")]: row.jobCount,
+        [t("reportSerials")]: row.serialCount,
+        [t("reportEntries")]: row.recordCount,
+        [t("reportExpectedShiftL")]: row.expectedL,
+        [t("reportActualScoredL")]: row.scoredActualL,
+        [t("reportTotal")]: row.allActualL,
+        [t("reportLitersVariance")]: row.varianceL ?? "",
+        [t("reportEfficiency")]: row.variancePct ?? "",
+        [t("reportOverconsumptionShifts")]: row.overconsumptionCount,
+        [t("reportScoredShifts")]: row.scoredShiftCount,
+        [t("reportEstimatedShifts")]: row.estimatedShiftCount,
+        [t("reportUnscoredShifts")]: row.unscoredShiftCount,
+      }));
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(picRows), "PIC Performance");
       XLSX.writeFile(workbook, `paintshop-${period}-${range.from}-${range.to}.xlsx`);
     } catch {
       setExportError(t("reportExportError"));
     }
   }
 
-  const isLoading = workflowQuery.isLoading || (mode === "usage" ? periodUsageQuery.isLoading : Boolean(serialId && (qcUsageQuery.isLoading || qcHistoryQuery.isLoading)));
+  const isLoading = workflowQuery.isLoading || (mode === "usage"
+    ? periodUsageQuery.isLoading || picHistoryLoading
+    : Boolean(serialId && (qcUsageQuery.isLoading || qcHistoryQuery.isLoading)));
   const hasError = workflowQuery.isError || (mode === "usage" ? periodUsageQuery.isError : Boolean(serialId && (qcUsageQuery.isError || qcHistoryQuery.isError)));
 
   return (
@@ -541,6 +585,13 @@ export function Reports() {
                 <p className="text-[10px] text-muted-foreground">{t("reportTargetNote")}</p>
                 <p className="text-[10px] text-muted-foreground">{t("reportCurrentSnapshotNote")}</p>
               </section>
+
+              <PicPerformanceView
+                rows={picPerformance}
+                historyError={picHistoryError}
+                t={t}
+                formatLiters={formatLiters}
+              />
 
               <section className="space-y-2">
                 <h2 className="text-xs font-extrabold uppercase tracking-widest">{t("reportSerialSummary")}</h2>
