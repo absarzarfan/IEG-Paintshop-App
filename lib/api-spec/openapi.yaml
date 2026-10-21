@@ -574,6 +574,59 @@ paths:
                 items:
                   $ref: "#/components/schemas/StockSummary"
 
+  /stock/lots:
+    get:
+      operationId: listStockLots
+      tags: [stock]
+      summary: List stock balances by material lot for physical stocktake
+      responses:
+        "200":
+          description: Lot-level stock balances, including batches with no remaining balance
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockLotBalance"
+
+  /stock/takes:
+    get:
+      operationId: listStockTakes
+      tags: [stock]
+      summary: List physical stocktake history
+      responses:
+        "200":
+          description: Stocktake records with the before-count balance and posted variance
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockTakeRecord"
+    post:
+      operationId: createStockTake
+      tags: [stock]
+      summary: Record a physical count and post its variance to the stock ledger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockTakeInput"
+      responses:
+        "201":
+          description: Count recorded and any variance posted as an issue or return-to-stock movement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockTakeRecord"
+        "400":
+          description: Invalid stocktake input
+        "404":
+          description: Material not found or inactive
+        "409":
+          description: Stock changed concurrently; recount before saving
+
   /stock/movements:
     get:
       operationId: listStockMovements
@@ -1360,6 +1413,51 @@ components:
         expiryDate: { type: ["string", "null"], format: date }
         notes: { type: ["string", "null"], maxLength: 500 }
       required: [materialId, movementType, quantityL]
+
+    StockLotBalance:
+      type: object
+      properties:
+        materialId: { type: integer }
+        materialDescription: { type: string }
+        brandName: { type: string }
+        lotNo: { type: ["string", "null"] }
+        expiryDate: { type: ["string", "null"], format: date }
+        stockL: { type: number }
+      required: [materialId, materialDescription, brandName, lotNo, expiryDate, stockL]
+
+    StockTakeRecord:
+      type: object
+      properties:
+        id: { type: integer }
+        materialId: { type: integer }
+        materialDescription: { type: string }
+        brandName: { type: string }
+        lotNo: { type: ["string", "null"] }
+        expiryDate: { type: ["string", "null"], format: date }
+        systemQuantityL: { type: number }
+        physicalQuantityL: { type: number }
+        varianceL: { type: number }
+        movementId: { type: ["integer", "null"] }
+        movementType:
+          oneOf:
+            - $ref: "#/components/schemas/StockMovementType"
+            - type: "null"
+        notes: { type: ["string", "null"] }
+        countedByUserId: { type: ["integer", "null"] }
+        countedByName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required:
+        [id, materialId, materialDescription, brandName, lotNo, expiryDate, systemQuantityL, physicalQuantityL, varianceL, movementId, movementType, notes, countedByUserId, countedByName, createdAt]
+
+    StockTakeInput:
+      type: object
+      properties:
+        materialId: { type: integer }
+        lotNo: { type: ["string", "null"], maxLength: 120 }
+        expiryDate: { type: ["string", "null"], format: date }
+        physicalQuantityL: { type: number, minimum: 0 }
+        notes: { type: ["string", "null"], maxLength: 500 }
+      required: [materialId, physicalQuantityL]
 
     JobItem:
       type: object

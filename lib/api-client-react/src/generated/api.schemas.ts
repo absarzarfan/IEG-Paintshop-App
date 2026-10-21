@@ -303,6 +303,59 @@ export interface StockMovementInput {
   notes?: string | null;
 }
 
+export interface StockLotBalance {
+  materialId: number;
+  materialDescription: string;
+  brandName: string;
+  /** @nullable */
+  lotNo: string | null;
+  /** @nullable */
+  expiryDate: string | null;
+  stockL: number;
+}
+
+export interface StockTakeRecord {
+  id: number;
+  materialId: number;
+  materialDescription: string;
+  brandName: string;
+  /** @nullable */
+  lotNo: string | null;
+  /** @nullable */
+  expiryDate: string | null;
+  systemQuantityL: number;
+  physicalQuantityL: number;
+  varianceL: number;
+  /** @nullable */
+  movementId: number | null;
+  movementType: StockMovementType | null;
+  /** @nullable */
+  notes: string | null;
+  /** @nullable */
+  countedByUserId: number | null;
+  /** @nullable */
+  countedByName: string | null;
+  createdAt: string;
+}
+
+export interface StockTakeInput {
+  materialId: number;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  lotNo?: string | null;
+  /** @nullable */
+  expiryDate?: string | null;
+  /** @minimum 0 */
+  physicalQuantityL: number;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  notes?: string | null;
+}
+
 export type JobItemTargetBasis = typeof JobItemTargetBasis[keyof typeof JobItemTargetBasis];
 
 

@@ -583,6 +583,81 @@ export const ListStockSummaryResponse = zod.array(ListStockSummaryResponseItem)
 
 
 /**
+ * @summary List stock balances by material lot for physical stocktake
+ */
+export const ListStockLotsResponseItem = zod.object({
+  "materialId": zod.number().int(),
+  "materialDescription": zod.string(),
+  "brandName": zod.string(),
+  "lotNo": zod.string().nullable(),
+  "expiryDate": zod.coerce.date().nullable(),
+  "stockL": zod.number()
+})
+export const ListStockLotsResponse = zod.array(ListStockLotsResponseItem)
+
+
+/**
+ * @summary List physical stocktake history
+ */
+export const ListStockTakesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "materialId": zod.number().int(),
+  "materialDescription": zod.string(),
+  "brandName": zod.string(),
+  "lotNo": zod.string().nullable(),
+  "expiryDate": zod.coerce.date().nullable(),
+  "systemQuantityL": zod.number(),
+  "physicalQuantityL": zod.number(),
+  "varianceL": zod.number(),
+  "movementId": zod.number().int().nullable(),
+  "movementType": zod.union([zod.enum(['in', 'out', 'return_to_stock']),zod.null()]),
+  "notes": zod.string().nullable(),
+  "countedByUserId": zod.number().int().nullable(),
+  "countedByName": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListStockTakesResponse = zod.array(ListStockTakesResponseItem)
+
+
+/**
+ * @summary Record a physical count and post its variance to the stock ledger
+ */
+export const createStockTakeBodyLotNoMax = 120;
+
+export const createStockTakeBodyPhysicalQuantityLMin = 0;
+
+export const createStockTakeBodyNotesMax = 500;
+
+
+
+export const CreateStockTakeBody = zod.object({
+  "materialId": zod.number().int(),
+  "lotNo": zod.string().max(createStockTakeBodyLotNoMax).nullish(),
+  "expiryDate": zod.coerce.date().nullish(),
+  "physicalQuantityL": zod.number().min(createStockTakeBodyPhysicalQuantityLMin),
+  "notes": zod.string().max(createStockTakeBodyNotesMax).nullish()
+})
+
+export const CreateStockTakeResponse = zod.object({
+  "id": zod.number().int(),
+  "materialId": zod.number().int(),
+  "materialDescription": zod.string(),
+  "brandName": zod.string(),
+  "lotNo": zod.string().nullable(),
+  "expiryDate": zod.coerce.date().nullable(),
+  "systemQuantityL": zod.number(),
+  "physicalQuantityL": zod.number(),
+  "varianceL": zod.number(),
+  "movementId": zod.number().int().nullable(),
+  "movementType": zod.union([zod.enum(['in', 'out', 'return_to_stock']),zod.null()]),
+  "notes": zod.string().nullable(),
+  "countedByUserId": zod.number().int().nullable(),
+  "countedByName": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List stock movements, newest first
  */
 export const ListStockMovementsResponseItem = zod.object({

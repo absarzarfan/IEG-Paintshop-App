@@ -1,16 +1,23 @@
 import { useMemo, useState } from "react";
 import {
   getListMaterialsQueryKey,
+  getListStockLotsQueryKey,
   getListStockMovementsQueryKey,
   getListStockSummaryQueryKey,
+  getListStockTakesQueryKey,
   StockMovementType,
+  type StockLotBalance,
+  type StockTakeInput,
+  useCreateStockTake,
   useCreateStockMovement,
   useListMaterials,
+  useListStockLots,
   useListStockMovements,
   useListStockSummary,
+  useListStockTakes,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Boxes, CheckCircle2, Loader2, Plus, TrendingDown, XCircle } from "lucide-react";
+import { AlertTriangle, Boxes, CheckCircle2, ClipboardCheck, Loader2, Plus, TrendingDown, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +53,10 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function lotIdentity(lot: Pick<StockLotBalance, "materialId" | "lotNo" | "expiryDate">) {
+  return JSON.stringify([lot.materialId, lot.lotNo, lot.expiryDate]);
+}
+
 export function Stock() {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -56,6 +67,14 @@ export function Stock() {
   const [expiryDate, setExpiryDate] = useState("");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState("");
+  const [physicalCounts, setPhysicalCounts] = useState<Record<string, string>>({});
+  const [takeError, setTakeError] = useState("");
+  const [takeSuccess, setTakeSuccess] = useState("");
+  const [newTakeMaterialId, setNewTakeMaterialId] = useState("");
+  const [newTakeLotNo, setNewTakeLotNo] = useState("");
+  const [newTakeExpiryDate, setNewTakeExpiryDate] = useState("");
+  const [newTakeQuantity, setNewTakeQuantity] = useState("");
+  const [newTakeNotes, setNewTakeNotes] = useState("");
 
   const { data: materials, isLoading: materialsLoading } = useListMaterials({
     query: { queryKey: getListMaterialsQueryKey() },
@@ -66,13 +85,66 @@ export function Stock() {
   const { data: movements, isLoading: movementsLoading, error: movementsError } = useListStockMovements({
     query: { queryKey: getListStockMovementsQueryKey() },
   });
+  const { data: lots, isLoading: lotsLoading, error: lotsError } = useListStockLots({
+    query: { queryKey: getListStockLotsQueryKey() },
+  });
+  const { data: takes, isLoading: takesLoading, error: takesError } = useListStockTakes({
+    query: { queryKey: getListStockTakesQueryKey() },
+  });
   const createMutation = useCreateStockMovement();
+  const stockTakeMutation = useCreateStockTake();
 
   const lowStockCount = useMemo(
     () => (summary ?? []).filter((item) => item.stockL <= item.deadStockThreshold).length,
     [summary],
   );
   const totalStock = useMemo(() => (summary ?? []).reduce((total, item) => total + item.stockL, 0), [summary]);
+
+  async function saveStockTake(data: StockTakeInput, key?: string) {
+    setTakeError("");
+    setTakeSuccess("");
+    try {
+      const saved = await stockTakeMutation.mutateAsync({ data });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getListStockLotsQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getListStockTakesQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getListStockSummaryQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getListStockMovementsQueryKey() }),
+      ]);
+      if (key) setPhysicalCounts((current) => {
+        const updated = { ...current };
+        delete updated[key];
+        return updated;
+      });
+      setTakeSuccess(`${t("stocktakeSaved")}: ${saved.materialDescription}${saved.lotNo ? ` · ${saved.lotNo}` : ""} (${saved.varianceL > 0 ? "+" : ""}${saved.varianceL.toFixed(3)} L)`);
+      setNewTakeLotNo("");
+      setNewTakeExpiryDate("");
+      setNewTakeQuantity("");
+      setNewTakeNotes("");
+    } catch (error) {
+      const responseError = typeof error === "object" && error !== null && "data" in error
+        ? (error.data as { error?: string } | undefined)?.error
+        : undefined;
+      setTakeError(responseError || (error instanceof Error ? error.message : t("stockError")));
+    }
+  }
+
+  async function handleNewStockTake(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const parsedMaterialId = Number(newTakeMaterialId);
+    const physicalQuantityL = Number(newTakeQuantity);
+    if (!parsedMaterialId || newTakeQuantity === "" || !Number.isFinite(physicalQuantityL) || physicalQuantityL < 0) {
+      setTakeError(t("invalidPhysicalQuantity"));
+      return;
+    }
+    await saveStockTake({
+      materialId: parsedMaterialId,
+      lotNo: newTakeLotNo.trim() || null,
+      expiryDate: newTakeExpiryDate || null,
+      physicalQuantityL,
+      notes: newTakeNotes.trim() || null,
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -217,6 +289,86 @@ export function Stock() {
             </table>
           </div>
         )}
+      </section>
+
+      <section className="border border-border bg-card">
+        <div className="flex items-center gap-2 border-b border-border bg-secondary/20 px-5 py-3">
+          <ClipboardCheck className="h-4 w-4 text-primary" />
+          <h2 className="text-xs font-bold uppercase tracking-[0.16em]">{t("stocktakeTitle")}</h2>
+        </div>
+        <p className="border-b border-border px-5 py-3 text-sm text-muted-foreground">{t("stocktakeIntro")}</p>
+        {takeError && <div className="m-5 flex items-start gap-2 border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive" data-testid="error-stocktake"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0"/>{takeError}</div>}
+        {takeSuccess && <p className="mx-5 mt-4 border border-emerald-700/20 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800" role="status">{takeSuccess}</p>}
+        {lotsLoading ? <div className="p-8 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary"/></div> : lotsError ? (
+          <p className="p-8 text-center font-bold text-destructive">{t("stockError")}</p>
+        ) : lots?.length ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-[960px]">
+              <thead><tr><th>{t("material")}</th><th>{t("lot")} / {t("expiry")}</th><th className="text-right">{t("systemQuantity")}</th><th>{t("physicalQuantity")}</th><th>{t("actions")}</th></tr></thead>
+              <tbody>{lots.map((lot) => {
+                const key = lotIdentity(lot);
+                const physicalValue = physicalCounts[key] ?? String(lot.stockL);
+                return <tr key={key}>
+                  <td><p className="font-bold">{lot.materialDescription}</p><p className="text-xs text-muted-foreground">{lot.brandName}</p></td>
+                  <td><p className="font-mono text-xs">{lot.lotNo || "—"}</p><p className="text-xs text-muted-foreground">{formatDate(lot.expiryDate)}</p></td>
+                  <td className="text-right font-mono font-bold">{formatLiters(lot.stockL)}</td>
+                  <td><Input type="number" min="0" step="0.001" value={physicalValue} onChange={(event) => setPhysicalCounts((current) => ({ ...current, [key]: event.target.value }))} className="max-w-40 text-right font-mono" aria-label={`${t("physicalQuantity")} ${lot.materialDescription} ${lot.lotNo || ""}`} data-testid={`input-stocktake-${lot.materialId}-${lot.lotNo || "untracked"}`}/></td>
+                  <td><Button type="button" size="sm" variant="outline" disabled={stockTakeMutation.isPending} onClick={() => {
+                    const physicalQuantityL = Number(physicalValue);
+                    if (physicalValue === "" || !Number.isFinite(physicalQuantityL) || physicalQuantityL < 0) {
+                      setTakeError(t("invalidPhysicalQuantity"));
+                      return;
+                    }
+                    void saveStockTake({
+                      materialId: lot.materialId,
+                      lotNo: lot.lotNo,
+                      expiryDate: lot.expiryDate,
+                      physicalQuantityL,
+                      notes: null,
+                    }, key);
+                  }} data-testid={`button-reconcile-stocktake-${lot.materialId}-${lot.lotNo || "untracked"}`}>{stockTakeMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}{t("reconcile")}</Button></td>
+                </tr>;
+              })}</tbody>
+            </table>
+          </div>
+        ) : <p className="p-8 text-center text-sm text-muted-foreground">{t("noLots")}</p>}
+
+        <form onSubmit={handleNewStockTake} className="grid gap-4 border-t border-border bg-secondary/10 p-5 md:grid-cols-2 lg:grid-cols-3" data-testid="form-stocktake-new-lot">
+          <div className="space-y-2 lg:col-span-3"><Label htmlFor="stocktake-material">{t("newLotCount")} · {t("material")}</Label>
+            <Select value={newTakeMaterialId} onValueChange={setNewTakeMaterialId}>
+              <SelectTrigger id="stocktake-material"><SelectValue placeholder={t("selectMaterial")}/></SelectTrigger>
+              <SelectContent>{materials?.filter((material) => material.isActive).map((material) => <SelectItem key={material.id} value={String(material.id)}>{material.description} — {material.type}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2"><Label htmlFor="stocktake-lot">{t("lot")}</Label><Input id="stocktake-lot" value={newTakeLotNo} onChange={(event) => setNewTakeLotNo(event.target.value)} maxLength={120}/></div>
+          <div className="space-y-2"><Label htmlFor="stocktake-expiry">{t("expiry")}</Label><Input id="stocktake-expiry" type="date" value={newTakeExpiryDate} onChange={(event) => setNewTakeExpiryDate(event.target.value)}/></div>
+          <div className="space-y-2"><Label htmlFor="stocktake-quantity">{t("physicalQuantity")}</Label><Input id="stocktake-quantity" type="number" min="0" step="0.001" value={newTakeQuantity} onChange={(event) => setNewTakeQuantity(event.target.value)}/></div>
+          <div className="space-y-2 md:col-span-2 lg:col-span-3"><Label htmlFor="stocktake-notes">{t("notes")} ({t("optional")})</Label><Textarea id="stocktake-notes" value={newTakeNotes} onChange={(event) => setNewTakeNotes(event.target.value)} maxLength={500}/></div>
+          <div className="md:col-span-2 lg:col-span-3"><Button type="submit" disabled={stockTakeMutation.isPending} data-testid="button-submit-stocktake">{stockTakeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}{t("reconcile")}</Button></div>
+        </form>
+      </section>
+
+      <section className="border border-border bg-card">
+        <div className="border-b border-border bg-secondary/20 px-5 py-3"><h2 className="text-xs font-bold uppercase tracking-[0.16em]">{t("stocktakeHistory")}</h2></div>
+        {takesLoading ? <div className="p-8 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-primary"/></div> : takesError ? (
+          <p className="p-8 text-center font-bold text-destructive">{t("stockError")}</p>
+        ) : takes?.length ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-[980px]">
+              <thead><tr><th>{t("date")}</th><th>{t("material")}</th><th>{t("lot")} / {t("expiry")}</th><th className="text-right">{t("systemQuantity")}</th><th className="text-right">{t("physicalQuantity")}</th><th className="text-right">{t("varianceL")}</th><th>{t("recordedBy")}</th><th>{t("transactionType")}</th></tr></thead>
+              <tbody>{takes.map((take) => <tr key={take.id} data-testid={`row-stocktake-${take.id}`}>
+                <td className="font-mono text-xs text-muted-foreground">{formatDateTime(take.createdAt)}</td>
+                <td className="font-bold">{take.materialDescription}<p className="text-xs font-normal text-muted-foreground">{take.brandName}</p></td>
+                <td><p className="font-mono text-xs">{take.lotNo || "—"}</p><p className="text-xs text-muted-foreground">{formatDate(take.expiryDate)}</p></td>
+                <td className="text-right font-mono">{formatLiters(take.systemQuantityL)}</td>
+                <td className="text-right font-mono">{formatLiters(take.physicalQuantityL)}</td>
+                <td className={`text-right font-mono font-bold ${take.varianceL > 0 ? "text-emerald-700" : take.varianceL < 0 ? "text-destructive" : "text-muted-foreground"}`}>{take.varianceL > 0 ? "+" : ""}{formatLiters(take.varianceL)}</td>
+                <td>{take.countedByName || "System"}</td>
+                <td className="text-xs font-bold">{take.movementType === "return_to_stock" ? t("stockReturn") : take.movementType === "out" ? t("issue") : t("noStockMovement")}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        ) : <p className="p-8 text-center text-sm text-muted-foreground">{t("noStocktakes")}</p>}
       </section>
 
       <section className="border border-border bg-card">
