@@ -44,6 +44,7 @@ export const paintUsageTable = pgTable(
     topcoatHrdActualL: liters("topcoat_hrd_actual_l"),
     topcoatThinnerActualL: liters("topcoat_thinner_actual_l"),
     notes: text("notes"),
+    operatorUserId: integer("operator_user_id").references(() => usersTable.id),
     createdByUserId: integer("created_by_user_id").references(() => usersTable.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })

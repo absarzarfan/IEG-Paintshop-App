@@ -34,6 +34,11 @@ export interface User {
   createdAt: string;
 }
 
+export interface PaintMixerOption {
+  id: number;
+  displayName: string;
+}
+
 export interface AuthStatus {
   setupRequired: boolean;
 }
@@ -843,6 +848,10 @@ export interface PaintUsage {
   /** @nullable */
   notes: string | null;
   /** @nullable */
+  operatorUserId: number | null;
+  /** @nullable */
+  operatorName: string | null;
+  /** @nullable */
   createdByUserId: number | null;
   /** @nullable */
   createdByName: string | null;
@@ -859,6 +868,7 @@ export type PaintUsageInputCustomPaintActualsItem = {
 export interface PaintUsageInput {
   jobItemId: number;
   serialNumberId: number;
+  operatorUserId: number;
   usageDate: string;
   /**
      * @minLength 1
@@ -912,6 +922,7 @@ export interface PaintUsageUpdate {
   topcoatThinnerActualL?: number;
   /** @nullable */
   notes?: string | null;
+  operatorUserId?: number;
 }
 
 export type AuditAction = typeof AuditAction[keyof typeof AuditAction];

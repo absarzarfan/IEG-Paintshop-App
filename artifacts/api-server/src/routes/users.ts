@@ -1,16 +1,17 @@
 import { Router, type IRouter } from "express";
-import { and, eq, count } from "drizzle-orm";
+import { and, asc, eq, count } from "drizzle-orm";
 import { db, usersTable, authSessionsTable } from "@workspace/db";
 import {
   CreateUserBody,
   CreateUserResponse,
   GetCurrentUserResponse,
   ListUsersResponse,
+  ListPaintMixersResponse,
   UpdateUserParams,
   UpdateUserBody,
   UpdateUserResponse,
 } from "@workspace/api-zod";
-import { requireAdmin } from "../middlewares/auth";
+import { requireAdmin, requireAnyRole } from "../middlewares/auth";
 import { recordAudit, diffFields } from "../lib/audit";
 import { hashPassword, isUniqueViolation, normalizeUsername, toPublicUser } from "../lib/auth";
 
@@ -18,6 +19,20 @@ const router: IRouter = Router();
 
 router.get("/users/me", async (req, res): Promise<void> => {
   res.json(GetCurrentUserResponse.parse(req.appUser ? toPublicUser(req.appUser) : null));
+});
+
+router.get("/paint-mixers", requireAnyRole, async (_req, res): Promise<void> => {
+  const rows = await db.select({
+    id: usersTable.id,
+    name: usersTable.name,
+    username: usersTable.username,
+  }).from(usersTable)
+    .where(and(eq(usersTable.role, "painter"), eq(usersTable.isActive, true)))
+    .orderBy(asc(usersTable.name), asc(usersTable.username));
+  res.json(ListPaintMixersResponse.parse(rows.map((user) => ({
+    id: user.id,
+    displayName: user.name?.trim() || user.username,
+  }))));
 });
 
 router.get("/users", requireAdmin, async (_req, res): Promise<void> => {

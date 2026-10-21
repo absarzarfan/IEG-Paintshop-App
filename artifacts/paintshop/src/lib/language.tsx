@@ -133,7 +133,7 @@ Object.assign(messages.id, {
   historyEmpty: "Belum ada riwayat pengerjaan.", started: "Pekerjaan dimulai", progressUpdated: "Progres diperbarui", handedOver: "Diserahterimakan", completed: "Pekerjaan selesai", shipmentVerified: "Shipment diverifikasi",
   operations: "Operasional", filter: "Filter", resetFilters: "Atur Ulang Filter", allJobItems: "Semua Job Item", fromDate: "Dari Tanggal", toDate: "Sampai Tanggal",
   jobItem: "Job Item", primerTarget: "Target Primer", topcoatTarget: "Target Topcoat", identityLocked: "Job Item dan SN tidak dapat diubah setelah catatan dibuat.",
-  searchPaintUsage: "Cari Job Number, Serial Number, atau Shift...", paintUsageLoadError: "Data pemakaian cat gagal dimuat. Muat ulang halaman dan coba lagi.",
+  searchPaintUsage: "Cari Job Number, Serial Number, Shift, atau PIC...", paintUsageLoadError: "Data pemakaian cat gagal dimuat. Muat ulang halaman dan coba lagi.",
   noRecordsTitle: "Belum Ada Data", noRecordsMatch: "Tidak ada data yang cocok dengan filter.", noUsageYet: "Belum ada pemakaian cat aktual yang dicatat.", recordFirstUsage: "Catat Pemakaian Pertama",
   dateAndShift: "Tanggal / Shift", targetValue: "Target", recordNotFound: "Data pemakaian cat tidak ditemukan atau gagal dimuat.", backToDetail: "Kembali ke Detail",
   editRecord: "Ubah Data", updateActualUsage: "Perbarui Pemakaian Aktual", usageNotesPlaceholder: "Kondisi aplikasi, pengerjaan ulang, atau catatan lapangan...",
@@ -146,7 +146,9 @@ Object.assign(messages.id, {
   closeNavigation: "Tutup navigasi", openNavigation: "Buka navigasi", language: "Bahasa", stockQuantityPlaceholder: "Contoh: 25",
   productionRegister: "Daftar Produksi", dashboardLoadError: "Ringkasan dashboard tidak dapat dimuat.", example: "Contoh",
   stageMaterial: "Material untuk Tahap Ini", selectStageMaterial: "Pilih material cat", stageMaterialRequired: "Pilih material untuk setiap tahap cat tambahan.",
-  topcoatColor: "Warna topcoat",
+   topcoatColor: "Warna topcoat", operatorPIC: "PIC / Operator", selectPaintMixer: "Pilih Paint Mixer",
+   noActivePaintMixers: "Tidak ada akun Paint Mixer aktif.", picNotAssigned: "Belum ditetapkan",
+   allPaintMixers: "Semua Paint Mixer", usageByPIC: "Pemakaian per PIC", additionalStages: "Tahap Tambahan",
 });
 Object.assign(messages.en, {
   customers: "Customers", customersTitle: "Customers", customersIntro: "Manage customers available for Job Numbers.", addCustomer: "Add Customer", editCustomer: "Edit Customer",
@@ -156,7 +158,7 @@ Object.assign(messages.en, {
   historyEmpty: "No work history yet.", started: "Work started", progressUpdated: "Progress updated", handedOver: "Handed over", completed: "Work completed", shipmentVerified: "Shipment verified",
   operations: "Operations", filter: "Filter", resetFilters: "Reset Filters", allJobItems: "All Job Items", fromDate: "From Date", toDate: "To Date",
   jobItem: "Job Item", primerTarget: "Primer Target", topcoatTarget: "Topcoat Target", identityLocked: "Job Item and Serial Number cannot be changed after the record is created.",
-  searchPaintUsage: "Search Job Number, Serial Number, or Shift...", paintUsageLoadError: "Paint usage data could not be loaded. Refresh the page and try again.",
+  searchPaintUsage: "Search Job Number, Serial Number, Shift, or PIC...", paintUsageLoadError: "Paint usage data could not be loaded. Refresh the page and try again.",
   noRecordsTitle: "No Records Yet", noRecordsMatch: "No records match the selected filters.", noUsageYet: "No actual paint usage has been recorded yet.", recordFirstUsage: "Record First Usage",
   dateAndShift: "Date / Shift", targetValue: "Target", recordNotFound: "The paint usage record could not be found or loaded.", backToDetail: "Back to Detail",
   editRecord: "Edit Record", updateActualUsage: "Update Actual Usage", usageNotesPlaceholder: "Application conditions, rework, or field notes...",
@@ -169,7 +171,9 @@ Object.assign(messages.en, {
   closeNavigation: "Close navigation", openNavigation: "Open navigation", language: "Language", stockQuantityPlaceholder: "Example: 25",
   productionRegister: "Production Register", dashboardLoadError: "Dashboard summary is unavailable.", example: "e.g.",
   stageMaterial: "Material for This Stage", selectStageMaterial: "Select a paint material", stageMaterialRequired: "Select a material for every additional paint stage.",
-  topcoatColor: "Topcoat color",
+   topcoatColor: "Topcoat color", operatorPIC: "PIC / Operator", selectPaintMixer: "Select Paint Mixer",
+   noActivePaintMixers: "There are no active Paint Mixer accounts.", picNotAssigned: "Not assigned",
+   allPaintMixers: "All Paint Mixers", usageByPIC: "Usage by PIC", additionalStages: "Additional Stages",
 });
 
 const LanguageContext = createContext<{ language: Language; setLanguage: (language: Language) => void; t: (key: string) => string }>({

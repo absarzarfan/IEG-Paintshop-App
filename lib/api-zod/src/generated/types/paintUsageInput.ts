@@ -11,6 +11,7 @@ import type { PaintUsageInputCustomPaintActualsItem } from './paintUsageInputCus
 export interface PaintUsageInput {
   jobItemId: number;
   serialNumberId: number;
+  operatorUserId: number;
   usageDate: Date;
   /**
      * @minLength 1

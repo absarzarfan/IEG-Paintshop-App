@@ -109,6 +109,16 @@ export const GetCurrentUserResponse = zod.object({
 
 
 /**
+ * @summary List active Paint Mixer accounts for PIC selection
+ */
+export const ListPaintMixersResponseItem = zod.object({
+  "id": zod.number().int(),
+  "displayName": zod.string()
+})
+export const ListPaintMixersResponse = zod.array(ListPaintMixersResponseItem)
+
+
+/**
  * @summary List all users (admin only)
  */
 export const ListUsersResponseItem = zod.object({
@@ -1296,6 +1306,8 @@ export const ListPaintUsageResponseItem = zod.object({
   "thresholdPct": zod.number(),
   "isOverconsumption": zod.boolean(),
   "notes": zod.string().nullable(),
+  "operatorUserId": zod.number().int().nullable(),
+  "operatorName": zod.string().nullable(),
   "createdByUserId": zod.number().int().nullable(),
   "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
@@ -1328,6 +1340,7 @@ export const createPaintUsageBodyTopcoatThinnerActualLMin = 0;
 export const CreatePaintUsageBody = zod.object({
   "jobItemId": zod.number().int(),
   "serialNumberId": zod.number().int(),
+  "operatorUserId": zod.number().int(),
   "usageDate": zod.coerce.date(),
   "shift": zod.string().min(1).max(createPaintUsageBodyShiftMax),
   "category": zod.enum(['preparation', 'blasting', 'washing', 'cleaning', 'finishing']).optional(),
@@ -1384,6 +1397,8 @@ export const CreatePaintUsageResponse = zod.object({
   "thresholdPct": zod.number(),
   "isOverconsumption": zod.boolean(),
   "notes": zod.string().nullable(),
+  "operatorUserId": zod.number().int().nullable(),
+  "operatorName": zod.string().nullable(),
   "createdByUserId": zod.number().int().nullable(),
   "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
@@ -1438,6 +1453,8 @@ export const GetPaintUsageResponse = zod.object({
   "thresholdPct": zod.number(),
   "isOverconsumption": zod.boolean(),
   "notes": zod.string().nullable(),
+  "operatorUserId": zod.number().int().nullable(),
+  "operatorName": zod.string().nullable(),
   "createdByUserId": zod.number().int().nullable(),
   "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
@@ -1484,7 +1501,8 @@ export const UpdatePaintUsageBody = zod.object({
   "topcoatBaseActualL": zod.number().min(updatePaintUsageBodyTopcoatBaseActualLMin).optional(),
   "topcoatHrdActualL": zod.number().min(updatePaintUsageBodyTopcoatHrdActualLMin).optional(),
   "topcoatThinnerActualL": zod.number().min(updatePaintUsageBodyTopcoatThinnerActualLMin).optional(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "operatorUserId": zod.number().int().optional()
 })
 
 export const updatePaintUsageResponseCustomPaintActualsItemTargetLitersMin = 0;
@@ -1527,6 +1545,8 @@ export const UpdatePaintUsageResponse = zod.object({
   "thresholdPct": zod.number(),
   "isOverconsumption": zod.boolean(),
   "notes": zod.string().nullable(),
+  "operatorUserId": zod.number().int().nullable(),
+  "operatorName": zod.string().nullable(),
   "createdByUserId": zod.number().int().nullable(),
   "createdByName": zod.string().nullable(),
   "createdAt": zod.coerce.date(),

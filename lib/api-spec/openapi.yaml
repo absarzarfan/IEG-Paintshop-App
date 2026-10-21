@@ -129,6 +129,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  /paint-mixers:
+    get:
+      operationId: listPaintMixers
+      tags: [users]
+      summary: List active Paint Mixer accounts for PIC selection
+      responses:
+        "200":
+          description: Active Paint Mixer accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaintMixerOption"
+
   /users:
     get:
       operationId: listUsers
@@ -1167,6 +1182,13 @@ components:
         createdAt: { type: string, format: date-time }
       required: [id, username, name, email, role, isPaintLeader, isActive, createdAt]
 
+    PaintMixerOption:
+      type: object
+      properties:
+        id: { type: integer }
+        displayName: { type: string }
+      required: [id, displayName]
+
     AuthStatus:
       type: object
       properties:
@@ -1848,6 +1870,8 @@ components:
         thresholdPct: { type: number }
         isOverconsumption: { type: boolean }
         notes: { type: ["string", "null"] }
+        operatorUserId: { type: ["integer", "null"] }
+        operatorName: { type: ["string", "null"] }
         createdByUserId: { type: ["integer", "null"] }
         createdByName: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
@@ -1861,7 +1885,7 @@ components:
           topcoatThinnerActualL, topcoatActualTotalL, primerTargetTotalL,
           topcoatTargetTotalL, primerVarianceL, topcoatVarianceL,
           primerVariancePct, topcoatVariancePct, thresholdPct,
-          isOverconsumption, notes, createdByUserId, createdByName,
+          isOverconsumption, notes, operatorUserId, operatorName, createdByUserId, createdByName,
           createdAt, updatedAt
         ]
 
@@ -1870,6 +1894,7 @@ components:
       properties:
         jobItemId: { type: integer }
         serialNumberId: { type: integer }
+        operatorUserId: { type: integer }
         usageDate: { type: string, format: date }
         shift: { type: string, minLength: 1, maxLength: 50 }
         category:
@@ -1891,7 +1916,7 @@ components:
         notes: { type: ["string", "null"] }
       required:
         [
-          jobItemId, serialNumberId, usageDate, shift,
+          jobItemId, serialNumberId, operatorUserId, usageDate, shift,
           primerBaseActualL, primerHrdActualL, primerThinnerActualL,
           topcoatBaseActualL, topcoatHrdActualL, topcoatThinnerActualL
         ]
@@ -1918,6 +1943,7 @@ components:
         topcoatHrdActualL: { type: number, minimum: 0 }
         topcoatThinnerActualL: { type: number, minimum: 0 }
         notes: { type: ["string", "null"] }
+        operatorUserId: { type: integer }
 
     AuditAction:
       type: string

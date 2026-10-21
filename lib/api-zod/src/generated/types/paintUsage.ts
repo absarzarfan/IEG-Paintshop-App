@@ -40,6 +40,10 @@ export interface PaintUsage {
   /** @nullable */
   notes: string | null;
   /** @nullable */
+  operatorUserId: number | null;
+  /** @nullable */
+  operatorName: string | null;
+  /** @nullable */
   createdByUserId: number | null;
   /** @nullable */
   createdByName: string | null;

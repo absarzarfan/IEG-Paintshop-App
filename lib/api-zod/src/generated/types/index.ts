@@ -57,6 +57,7 @@ export * from './materialPriceInput';
 export * from './materialType';
 export * from './materialUpdate';
 export * from './orderPerformance';
+export * from './paintMixerOption';
 export * from './paintMixerStatus';
 export * from './paintMixerStatusState';
 export * from './paintPerformanceTotals';

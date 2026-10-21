@@ -52,6 +52,7 @@ import type {
   MaterialPrice,
   MaterialPriceInput,
   MaterialUpdate,
+  PaintMixerOption,
   PaintUsage,
   PaintUsageInput,
   PaintUsagePhoto,
@@ -570,6 +571,83 @@ export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUs
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetCurrentUserQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPaintMixersUrl = () => {
+
+
+
+
+  return `/api/paint-mixers`
+}
+
+/**
+ * @summary List active Paint Mixer accounts for PIC selection
+ */
+export const listPaintMixers = async ( options?: Parameters<typeof customFetch>[1]): Promise<PaintMixerOption[]> => {
+
+  return customFetch<PaintMixerOption[]>(getListPaintMixersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPaintMixersQueryKey = () => {
+    return [
+    `/api/paint-mixers`
+    ] as const;
+    }
+
+
+export const getListPaintMixersQueryOptions = <TData = Awaited<ReturnType<typeof listPaintMixers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaintMixers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPaintMixersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPaintMixers>>> = ({ signal }) => listPaintMixers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPaintMixers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPaintMixersQueryResult = NonNullable<Awaited<ReturnType<typeof listPaintMixers>>>
+export type ListPaintMixersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active Paint Mixer accounts for PIC selection
+ */
+
+export function useListPaintMixers<TData = Awaited<ReturnType<typeof listPaintMixers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaintMixers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPaintMixersQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

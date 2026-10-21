@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import {
   db,
   jobItemsTable,
@@ -28,6 +29,7 @@ import { targetsPerUnit } from "../lib/costs";
 
 const router: IRouter = Router();
 const canRecordUsage = requireRole("admin", "painter");
+const operatorUsersTable = alias(usersTable, "paint_usage_operator");
 
 function usageWorkEvent(
   usage: typeof paintUsageTable.$inferSelect,
@@ -84,7 +86,18 @@ type UsageRow = {
   jobItem: typeof jobItemsTable.$inferSelect;
   serial: typeof serialNumbersTable.$inferSelect;
   actor: typeof usersTable.$inferSelect | null;
+  operator: typeof usersTable.$inferSelect | null;
 };
+
+async function findActivePaintMixer(id: number) {
+  const [user] = await db.select().from(usersTable)
+    .where(and(
+      eq(usersTable.id, id),
+      eq(usersTable.role, "painter"),
+      eq(usersTable.isActive, true),
+    ));
+  return user ?? null;
+}
 
 function toActuals(row: typeof paintUsageTable.$inferSelect): UsageActuals {
   return {
@@ -347,7 +360,7 @@ async function issueUsageStock(
   }
 }
 
-function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
+function serializeUsage({ usage, jobItem, serial, actor, operator }: UsageRow) {
   const variance = calculateUsageVariance(targetsPerUnit(jobItem), toActuals(usage));
   const customOverconsumption = usage.customPaintActuals.some((actual) =>
     actual.actualLiters > actual.targetLiters * (1 + variance.thresholdPct / 100)
@@ -371,6 +384,8 @@ function serializeUsage({ usage, jobItem, serial, actor }: UsageRow) {
     ...variance,
     isOverconsumption: variance.isOverconsumption || customOverconsumption,
     notes: usage.notes,
+    operatorUserId: usage.operatorUserId,
+    operatorName: operator?.name ?? operator?.username ?? null,
     createdByUserId: usage.createdByUserId,
     createdByName: actor?.name ?? actor?.email ?? null,
     createdAt: usage.createdAt,
@@ -385,11 +400,13 @@ async function findUsage(id: number): Promise<UsageRow | null> {
       jobItem: jobItemsTable,
       serial: serialNumbersTable,
       actor: usersTable,
+      operator: operatorUsersTable,
     })
     .from(paintUsageTable)
     .innerJoin(jobItemsTable, eq(paintUsageTable.jobItemId, jobItemsTable.id))
     .innerJoin(serialNumbersTable, eq(paintUsageTable.serialNumberId, serialNumbersTable.id))
     .leftJoin(usersTable, eq(paintUsageTable.createdByUserId, usersTable.id))
+    .leftJoin(operatorUsersTable, eq(paintUsageTable.operatorUserId, operatorUsersTable.id))
     .where(eq(paintUsageTable.id, id));
   return row ?? null;
 }
@@ -421,11 +438,13 @@ router.get("/paint-usage", requireAnyRole, async (req, res): Promise<void> => {
       jobItem: jobItemsTable,
       serial: serialNumbersTable,
       actor: usersTable,
+      operator: operatorUsersTable,
     })
     .from(paintUsageTable)
     .innerJoin(jobItemsTable, eq(paintUsageTable.jobItemId, jobItemsTable.id))
     .innerJoin(serialNumbersTable, eq(paintUsageTable.serialNumberId, serialNumbersTable.id))
     .leftJoin(usersTable, eq(paintUsageTable.createdByUserId, usersTable.id))
+    .leftJoin(operatorUsersTable, eq(paintUsageTable.operatorUserId, operatorUsersTable.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(paintUsageTable.usageDate), asc(jobItemsTable.jobNo), asc(serialNumbersTable.serialNo));
 
@@ -451,6 +470,11 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
     .where(eq(serialNumbersTable.id, parsed.data.serialNumberId));
   if (!serial || serial.jobItemId !== parsed.data.jobItemId) {
     res.status(400).json({ error: "Serial number does not belong to the selected job item" });
+    return;
+  }
+  const operator = await findActivePaintMixer(parsed.data.operatorUserId);
+  if (!operator) {
+    res.status(400).json({ error: "Select an active Paint Mixer as the PIC/operator" });
     return;
   }
   const shiftError = usageShiftError(serial, parsed.data.shift, req.appUser?.role);
@@ -516,6 +540,7 @@ router.post("/paint-usage", canRecordUsage, async (req, res): Promise<void> => {
     jobItem,
     serial,
     actor: req.appUser ?? null,
+    operator,
   });
   res.status(201).json(CreatePaintUsageResponse.parse(serialized));
 });
@@ -563,6 +588,13 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
     res.status(404).json({ error: "Job item not found" });
     return;
   }
+  if (parsed.data.operatorUserId !== undefined && parsed.data.operatorUserId !== before.operatorUserId) {
+    const operator = await findActivePaintMixer(parsed.data.operatorUserId);
+    if (!operator) {
+      res.status(400).json({ error: "Select an active Paint Mixer as the PIC/operator" });
+      return;
+    }
+  }
   const shiftError = usageShiftError(serial, parsed.data.shift ?? before.shift, req.appUser?.role);
   if (shiftError) {
     res.status(409).json({ error: shiftError });
@@ -605,7 +637,7 @@ router.patch("/paint-usage/:id", canRecordUsage, async (req, res): Promise<void>
         await restoreUsageStock(tx, before.id, req.appUser?.id ?? null);
         await issueUsageStock(tx, record, jobItem, req.appUser?.id ?? null);
       }
-      if (Object.keys(changes).length > 0) {
+      if (Object.keys(changes).some((field) => field !== "operatorUserId")) {
         await tx.insert(jobWorkEventsTable).values(usageWorkEvent(record, req.appUser?.id ?? null, serial));
       }
       return record;

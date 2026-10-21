@@ -20,7 +20,9 @@ import {
   useListJobItemSerialNumbers,
   useListJobItems,
   useListMaterials,
+  useListPaintMixers,
   useListPaintUsage,
+  getListPaintMixersQueryKey,
   useListPaintUsagePhotos,
   useRequestPaintUsagePhotoUploadUrl,
   useUpdatePaintUsage,
@@ -79,6 +81,7 @@ const actualFields = [
 const usageSchema = (t: (key: string) => string) => z.object({
   jobItemId: z.coerce.number().int().positive(t("selectJobItem")),
   serialNumberId: z.coerce.number().int().positive(t("selectSerialNumber")),
+  operatorUserId: z.coerce.number().int().positive(t("selectPaintMixer")),
   usageDate: z.string().min(1, t("usageDateRequired")),
   shift: z.string().min(1, t("required")).max(50),
   category: z.enum(["preparation", "blasting", "washing", "cleaning", "finishing"]),
@@ -166,6 +169,7 @@ function UsageForm({
     Object.fromEntries((usage?.customPaintActuals ?? []).map((actual) => [actual.stageId, actual.actualLiters])),
   );
   const { t, language } = useLanguage();
+  const { user } = useAppAuth();
   const isEdit = mode === "edit";
 
   const { data: jobs, isLoading: jobsLoading, error: jobsError } = useListJobItems(
@@ -173,11 +177,15 @@ function UsageForm({
     { query: { queryKey: getListJobItemsQueryKey() } },
   );
   const { data: materials } = useListMaterials({ query: { queryKey: getListMaterialsQueryKey() } });
+  const { data: paintMixers, isLoading: paintMixersLoading } = useListPaintMixers({
+    query: { queryKey: getListPaintMixersQueryKey() },
+  });
   const defaultJobId = usage?.jobItemId ?? initialJobId;
   const form = useForm<UsageFormValues | EditFormValues>({
     resolver: zodResolver(isEdit ? editSchema(t) : usageSchema(t)),
     defaultValues: isEdit
       ? {
+          operatorUserId: usage?.operatorUserId ?? 0,
           usageDate: usage?.usageDate?.slice(0, 10) ?? "",
           shift: usage?.shift ?? "",
           category: usage?.category ?? "preparation",
@@ -192,6 +200,7 @@ function UsageForm({
       : {
           jobItemId: defaultJobId,
           serialNumberId: 0,
+          operatorUserId: user?.role === "painter" ? user.id : 0,
           usageDate: new Date().toISOString().slice(0, 10),
           shift: "Shift 1",
           category: "preparation",
@@ -243,6 +252,7 @@ function UsageForm({
       if (isEdit && usage) {
         const editValues = values as EditFormValues;
         const data: PaintUsageUpdate = {
+          operatorUserId: Number(editValues.operatorUserId),
           usageDate: editValues.usageDate,
           shift: editValues.shift,
           category: editValues.category,
@@ -272,6 +282,7 @@ function UsageForm({
         const data: PaintUsageInput = {
           jobItemId: Number(createValues.jobItemId),
           serialNumberId: Number(createValues.serialNumberId),
+          operatorUserId: Number(createValues.operatorUserId),
           usageDate: createValues.usageDate,
           shift: createValues.shift,
           category: createValues.category,
@@ -358,9 +369,10 @@ function UsageForm({
         )}
 
         {isEdit && usage && (
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Metric label={t("jobNo")} value={usage.jobNo} />
             <Metric label={t("serial")} value={usage.serialNo} />
+            <Metric label={t("operatorPIC")} value={usage.operatorName || t("picNotAssigned")} />
             <Metric label={t("recordedBy")} value={usage.createdByName || "—"} />
           </div>
         )}
@@ -380,6 +392,17 @@ function UsageForm({
               <FormItem><FormLabel className="font-bold">{t("category")}</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger data-testid="select-usage-category"><SelectValue /></SelectTrigger></FormControl><SelectContent>
                 <SelectItem value="preparation">{t("preparation")}</SelectItem><SelectItem value="blasting">{t("blasting")}</SelectItem><SelectItem value="washing">{t("washing")}</SelectItem><SelectItem value="cleaning">{t("cleaning")}</SelectItem><SelectItem value="finishing">{t("finishing")}</SelectItem>
               </SelectContent></Select><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="operatorUserId" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-bold">{t("operatorPIC")}</FormLabel>
+                <Select value={field.value ? String(field.value) : ""} onValueChange={(value) => field.onChange(Number(value))} disabled={paintMixersLoading || !paintMixers?.length}>
+                  <FormControl><SelectTrigger data-testid="select-paint-usage-pic"><SelectValue placeholder={paintMixersLoading ? t("loadingSystem") : t("selectPaintMixer")} /></SelectTrigger></FormControl>
+                  <SelectContent>{paintMixers?.map((mixer) => <SelectItem key={mixer.id} value={String(mixer.id)}>{mixer.displayName}</SelectItem>)}</SelectContent>
+                </Select>
+                {!paintMixersLoading && !paintMixers?.length && <p className="text-xs font-medium text-destructive">{t("noActivePaintMixers")}</p>}
+                <FormMessage />
+              </FormItem>
             )} />
           </div>
         </section>
@@ -460,7 +483,7 @@ function UsageForm({
         )}
         <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => setLocation(isEdit && usage ? `/paint-usage/${usage.id}` : "/paint-usage")} data-testid="button-cancel-paint-usage">{t("cancel")}</Button>
-          <Button type="submit" disabled={mutationPending || (!isEdit && (!jobs?.length || !serials?.length))} className="font-bold uppercase tracking-wider" data-testid="button-save-paint-usage">
+          <Button type="submit" disabled={mutationPending || !paintMixers?.length || (!isEdit && (!jobs?.length || !serials?.length))} className="font-bold uppercase tracking-wider" data-testid="button-save-paint-usage">
             {mutationPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEdit ? t("saveChanges") : t("saveUsage")}
           </Button>
@@ -490,6 +513,7 @@ function PaintUsageList() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [jobItemFilter, setJobItemFilter] = useState("all");
+  const [operatorFilter, setOperatorFilter] = useState("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -500,12 +524,36 @@ function PaintUsageList() {
   }), [jobItemFilter, fromDate, toDate]);
   const { data: records, isLoading, error } = useListPaintUsage(params, { query: { queryKey: getListPaintUsageQueryKey(params) } });
   const { data: jobs } = useListJobItems(undefined, { query: { queryKey: getListJobItemsQueryKey() } });
+  const { data: paintMixers } = useListPaintMixers({ query: { queryKey: getListPaintMixersQueryKey() } });
   const visibleRecords = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
-    if (!query) return records ?? [];
-    return (records ?? []).filter((record) => `${record.jobNo} ${record.serialNo} ${record.shift}`.toLowerCase().includes(query));
-  }, [records, debouncedSearch]);
+    return (records ?? []).filter((record) => {
+      const matchesSearch = !query || `${record.jobNo} ${record.serialNo} ${record.shift} ${record.operatorName ?? ""}`.toLowerCase().includes(query);
+      const matchesOperator = operatorFilter === "all" || String(record.operatorUserId ?? "unassigned") === operatorFilter;
+      return matchesSearch && matchesOperator;
+    });
+  }, [records, debouncedSearch, operatorFilter]);
   const overCount = visibleRecords.filter((record) => record.isOverconsumption).length;
+  const operatorUsage = useMemo(() => {
+    const groups = new Map<string, { id: string; name: string; records: number; primer: number; topcoat: number; additional: number }>();
+    for (const record of visibleRecords) {
+      const key = String(record.operatorUserId ?? "unassigned");
+      const summary = groups.get(key) ?? {
+        id: key,
+        name: record.operatorName || t("picNotAssigned"),
+        records: 0,
+        primer: 0,
+        topcoat: 0,
+        additional: 0,
+      };
+      summary.records += 1;
+      summary.primer += record.primerActualTotalL;
+      summary.topcoat += record.topcoatActualTotalL;
+      summary.additional += record.customPaintActuals.reduce((total, stage) => total + stage.actualLiters, 0);
+      groups.set(key, summary);
+    }
+    return Array.from(groups.values()).sort((a, b) => (b.primer + b.topcoat + b.additional) - (a.primer + a.topcoat + a.additional));
+  }, [visibleRecords, t]);
 
   return (
     <div className="space-y-6 pb-12">
@@ -531,15 +579,36 @@ function PaintUsageList() {
             <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("searchPaintUsage")} className="bg-background pl-9" data-testid="input-search-paint-usage" />
           </div>
           <Button type="button" variant="outline" onClick={() => setShowFilters((open) => !open)} className="w-full font-bold uppercase tracking-wider sm:w-auto" data-testid="button-toggle-paint-usage-filters"><SlidersHorizontal className="mr-2 h-4 w-4" /> {t("filter")} <Filter className="ml-2 h-3 w-3" /></Button>
-           {(fromDate || toDate || jobItemFilter !== "all") && <Button type="button" variant="ghost" onClick={() => { setFromDate(""); setToDate(""); setJobItemFilter("all"); }} className="text-xs font-bold uppercase tracking-wider" data-testid="button-clear-paint-usage-filters">{t("resetFilters")}</Button>}
+            {(fromDate || toDate || jobItemFilter !== "all" || operatorFilter !== "all") && <Button type="button" variant="ghost" onClick={() => { setFromDate(""); setToDate(""); setJobItemFilter("all"); setOperatorFilter("all"); }} className="text-xs font-bold uppercase tracking-wider" data-testid="button-clear-paint-usage-filters">{t("resetFilters")}</Button>}
         </div>
         {showFilters && (
-          <div className="grid gap-4 border-b border-border bg-secondary/10 p-4 md:grid-cols-3">
+           <div className="grid gap-4 border-b border-border bg-secondary/10 p-4 md:grid-cols-4">
              <div><label className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("jobItem")}</label><Select value={jobItemFilter} onValueChange={setJobItemFilter}><SelectTrigger data-testid="select-filter-job-item"><SelectValue placeholder={t("allJobItems")} /></SelectTrigger><SelectContent><SelectItem value="all">{t("allJobItems")}</SelectItem>{jobs?.map((job) => <SelectItem key={job.id} value={String(job.id)}>{job.jobNo} — {job.description}</SelectItem>)}</SelectContent></Select></div>
+              <div><label className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("operatorPIC")}</label><Select value={operatorFilter} onValueChange={setOperatorFilter}><SelectTrigger data-testid="select-filter-paint-usage-pic"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("allPaintMixers")}</SelectItem><SelectItem value="unassigned">{t("picNotAssigned")}</SelectItem>{paintMixers?.map((mixer) => <SelectItem key={mixer.id} value={String(mixer.id)}>{mixer.displayName}</SelectItem>)}</SelectContent></Select></div>
              <div><label className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("fromDate")}</label><Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} data-testid="input-filter-from-date" /></div>
              <div><label className="mb-1 block text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("toDate")}</label><Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} data-testid="input-filter-to-date" /></div>
           </div>
         )}
+         {operatorUsage.length > 0 && (
+           <section className="border-b border-border bg-card" data-testid="paint-usage-pic-summary">
+             <div className="border-b border-border bg-secondary/30 px-4 py-3"><h2 className="text-xs font-bold uppercase tracking-[0.16em]">{t("usageByPIC")}</h2></div>
+             <div className="overflow-x-auto">
+               <table className="min-w-[760px]">
+                 <thead><tr><th>{t("operatorPIC")}</th><th className="text-right">{t("recordsShown")}</th><th className="text-right">{t("actualPrimer")}</th><th className="text-right">{t("actualTopcoat")}</th><th className="text-right">{t("additionalStages")}</th><th className="text-right">{t("total")}</th></tr></thead>
+                 <tbody>{operatorUsage.map((summary) => (
+                   <tr key={summary.id}>
+                     <td className="font-bold">{summary.name}</td>
+                     <td className="text-right font-mono">{summary.records}</td>
+                     <td className="text-right font-mono">{formatLiters(summary.primer)}</td>
+                     <td className="text-right font-mono">{formatLiters(summary.topcoat)}</td>
+                     <td className="text-right font-mono">{formatLiters(summary.additional)}</td>
+                     <td className="text-right font-mono font-bold">{formatLiters(summary.primer + summary.topcoat + summary.additional)}</td>
+                   </tr>
+                 ))}</tbody>
+               </table>
+             </div>
+           </section>
+         )}
         {isLoading ? (
           <div className="space-y-3 p-5" data-testid="loading-paint-usage"><div className="h-10 animate-pulse bg-secondary" /><div className="h-10 animate-pulse bg-secondary" /><div className="h-10 animate-pulse bg-secondary" /></div>
         ) : error ? (
@@ -548,14 +617,15 @@ function PaintUsageList() {
            <div className="p-16 text-center" data-testid="empty-paint-usage"><div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center border border-border bg-secondary text-muted-foreground"><ClipboardPenLine /></div><h3 className="font-bold uppercase tracking-wide">{t("noRecordsTitle")}</h3><p className="mt-1 text-sm font-medium text-muted-foreground">{search || fromDate || toDate ? t("noRecordsMatch") : t("noUsageYet")}</p>{canRecordUsage && <Button onClick={() => setLocation("/paint-usage/new")} variant="outline" className="mt-5 font-bold uppercase tracking-wider" data-testid="button-empty-create-usage">{t("recordFirstUsage")}</Button>}</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-[980px]">
-              <thead><tr><th>{t("dateAndShift")}</th><th>{t("jobNo")}</th><th>{t("serial")}</th><th className="text-right">{t("actualPrimer")}</th><th className="text-right">{t("actualTopcoat")}</th><th className="text-right">{t("variance")}</th><th>{t("status")}</th><th className="w-10" /></tr></thead>
+             <table className="min-w-[1080px]">
+               <thead><tr><th>{t("dateAndShift")}</th><th>{t("jobNo")}</th><th>{t("serial")}</th><th>{t("operatorPIC")}</th><th className="text-right">{t("actualPrimer")}</th><th className="text-right">{t("actualTopcoat")}</th><th className="text-right">{t("variance")}</th><th>{t("status")}</th><th className="w-10" /></tr></thead>
               <tbody>
                 {visibleRecords.map((record) => (
                   <tr key={record.id} className="cursor-pointer transition-colors hover:bg-secondary/30" onClick={() => setLocation(`/paint-usage/${record.id}`)} data-testid={`row-paint-usage-${record.id}`}>
                     <td><p className="font-mono text-xs font-bold">{formatDate(record.usageDate, language)}</p><p className="mt-1 text-xs text-muted-foreground">{record.shift} · {t(record.category)}</p></td>
                     <td className="font-mono font-bold">{record.jobNo}</td>
                     <td className="font-mono font-bold text-primary">{record.serialNo}</td>
+                    <td className="font-bold">{record.operatorName || t("picNotAssigned")}</td>
                     <td className="text-right font-mono">{formatLiters(record.primerActualTotalL)}<p className="text-xs text-muted-foreground">{t("targetValue")} {formatLiters(record.primerTargetTotalL)}</p></td>
                     <td className="text-right font-mono">{formatLiters(record.topcoatActualTotalL)}<p className="text-xs text-muted-foreground">{t("targetValue")} {formatLiters(record.topcoatTargetTotalL)}</p></td>
                     <td className={`text-right font-mono font-bold ${record.isOverconsumption ? "text-destructive" : "text-foreground"}`}>P {record.primerVariancePct.toFixed(1)}%<br />T {record.topcoatVariancePct.toFixed(1)}%</td>
@@ -694,7 +764,7 @@ function PaintUsageDetail({ id }: { id: number }) {
         <div><Link href="/paint-usage" className="mb-3 inline-flex items-center text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-primary" data-testid="link-back-paint-usage"><ArrowLeft className="mr-2 h-4 w-4" /> {t("usage")}</Link><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{t("usageTitle")} #{usage.id}</p><h1 className="mt-1 font-mono text-3xl font-extrabold text-foreground">{usage.jobNo} <span className="text-muted-foreground">/</span> {usage.serialNo}</h1><p className="mt-1 text-sm font-medium text-muted-foreground">{formatDate(usage.usageDate, language)} · {usage.shift} · {t(usage.category)}</p></div>
           {canRecordUsage && <Button onClick={() => setEditing(true)} variant="outline" className="font-bold uppercase tracking-wider" data-testid="button-edit-paint-usage"><Edit3 className="mr-2 h-4 w-4" /> {t("editRecord")}</Button>}
       </div>
-      <div className="flex flex-wrap items-center gap-3"><VarianceBadge over={usage.isOverconsumption} /><span className="border border-border bg-secondary px-3 py-1 font-mono text-xs font-bold">{t("thresholdStatus")} {usage.thresholdPct.toFixed(1)}%</span><span className="text-xs font-medium text-muted-foreground">{t("recordedBy")} {usage.createdByName || "System"} · {t("updated")} {formatDate(usage.updatedAt, language)}</span></div>
+       <div className="flex flex-wrap items-center gap-3"><VarianceBadge over={usage.isOverconsumption} /><span className="border border-border bg-secondary px-3 py-1 font-mono text-xs font-bold">{t("thresholdStatus")} {usage.thresholdPct.toFixed(1)}%</span><span className="text-xs font-medium text-muted-foreground">{t("operatorPIC")}: {usage.operatorName || t("picNotAssigned")} · {t("recordedBy")} {usage.createdByName || "System"} · {t("updated")} {formatDate(usage.updatedAt, language)}</span></div>
        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label={t("actualPrimer")} value={formatLiters(usage.primerActualTotalL)} tone={primerTone} /><Metric label={t("primerTarget")} value={formatLiters(usage.primerTargetTotalL)} tone="blue" /><Metric label={t("actualTopcoat")} value={formatLiters(usage.topcoatActualTotalL)} tone={topcoatTone} /><Metric label={t("topcoatTarget")} value={formatLiters(usage.topcoatTargetTotalL)} tone="orange" /></div>
       <section className="grid gap-5 lg:grid-cols-2">
         <ComponentTable title={t("primerActualVsTarget")} accent="blue" rows={[[t("primerBase"), usage.primerBaseActualL, usage.primerTargetTotalL], [t("hardener"), usage.primerHrdActualL, 0], [t("thinner"), usage.primerThinnerActualL, 0]]} total={usage.primerActualTotalL} variance={usage.primerVarianceL} pct={usage.primerVariancePct} threshold={usage.thresholdPct} />

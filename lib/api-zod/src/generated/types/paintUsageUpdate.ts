@@ -31,4 +31,5 @@ export interface PaintUsageUpdate {
   topcoatThinnerActualL?: number;
   /** @nullable */
   notes?: string | null;
+  operatorUserId?: number;
 }
