@@ -20,3 +20,9 @@ Paint Usage is recorded separately for each shift on an SN; shipment totals sum 
 **Why:** The user explicitly chose per-shift records so each handover preserves its own usage and history.
 
 **How to apply:** Prevent duplicate records for the same SN and shift, keep stock movements attached to each shift record, and aggregate all shift records for shipment variance and cost.
+
+Each active shift must record Paint Usage before handing over the job or completing it; a zero-liter record is valid when no paint was used.
+
+**Why:** A handover without a shift record would omit that shift's consumption from shipment totals and could report a false saving.
+
+**How to apply:** Enforce the requirement on the server for both handover and completion, and provide a direct link to the active job's Paint Usage form.

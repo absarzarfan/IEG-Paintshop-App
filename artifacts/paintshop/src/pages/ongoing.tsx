@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListJobWorkflowHistoryQueryKey, getListJobWorkflowQueryKey, useListJobWorkflow, useUpdateJobWorkflow, type JobWorkflowItem } from "@workspace/api-client-react";
 import { AlertTriangle, ClipboardList, Loader2, Play, RefreshCw, Send, Check } from "lucide-react";
@@ -38,6 +39,7 @@ function WorkflowRow({ item, canWork, canComplete, shift, onAction, pendingId }:
       {canWork && item.workStatus === "ongoing" && item.handoverToShift === null && <>
         <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-bold uppercase text-muted-foreground">{t("progress")} %<Input type="number" min="0" max="100" value={progressPct} onChange={e => setProgress(e.target.value)} data-testid={`input-progress-${item.serialNumberId}`}/></label>
           <label className="text-[10px] font-bold uppercase text-muted-foreground">{t("category")}<Select value={category} onValueChange={setCategory}><SelectTrigger data-testid={`select-category-${item.serialNumberId}`}><SelectValue/></SelectTrigger><SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></label></div>
+          <p className="text-xs text-muted-foreground">{t("usageBeforeTransition")} <Link href={`/paint-usage/new?jobItemId=${item.jobItemId}`} className="font-bold text-primary underline underline-offset-2">{t("recordPaintUsage")}</Link></p>
          <div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" disabled={pendingId === item.serialNumberId} onClick={() => onAction(item, "update_progress", { shift, progressPct: Number(progressPct), category, note: note || null })} data-testid={`button-update-${item.serialNumberId}`}><RefreshCw size={13} className="mr-1"/>{t("update")}</Button>
            {nextShift !== null && <Button size="sm" variant="outline" disabled={pendingId === item.serialNumberId} onClick={() => onAction(item, "handover", { shift, handoverToShift: nextShift, progressPct: Number(progressPct), category, note: note || null })} data-testid={`button-handover-${item.serialNumberId}`}><Send size={13} className="mr-1"/>{t("handover")} · Shift {nextShift}</Button>}
           {canComplete && <Button size="sm" onClick={() => onAction(item, "complete", { shift, progressPct: 100, category, note: note || null })} disabled={pendingId === item.serialNumberId} data-testid={`button-complete-${item.serialNumberId}`}><Check size={13} className="mr-1"/>{t("complete")}</Button>}</div>

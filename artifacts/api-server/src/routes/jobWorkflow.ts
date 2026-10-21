@@ -46,6 +46,17 @@ function totalActuals(actuals: UsageActuals | null) {
     actuals.topcoatBaseActualL + actuals.topcoatHrdActualL + actuals.topcoatThinnerActualL;
 }
 
+async function hasPaintUsageForShift(serialNumberId: number, shift: number) {
+  const [usage] = await db.select({ id: paintUsageTable.id })
+    .from(paintUsageTable)
+    .where(and(
+      eq(paintUsageTable.serialNumberId, serialNumberId),
+      eq(paintUsageTable.shift, `Shift ${shift}`),
+    ))
+    .limit(1);
+  return Boolean(usage);
+}
+
 export async function serializeWorkflow(serialNumberId: number) {
   const [row] = await db
     .select({ serial: serialNumbersTable, job: jobItemsTable })
@@ -313,6 +324,10 @@ router.post(
             res.status(400).json({ error: "Handover must be to the next shift only." });
             return;
           }
+          if (!await hasPaintUsageForShift(serial.id, selectedShift)) {
+            res.status(409).json({ error: "Record Paint Usage for the active shift before handing over this job." });
+            return;
+          }
           next.progressPct = progressPct ?? serial.progressPct;
           next.currentCategory = category ?? serial.currentCategory;
           next.handoverToShift = handoverToShift;
@@ -322,12 +337,7 @@ router.post(
             res.status(400).json({ error: "Set progress to 100% before completing this job." });
             return;
           }
-          const [usage] = await db.select({ id: paintUsageTable.id }).from(paintUsageTable)
-            .where(and(
-              eq(paintUsageTable.serialNumberId, serial.id),
-              eq(paintUsageTable.shift, `Shift ${serial.activeShift}`),
-            ));
-          if (!usage) {
+          if (!await hasPaintUsageForShift(serial.id, serial.activeShift)) {
             res.status(409).json({ error: "Record Paint Usage for the active shift before completing this job." });
             return;
           }

@@ -825,7 +825,7 @@ paths:
         "404":
           description: Serial number not found
         "409":
-          description: Workflow state conflict
+          description: Workflow state conflict, including missing Paint Usage for the active shift before handover or completion
 
   /serial-numbers/{id}/workflow/history:
     get:
