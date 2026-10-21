@@ -14,3 +14,9 @@ Stocktake records are append-only snapshots. Post a positive physical-count vari
 **Why:** The user confirmed that stocktake differences should become ledger transactions rather than remain report-only.
 
 **How to apply:** Calculate the variance from the locked current lot balance, preserve the before-count balance, and link the resulting movement to the stocktake record.
+
+When approved demo Paint Usage records are removed, post `return_to_stock` movements for their outstanding net consumption, preserving the original material and lot attribution, before deleting the linked usage and work history.
+
+**Why:** the user chose to restore stock balances when deleting demo work history, rather than leave demo paint consumption in inventory totals.
+
+**How to apply:** Reverse only the net `out` amount not already returned for each usage component and lot; keep master materials and prior stock movements intact.

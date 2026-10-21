@@ -6,6 +6,6 @@
 - [Paintshop CRUD safety](paintshop-crud-safety.md) — delete only unreferenced records; deactivate historical records and protect the last Admin.
 - [Legacy database constraints](legacy-database-constraints.md) — preserve historical unique-constraint names or schema push can propose destructive table replacement.
 - [Order and shipment rules](paintshop-order-rules.md) — whole-order targets, progress-adjusted material savings/overruns, and Admin-designated leader verification.
-- [Paintshop stock allocation](paintshop-stock-allocation.md) — additional paint stages map to specific materials, and usage snapshots that mapping for stock and cost history.
+- [Paintshop stock allocation](paintshop-stock-allocation.md) — usage snapshots material/lot attribution; approved demo deletions return outstanding consumption before removing work history.
 - [Paintshop PIC attribution](paintshop-pic-attribution.md) — PIC stays separate from the recorder; efficiency allocates target by shift progress and labels estimates.
 - [Paintshop dashboard scope](paintshop-dashboard-scope.md) — keep operational monitoring visible to every authenticated role; leave audit history in its dedicated page.
