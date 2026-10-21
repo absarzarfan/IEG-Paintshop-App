@@ -43,6 +43,14 @@ function formatDate(value: string | null) {
     : new Intl.DateTimeFormat("en-US", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
+function daysUntilExpiry(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  const expiryDay = Date.UTC(year, month - 1, day);
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Number.isFinite(expiryDay) ? Math.floor((expiryDay - today) / 86_400_000) : Number.NaN;
+}
+
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
@@ -98,6 +106,20 @@ export function Stock() {
     () => (summary ?? []).filter((item) => item.stockL <= item.deadStockThreshold).length,
     [summary],
   );
+  const lowStockItems = useMemo(
+    () => (summary ?? [])
+      .filter((item) => item.stockL <= item.deadStockThreshold)
+      .sort((a, b) => a.stockL - b.stockL),
+    [summary],
+  );
+  const nearExpiryLots = useMemo(() => (lots ?? []).flatMap((lot) => {
+    if (lot.stockL <= 0 || !lot.expiryDate) return [];
+    const daysLeft = daysUntilExpiry(lot.expiryDate);
+    return Number.isFinite(daysLeft) && daysLeft <= 90 ? [{ ...lot, daysLeft }] : [];
+  }).sort((a, b) => a.daysLeft - b.daysLeft), [lots]);
+  const expiryWithin30Count = nearExpiryLots.filter((lot) => lot.daysLeft >= 0 && lot.daysLeft <= 30).length;
+  const expiryWithin90Count = nearExpiryLots.filter((lot) => lot.daysLeft > 30 && lot.daysLeft <= 90).length;
+  const expiredLotCount = nearExpiryLots.filter((lot) => lot.daysLeft < 0).length;
   const totalStock = useMemo(() => (summary ?? []).reduce((total, item) => total + item.stockL, 0), [summary]);
 
   async function saveStockTake(data: StockTakeInput, key?: string) {
@@ -210,6 +232,69 @@ export function Stock() {
           <p className={`mt-1 font-mono text-lg font-bold ${lowStockCount ? "text-destructive" : "text-foreground"}`}>{lowStockCount}</p>
         </div>
       </div>
+
+      <section className="border border-border bg-card" data-testid="stock-alerts">
+        <div className="flex items-center gap-2 border-b border-border bg-secondary/30 px-5 py-3">
+          <AlertTriangle className="h-4 w-4 text-primary" />
+          <h2 className="text-xs font-bold uppercase tracking-[0.16em]">{t("stockAlerts")}</h2>
+        </div>
+        <div className="grid gap-3 border-b border-border p-4 sm:grid-cols-3">
+          <div className={`border px-4 py-3 ${lowStockCount ? "border-destructive/40 bg-destructive/5" : "border-border"}`}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("lowStockAlert")}</p>
+            <p className={`mt-1 font-mono text-2xl font-bold ${lowStockCount ? "text-destructive" : "text-foreground"}`}>{summaryLoading ? "—" : lowStockCount}</p>
+          </div>
+          <div className={`border px-4 py-3 ${expiredLotCount ? "border-destructive/40 bg-destructive/5" : "border-border"}`}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("expiredLots")}</p>
+            <p className={`mt-1 font-mono text-2xl font-bold ${expiredLotCount ? "text-destructive" : "text-foreground"}`}>{lotsLoading ? "—" : expiredLotCount}</p>
+          </div>
+          <div className={`border px-4 py-3 ${expiryWithin30Count ? "border-primary/50 bg-primary/5" : "border-border"}`}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">{t("expiryNext30Days")}</p>
+            <p className="mt-1 font-mono text-2xl font-bold">{lotsLoading ? "—" : expiryWithin30Count}</p>
+            <p className="text-xs text-muted-foreground">{t("expiryDays31To90")}: {lotsLoading ? "—" : expiryWithin90Count}</p>
+          </div>
+        </div>
+        {summaryLoading || lotsLoading ? (
+          <p className="p-5 text-sm text-muted-foreground">{t("loadingSystem")}</p>
+        ) : summaryError || lotsError ? (
+          <p className="p-5 text-sm font-semibold text-destructive">{t("stockError")}</p>
+        ) : (
+          <div className="grid divide-y divide-border lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+            <div className="p-4">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider">{t("lowStockAlert")}</h3>
+              {lowStockItems.length ? (
+                <ul className="divide-y divide-border">
+                  {lowStockItems.map((item) => (
+                    <li key={item.materialId} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <span className="min-w-0"><span className="block truncate font-semibold">{item.materialDescription}</span><span className="text-xs text-muted-foreground">{item.brandName}</span></span>
+                      <span className="shrink-0 text-right font-mono text-destructive">{formatLiters(item.stockL)} / {formatLiters(item.deadStockThreshold)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-muted-foreground">{t("noLowStockAlerts")}</p>}
+            </div>
+            <div className="p-4">
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider">{t("expiryAlerts90Days")}</h3>
+              {nearExpiryLots.length ? (
+                <ul className="divide-y divide-border">
+                  {nearExpiryLots.map((lot) => (
+                    <li key={lotIdentity(lot)} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <span className="min-w-0"><span className="block truncate font-semibold">{lot.materialDescription}</span><span className="text-xs text-muted-foreground">{lot.brandName} · {t("lot")} {lot.lotNo || "—"} · {formatDate(lot.expiryDate)}</span></span>
+                      <span className={`shrink-0 text-right text-xs font-bold ${lot.daysLeft <= 30 ? "text-destructive" : "text-amber-700"}`}>
+                        {lot.daysLeft < 0
+                          ? `${t("expired")} · ${Math.abs(lot.daysLeft)} ${t("daysAgo")}`
+                          : lot.daysLeft === 0
+                            ? t("expiresToday")
+                            : `${t("expiresIn")} ${lot.daysLeft} ${t("days")}`}
+                        <span className="block font-mono">{formatLiters(lot.stockL)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-muted-foreground">{t("noExpiryAlerts")}</p>}
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className="border border-border bg-card">
         <div className="flex items-center gap-2 border-b border-border bg-secondary/30 px-5 py-3">
