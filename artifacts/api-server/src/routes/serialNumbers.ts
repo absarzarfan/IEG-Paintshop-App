@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray, count } from "drizzle-orm";
+import { and, eq, inArray, count } from "drizzle-orm";
 import { db, jobItemsTable, serialNumbersTable, paintUsageTable, jobWorkEventsTable } from "@workspace/db";
 import {
   ListJobItemSerialNumbersParams,
@@ -98,19 +98,35 @@ router.post("/job-items/:jobItemId/serial-numbers", requireRole("admin", "painte
     values = parsed.data.values.map((v) => v.trim()).filter(Boolean);
   }
 
-  values = [...new Set(values)];
   if (values.length === 0) {
     res.status(400).json({ error: "No serial numbers to add" });
     return;
   }
 
+  const seenValues = new Set<string>();
+  const duplicateValues = new Set<string>();
+  for (const serialNo of values) {
+    if (seenValues.has(serialNo)) duplicateValues.add(serialNo);
+    seenValues.add(serialNo);
+  }
+  if (duplicateValues.size > 0) {
+    res.status(409).json({
+      error: `Serial Number repeated in this list: ${[...duplicateValues].join(", ")}. Search Jobs or Ongoing Jobs instead of adding it again.`,
+    });
+    return;
+  }
+  values = [...seenValues];
+
   const existing = await db
     .select({ serialNo: serialNumbersTable.serialNo })
     .from(serialNumbersTable)
-    .where(inArray(serialNumbersTable.serialNo, values));
+    .where(and(
+      eq(serialNumbersTable.jobItemId, params.data.jobItemId),
+      inArray(serialNumbersTable.serialNo, values),
+    ));
   if (existing.length > 0) {
     res.status(409).json({
-      error: `Serial Number already exists: ${existing.map((row) => row.serialNo).join(", ")}. Search Jobs or Ongoing Jobs instead of adding it again.`,
+      error: `Serial Number already exists for this Job Number: ${existing.map((row) => row.serialNo).join(", ")}. Search Jobs or Ongoing Jobs instead of adding it again.`,
     });
     return;
   }
