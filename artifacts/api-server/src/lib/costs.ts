@@ -1,5 +1,6 @@
 import { eq, desc } from "drizzle-orm";
 import { db, materialPricesTable, type JobItem } from "@workspace/db";
+import { priceMaterialVolumes, type MaterialPriceInfo } from "./materialCostMath";
 
 const targetFields = [
   "primerBaseL",
@@ -23,11 +24,6 @@ export function targetsPerUnit(jobItem: JobItem): JobItem {
     normalized[field] = normalized[field] / quantity;
   }
   return normalized;
-}
-
-interface MaterialPriceInfo {
-  unitPrice: number;
-  currency: string;
 }
 
 async function getCurrentPrice(materialId: number | null): Promise<MaterialPriceInfo | null> {
@@ -72,7 +68,7 @@ export interface JobItemCostInputs {
  * Derives a job item's cost preview from current material prices. Never
  * stored -- always computed at read time so a later price change is
  * reflected immediately and old costs are never silently stale. Returns null
- * for a line (and for the whole currency) whenever a role has no material
+ * for a nonzero line whenever a role has no material
  * assigned, that material has no price recorded yet, or the assigned
  * materials mix currencies -- showing a wrong number is worse than showing
  * none.
@@ -89,23 +85,12 @@ export async function computeJobItemCosts(jobItem: JobItemCostInputs) {
     ]);
 
   const allPrices = [primerBasePrice, primerHrdPrice, primerThinnerPrice, topcoatBasePrice, topcoatHrdPrice, topcoatThinnerPrice];
-  const currencies = new Set(allPrices.filter((p): p is MaterialPriceInfo => p !== null).map((p) => p.currency));
-  const consistentCurrency = currencies.size === 1 ? [...currencies][0]! : null;
-
-  const costFor = (liters: number, price: MaterialPriceInfo | null): number | null => {
-    if (!price || !consistentCurrency || price.currency !== consistentCurrency) return null;
-    return round4(liters * price.unitPrice);
-  };
-
-  const primerCostBase = costFor(jobItem.primerBaseL, primerBasePrice);
-  const primerCostHrd = costFor(jobItem.primerHrdL, primerHrdPrice);
-  const primerCostThinner = costFor(jobItem.primerThinnerL, primerThinnerPrice);
-  const topcoatCostBase = costFor(jobItem.topcoatBaseL, topcoatBasePrice);
-  const topcoatCostHrd = costFor(jobItem.topcoatHrdL, topcoatHrdPrice);
-  const topcoatCostThinner = costFor(jobItem.topcoatThinnerL, topcoatThinnerPrice);
+  const priced = priceMaterialVolumes(targetFields.map((field) => jobItem[field]), allPrices);
+  const [primerCostBase, primerCostHrd, primerCostThinner, topcoatCostBase, topcoatCostHrd, topcoatCostThinner] =
+    priced.costs as [number | null, number | null, number | null, number | null, number | null, number | null];
 
   return {
-    currency: consistentCurrency,
+    currency: priced.currency,
     primerCostBase,
     primerCostHrd,
     primerCostThinner,
@@ -133,18 +118,6 @@ export async function computePaintUsageCost(
     jobItem.topcoatThinnerMaterialId,
   ];
   const prices = await Promise.all(materialIds.map(getCurrentPrice));
-  const currencies = new Set(prices.filter((price): price is MaterialPriceInfo => price !== null).map((price) => price.currency));
-  const currency = currencies.size === 1 ? [...currencies][0]! : null;
-  if (!currency || prices.some((price) => !price || price.currency !== currency)) {
-    return { currency: null, total: null };
-  }
-
-  const total =
-    actuals.primerBaseL * prices[0]!.unitPrice +
-    actuals.primerHrdL * prices[1]!.unitPrice +
-    actuals.primerThinnerL * prices[2]!.unitPrice +
-    actuals.topcoatBaseL * prices[3]!.unitPrice +
-    actuals.topcoatHrdL * prices[4]!.unitPrice +
-    actuals.topcoatThinnerL * prices[5]!.unitPrice;
-  return { currency, total: round4(total) };
+  const { currency, total } = priceMaterialVolumes(targetFields.map((field) => actuals[field]), prices);
+  return { currency, total };
 }

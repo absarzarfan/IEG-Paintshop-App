@@ -78,6 +78,8 @@ const actualFields = [
   { name: "topcoatThinnerActualL", label: "thinner" },
 ] as const;
 
+const usageSelectClassName = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+
 const usageSchema = (t: (key: string) => string) => z.object({
   jobItemId: z.coerce.number().int().positive(t("selectJobItem")),
   serialNumberId: z.coerce.number().int().positive(t("selectSerialNumber")),
@@ -109,6 +111,7 @@ function formatDate(value: string, language: "id" | "en") {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   }).format(date);
 }
 
@@ -329,12 +332,12 @@ function UsageForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-bold">{t("jobs")}</FormLabel>
-                    <Select value={field.value ? String(field.value) : ""} onValueChange={(value) => { field.onChange(Number(value)); form.setValue("serialNumberId", 0); }}>
-                      <FormControl><SelectTrigger data-testid="select-job-item"><SelectValue placeholder={jobsLoading ? t("loadingJobItems") : t("selectJobItem")} /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {jobs?.map((job) => <SelectItem value={String(job.id)} key={job.id}>{job.jobNo} — {job.description}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <select ref={field.ref} name={field.name} onBlur={field.onBlur} className={usageSelectClassName} data-testid="select-job-item" value={field.value ? String(field.value) : ""} onChange={(event) => { field.onChange(Number(event.target.value)); form.setValue("serialNumberId", 0); }}>
+                        <option value="">{jobsLoading ? t("loadingJobItems") : t("selectJobItem")}</option>
+                        {jobs?.map((job) => <option value={String(job.id)} key={job.id}>{job.jobNo} — {job.description}</option>)}
+                      </select>
+                    </FormControl>
                     {jobsError && <p className="text-xs font-medium text-destructive">{t("jobItemsLoadError")}</p>}
                     <FormMessage />
                   </FormItem>
@@ -346,18 +349,16 @@ function UsageForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-bold">{t("serial")}</FormLabel>
-                    <Select value={field.value ? String(field.value) : ""} onValueChange={(value) => {
-                      field.onChange(Number(value));
-                      const selectedSerial = serials?.find((serial) => serial.id === Number(value));
+                    <FormControl><select ref={field.ref} name={field.name} onBlur={field.onBlur} className={usageSelectClassName} data-testid="select-serial-number" value={field.value ? String(field.value) : ""} onChange={(event) => {
+                      field.onChange(Number(event.target.value));
+                      const selectedSerial = serials?.find((serial) => serial.id === Number(event.target.value));
                       if (selectedSerial) {
                         form.setValue("shift", `Shift ${selectedSerial.activeShift}`, { shouldValidate: true });
                       }
                     }} disabled={!selectedJobId || serialsLoading}>
-                      <FormControl><SelectTrigger data-testid="select-serial-number"><SelectValue placeholder={serialsLoading ? t("loadingSerialNumbers") : t("selectSerialNumber")} /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {serials?.map((serial) => <SelectItem value={String(serial.id)} key={serial.id} disabled={usedSerialIds.has(serial.id)}>{serial.serialNo}{usedSerialIds.has(serial.id) ? ` — ${t("serialAlreadyRecorded")}` : ""}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                      <option value="">{serialsLoading ? t("loadingSerialNumbers") : t("selectSerialNumber")}</option>
+                      {serials?.map((serial) => <option value={String(serial.id)} key={serial.id} disabled={usedSerialIds.has(serial.id)}>{serial.serialNo}{usedSerialIds.has(serial.id) ? ` — ${t("serialAlreadyRecorded")}` : ""}</option>)}
+                    </select></FormControl>
                     {selectedJobId > 0 && !serialsLoading && serials?.length === 0 && <p className="text-xs font-medium text-amber-700">{t("noSerialNumbers")}</p>}
                     {selectedJobId > 0 && !serialsLoading && serials?.length && serials.every((serial) => usedSerialIds.has(serial.id)) ? <p className="text-xs font-medium text-amber-700">{t("allSerialsRecorded")}</p> : null}
                     <FormMessage />
@@ -386,20 +387,20 @@ function UsageForm({
               <FormItem><FormLabel className="font-bold">{t("usageDate")}</FormLabel><FormControl><Input type="date" {...field} data-testid="input-usage-date" /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="shift" render={({ field }) => (
-              <FormItem><FormLabel className="font-bold">{t("shift")}</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger data-testid="input-shift"><SelectValue /></SelectTrigger></FormControl><SelectContent>{[1, 2, 3].map((shift) => <SelectItem key={shift} value={`Shift ${shift}`}>{t("shift")} {shift}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+              <FormItem><FormLabel className="font-bold">{t("shift")}</FormLabel><FormControl><select {...field} className={usageSelectClassName} data-testid="input-shift">{[1, 2, 3].map((shift) => <option key={shift} value={`Shift ${shift}`}>{t("shift")} {shift}</option>)}</select></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="category" render={({ field }) => (
-              <FormItem><FormLabel className="font-bold">{t("category")}</FormLabel><Select value={field.value} onValueChange={field.onChange}><FormControl><SelectTrigger data-testid="select-usage-category"><SelectValue /></SelectTrigger></FormControl><SelectContent>
-                <SelectItem value="preparation">{t("preparation")}</SelectItem><SelectItem value="blasting">{t("blasting")}</SelectItem><SelectItem value="washing">{t("washing")}</SelectItem><SelectItem value="cleaning">{t("cleaning")}</SelectItem><SelectItem value="finishing">{t("finishing")}</SelectItem>
-              </SelectContent></Select><FormMessage /></FormItem>
+              <FormItem><FormLabel className="font-bold">{t("category")}</FormLabel><FormControl><select {...field} className={usageSelectClassName} data-testid="select-usage-category">
+                <option value="preparation">{t("preparation")}</option><option value="blasting">{t("blasting")}</option><option value="washing">{t("washing")}</option><option value="cleaning">{t("cleaning")}</option><option value="finishing">{t("finishing")}</option>
+              </select></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="operatorUserId" render={({ field }) => (
               <FormItem>
                 <FormLabel className="font-bold">{t("operatorPIC")}</FormLabel>
-                <Select value={field.value ? String(field.value) : ""} onValueChange={(value) => field.onChange(Number(value))} disabled={paintMixersLoading || !paintMixers?.length}>
-                  <FormControl><SelectTrigger data-testid="select-paint-usage-pic"><SelectValue placeholder={paintMixersLoading ? t("loadingSystem") : t("selectPaintMixer")} /></SelectTrigger></FormControl>
-                  <SelectContent>{paintMixers?.map((mixer) => <SelectItem key={mixer.id} value={String(mixer.id)}>{mixer.displayName}</SelectItem>)}</SelectContent>
-                </Select>
+                <FormControl><select ref={field.ref} name={field.name} onBlur={field.onBlur} className={usageSelectClassName} data-testid="select-paint-usage-pic" value={field.value ? String(field.value) : ""} onChange={(event) => field.onChange(Number(event.target.value))} disabled={paintMixersLoading || !paintMixers?.length}>
+                  <option value="">{paintMixersLoading ? t("loadingSystem") : t("selectPaintMixer")}</option>
+                  {paintMixers?.map((mixer) => <option key={mixer.id} value={String(mixer.id)}>{mixer.displayName}</option>)}
+                </select></FormControl>
                 {!paintMixersLoading && !paintMixers?.length && <p className="text-xs font-medium text-destructive">{t("noActivePaintMixers")}</p>}
                 <FormMessage />
               </FormItem>

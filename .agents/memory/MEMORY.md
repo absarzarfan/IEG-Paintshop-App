@@ -10,3 +10,4 @@
 - [Paintshop stock allocation](paintshop-stock-allocation.md) — usage snapshots material/lot attribution; approved demo deletions return outstanding consumption before removing work history.
 - [Paintshop PIC attribution](paintshop-pic-attribution.md) — PIC stays separate from the recorder; efficiency allocates target by shift progress and labels estimates.
 - [Paintshop dashboard scope](paintshop-dashboard-scope.md) — keep operational monitoring visible to every authenticated role; leave audit history in its dedicated page.
+- [Paintshop form selectors](paintshop-form-selects.md) — native controlled form fields avoid a signed-in Radix hidden-select runtime failure that reproduces across versions.

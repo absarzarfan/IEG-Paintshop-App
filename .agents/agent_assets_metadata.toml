@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "3ralE-8Ca2uLKPqDUKoiY"
+uri = "file://generated-artifacts/paintshop-demo.html"
+type = "html"
+title = "Demo workflow Admin → Paint Mixer"
+description = "Dokumentasi demo nyata hingga shipment terverifikasi, lengkap dengan langkah, bukti layar, stok akhir, dan penghematan material."
+logical_id = "9c56394b-6e73-43a3-8e13-2d81f63bee19"
+content_hash = "sha256:27cb755885fc3101e0220384715e33a450d270428d064a390cb39b35e29b6197"
+size = 1021508
+mtime_ms = 1792635280852
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:4b5ab020-5d66-420d-85d6-093383c3a8c9/9c56394b-6e73-43a3-8e13-2d81f63bee19/d40d37f9-fe03-4faa-87c3-8b63c200fa39"
+storage_version_token = "1792635326472371"
+content_type = "text/html"
