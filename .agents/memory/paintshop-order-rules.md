@@ -9,6 +9,12 @@ New JN targets cover the total ordered quantity, not one item. Customer reportin
 
 **How to apply:** Keep full-plan remaining liters separate from progress-adjusted savings/overrun. Describe monetary results as material-cost savings/overruns, not net sales profit.
 
+Operational mixing comparisons must expose Base, Hardener, and Thinner overruns separately for Primer and Topcoat, even when the combined job remains within its total budget.
+
+**Why:** The user's Daily Paint Mixing Update workbook and reference image require identifying which individual components exceed target, not only whether the aggregate is over.
+
+**How to apply:** Keep component-level target-minus-actual comparisons visible alongside the separate progress-adjusted overall assessment. Do not let unused budget on one component conceal an overrun on another.
+
 Shipment verification is restricted to a Paint Mixer designated as leader by an Admin.
 
 **Why:** The user explicitly selected the nominated-leader rule, rather than allowing all Paint Mixers to verify.

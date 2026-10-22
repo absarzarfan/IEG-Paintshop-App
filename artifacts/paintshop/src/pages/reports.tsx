@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/language";
 import { buildPicPerformance } from "./reports/pic-performance";
 import { PicPerformanceView } from "./reports/pic-performance-view";
+import { MixingRecordView } from "./reports/mixing-record-view";
 
-type ReportMode = "usage" | "qc";
+type ReportMode = "usage" | "qc" | "mixing";
 type Period = "week" | "month";
 
 function datePart(date: Date) {
@@ -89,7 +90,7 @@ function statusTranslationKey(status: string) {
 
 export function Reports() {
   const { language, t } = useLanguage();
-  const [mode, setMode] = useState<ReportMode>("usage");
+  const [mode, setMode] = useState<ReportMode>("mixing");
   const [period, setPeriod] = useState<Period>("week");
   const [periodOffset, setPeriodOffset] = useState(0);
   const [selectedSerialId, setSelectedSerialId] = useState("");
@@ -101,10 +102,10 @@ export function Reports() {
   );
 
   const workflowQuery = useListJobWorkflow(undefined, {
-    query: { queryKey: getListJobWorkflowQueryKey(), refetchInterval: 30000 },
+    query: { queryKey: getListJobWorkflowQueryKey(), refetchInterval: 30000, enabled: mode !== "mixing" },
   });
   const periodUsageQuery = useListPaintUsage(usageParams, {
-    query: { queryKey: getListPaintUsageQueryKey(usageParams) },
+    query: { queryKey: getListPaintUsageQueryKey(usageParams), enabled: mode === "usage" },
   });
   const serialId = Number(selectedSerialId) || 0;
   const qcUsageParams = useMemo(
@@ -494,9 +495,11 @@ export function Reports() {
         <div className="flex flex-wrap gap-2">
           <Button variant={mode === "usage" ? "default" : "outline"} onClick={() => setMode("usage")} data-testid="button-report-usage">{t("reportUsageDetails")}</Button>
           <Button variant={mode === "qc" ? "default" : "outline"} onClick={() => setMode("qc")} data-testid="button-report-qc">{t("reportQcUsage")}</Button>
+          <Button variant={mode === "mixing" ? "default" : "outline"} onClick={() => setMode("mixing")} data-testid="button-report-mixing">{language === "en" ? "Mixing Record" : "Catatan Pencampuran"}</Button>
         </div>
       </header>
 
+      {mode !== "mixing" && (<>
       <section className="report-no-print flex flex-wrap items-center justify-between gap-3 border border-border bg-card p-3">
         {mode === "usage" ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -528,6 +531,8 @@ export function Reports() {
       {exportError && <p className="report-no-print border border-destructive/30 bg-destructive/10 p-3 text-sm font-semibold text-destructive" role="alert">{exportError}</p>}
       {isLoading && <p className="border border-border bg-card p-5 text-sm text-muted-foreground">{t("reportLoading")}</p>}
       {hasError && <p className="border border-destructive/30 bg-destructive/10 p-5 text-sm font-semibold text-destructive">{t("reportError")}</p>}
+      </>)}
+      {mode === "mixing" && <MixingRecordView />}
 
       {!isLoading && !hasError && mode === "usage" && (
         <div id="paintshop-report-print" className="space-y-5">
